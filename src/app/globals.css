@@ -1,6 +1,51 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-/*
- * Personaliza tu tema aquí
- * Documentación: https://tailwindcss.com/docs/theme
- */
+/* Variables CSS globales - Sistema Neumorphism */
+:root {
+  --font-inter: 'Inter', sans-serif;
+  --font-manrope: 'Manrope', sans-serif;
+
+  /* Neumorphism palette */
+  --neu-bg: #e6e7ee;
+  --neu-shadow-dark: #b8b9be;
+  --neu-shadow-light: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: #e6e7ee;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #e6e7ee;
+  border-radius: 10px;
+  box-shadow: inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff;
+}
+::-webkit-scrollbar-thumb {
+  background: #c8c9d0;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9a9ba2;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
