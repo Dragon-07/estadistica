@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { processReporteFacturacion } from '@/features/data-parser/reportes';
+import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { ExcelUploader } from '@/features/data-parser/components/ExcelUploader';
 import { Dashboard } from '@/features/reports/components/Dashboard';
 import { BillingReport } from '@/features/reports/components/BillingReport';
@@ -25,6 +27,32 @@ const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { reporteFacturacionData, setReporteFacturacionData } = useReportesStore();
+
+  const handleReporteFacturacionClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsProcessing(true);
+      const data = await processReporteFacturacion(file);
+      setReporteFacturacionData(data);
+      // Podríamos usar un toast, pero un alert sirve por ahora para dar feedback rápido
+      alert('Reporte facturación procesado, datos guardados y descargado exitosamente.');
+    } catch (err: any) {
+      console.error(err);
+      alert('Error: ' + err.message);
+    } finally {
+      setIsProcessing(false);
+      e.target.value = '';
+    }
+  };
 
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--neu-bg)' }}>
@@ -116,26 +144,72 @@ export default function Home() {
               {/* Botones Superiores */}
               <div className="flex flex-wrap gap-6">
                 {[
-                  { id: 'facturacion', label: 'reporte_facturacio', icon: FileText },
+                  { id: 'facturacion', label: 'reporte_facturacio', icon: FileText, onClick: handleReporteFacturacionClick, isProcessing },
                   { id: 'transaccion', label: 'reporte_transaccio', icon: Activity },
                   { id: 'database', label: 'BASE DE DATOS', icon: Database },
-                ].map(({ id, label, icon: Icon }) => (
+                ].map(({ id, label, icon: Icon, onClick, isProcessing: loading }) => (
                   <button
                     key={id}
-                    className="flex items-center gap-4 px-8 py-5 rounded-3xl bg-[#e6e7ee] text-gray-700 font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all duration-300 group min-w-[240px]"
+                    onClick={onClick}
+                    disabled={loading}
+                    className={`flex items-center gap-4 px-8 py-5 rounded-3xl bg-[#e6e7ee] text-gray-700 font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all duration-300 group min-w-[240px] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div className="w-10 h-10 rounded-2xl bg-white shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] flex items-center justify-center group-hover:scale-95 transition-transform">
-                      <Icon className="w-5 h-5 text-blue-500" />
+                      <Icon className={`w-5 h-5 ${loading ? 'text-gray-400 animate-pulse' : 'text-blue-500'}`} />
                     </div>
-                    <span className="text-sm tracking-wide">{label}</span>
+                    <span className="text-sm tracking-wide">{loading ? 'Procesando...' : label}</span>
                   </button>
                 ))}
               </div>
+              
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept=".xlsx, .xls"
+                onChange={handleFileChange} 
+              />
 
-              {/* Espacio para contenido futuro */}
-              <div className="flex flex-col items-center justify-center min-h-[40vh] border-2 border-dashed border-gray-300 rounded-[3rem] opacity-50">
-                <p className="text-gray-400 italic">Selecciona una opción para procesar los datos</p>
-              </div>
+              {/* Controles y Visualización de los Datos de Facturación */}
+              {reporteFacturacionData ? (
+                <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[6px_6px_14px_#b8b9be,-6px_-6px_14px_#ffffff]">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold text-gray-700">Previsualización de Datos Procesados</h2>
+                    <span className="text-xs font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                      {reporteFacturacionData.length - 1} registros (excluyendo encabezado)
+                    </span>
+                  </div>
+                  
+                  <div className="overflow-x-auto rounded-xl border border-gray-200" style={{ maxHeight: '500px' }}>
+                    <table className="min-w-full text-xs text-left text-gray-600 bg-white">
+                      <thead className="text-gray-700 bg-gray-50/80 sticky top-0 shadow-sm backdrop-blur-sm z-10">
+                        <tr>
+                          {reporteFacturacionData[0]?.map((header: string, i: number) => (
+                            <th key={`h-${i}`} className="px-4 py-3 font-semibold whitespace-nowrap border-b border-gray-200">
+                              {header || <span className="text-gray-400 italic">Vacio</span>}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reporteFacturacionData.slice(1).map((row: any[], rowIndex: number) => (
+                          <tr key={`r-${rowIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
+                            {row.map((cell: any, cellIndex: number) => (
+                              <td key={`c-${rowIndex}-${cellIndex}`} className="px-4 py-3 whitespace-nowrap">
+                                {cell || <span className="text-gray-300">-</span>}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center min-h-[40vh] border-2 border-dashed border-gray-300 rounded-[3rem] opacity-50">
+                  <p className="text-gray-400 italic">Selecciona una opción para procesar y cargar los datos aquí</p>
+                </div>
+              )}
             </div>
           )}
         </div>
