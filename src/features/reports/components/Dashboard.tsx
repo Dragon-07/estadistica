@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/shared/lib/supabase/client';
 import { DashboardStats, DoctorSummary, EntitySummary } from '@/shared/types/medical';
-import { Users, Building2, Stethoscope, FileText, TrendingUp, TrendingDown, Calendar, X } from 'lucide-react';
+import { Users, Building2, Stethoscope, FileText, TrendingUp, TrendingDown, Calendar, X, Download, Check } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { GLOBAL_REPORT_COLUMNS } from '@/features/data-parser/reportes';
 
 export function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -16,6 +18,7 @@ export function Dashboard() {
   const [endDate, setEndDate] = useState<string>('');
   const [tempStartDate, setTempStartDate] = useState<string>('');
   const [tempEndDate, setTempEndDate] = useState<string>('');
+  const [currentRecords, setCurrentRecords] = useState<any[]>([]);
 
 
   useEffect(() => {
@@ -29,14 +32,14 @@ export function Dashboard() {
       let hasMore = true;
 
       while (hasMore) {
-        let query = supabase
-          .from('medical_records')
-          .select('*')
-          .range(from, from + step - 1);
+        let query = supabase.from('medical_records').select('*');
         
+        // Aplicamos filtros ANTES del range para asegurar que la paginación sea sobre el set correcto
         if (entityFilters.length > 0) query = query.in('entity_name', entityFilters);
         if (startDate) query = query.gte('treatment_date', startDate);
         if (endDate) query = query.lte('treatment_date', endDate);
+
+        query = query.range(from, from + step - 1);
 
         const { data, error } = await query;
         
@@ -131,24 +134,54 @@ export function Dashboard() {
           })
       );
 
+      setCurrentRecords(allRecords);
       setLoading(false);
     };
 
     fetchData();
   }, [entityFilters, startDate, endDate]);
 
-  const handleDateChange = (val: string, type: 'start' | 'end') => {
-    const newStart = type === 'start' ? val : tempStartDate;
-    const newEnd = type === 'end' ? val : tempEndDate;
-    
-    setTempStartDate(newStart);
-    setTempEndDate(newEnd);
-    
-    // Si ambos están definidos, o ambos están vacíos (al limpiar), aplicamos el filtro real
-    if ((newStart && newEnd) || (!newStart && !newEnd)) {
-      setStartDate(newStart);
-      setEndDate(newEnd);
+
+  const handleApplyFilters = () => {
+    // Validamos que el rango sea coherente si ambas están presentes
+    if (tempStartDate && tempEndDate && tempStartDate > tempEndDate) {
+      alert('La fecha de inicio no puede ser posterior a la fecha de fin');
+      return;
     }
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate);
+  };
+
+  const exportToExcel = () => {
+    if (currentRecords.length === 0) return;
+
+    const dataToExport = currentRecords.map(r => {
+      const rowData: Record<string, any> = {};
+      
+      GLOBAL_REPORT_COLUMNS.forEach(col => {
+        // Ignoramos la columna vacía usada como separador
+        if (col === '') return; 
+        
+        // extra_data contiene exactamente los valores asociados a los nombres de columna originales
+        rowData[col] = r.extra_data?.[col] || '';
+      });
+      
+      return rowData;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
+    
+    // Nombre del archivo con el rango
+    const rangeStr = startDate && endDate ? `${startDate}_a_${endDate}` : 'Historico_Total';
+    XLSX.writeFile(wb, `Reporte_Todexo_${rangeStr}.xlsx`);
+  };
+
+  const handleDateChange = (val: string, type: 'start' | 'end') => {
+    if (type === 'start') setTempStartDate(val);
+    else setTempEndDate(val);
+    // Ya no aplicamos automáticamente, esperamos al botón
   };
 
   const handleClearDates = () => {
@@ -226,6 +259,15 @@ export function Dashboard() {
                 className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 cursor-pointer"
               />
             </div>
+            
+            <button 
+              onClick={handleApplyFilters}
+              className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-2xl text-xs font-bold shadow-[4px_4px_8px_rgba(22,163,74,0.3)] hover:bg-green-700 transition-all transform active:scale-95"
+            >
+              <Check className="w-4 h-4" />
+              Aplicar Periodo
+            </button>
+
             {(tempStartDate || tempEndDate) && (
               <button 
                 onClick={handleClearDates}
@@ -237,8 +279,17 @@ export function Dashboard() {
             )}
           </div>
           
-          <div className="flex items-center gap-2">
-            <div className="px-4 py-2 bg-blue-50 rounded-2xl border border-blue-100">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={exportToExcel}
+              disabled={loading || currentRecords.length === 0}
+              className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-2xl text-xs font-bold shadow-[4px_4px_10px_rgba(37,99,235,0.3)] hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              Excel
+            </button>
+
+            <div className="px-4 py-2 bg-blue-50 rounded-2xl border border-blue-100 flex flex-col items-center min-w-[100px]">
               <span className="text-[10px] font-bold text-blue-500 uppercase block leading-tight">Total Periodo</span>
               <span className="text-lg font-black text-blue-700 leading-tight">{stats.totalRecords.toLocaleString()}</span>
             </div>

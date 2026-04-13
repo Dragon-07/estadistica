@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { createClient } from '@/shared/lib/supabase/client';
 
-const GLOBAL_REPORT_COLUMNS = [
+export const GLOBAL_REPORT_COLUMNS = [
   'M Tratante',
   'Fecha Creación',
   'Factura',
@@ -183,15 +183,28 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
 
         if (rawRows.length === 0) throw new Error("El archivo de médicos está vacío.");
 
+        // Normalizador auxiliar para mejorar el emparejamiento ignorando tildes y mayúsculas
+        const normalizeStr = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
         // Crear un mapa para búsqueda rápida: Documento -> Medico Tratante
         const medicosMap = new Map<string, string>();
         for (const row of rawRows) {
           const keys = Object.keys(row);
-          const docKey = keys.find(k => k.trim().toLowerCase() === 'documento');
-          const medicoKey = keys.find(k => k.trim().toLowerCase() === 'medico tratante');
+          
+          const docKey = keys.find(k => {
+            const norm = normalizeStr(k);
+            return norm === 'documento' || norm === 'numero documento' || norm === 'identificacion' || norm === 'cedula' || norm === 'doc';
+          });
+          const medicoKey = keys.find(k => {
+            const norm = normalizeStr(k);
+            return norm === 'medico tratante' || norm === 'medico' || norm === 'm tratante';
+          });
           
           if (docKey && medicoKey) {
-            const docVal = String(row[docKey]).trim();
+            let docVal = String(row[docKey]).trim();
+            // A veces Excel exporta números grandes con un .0 al final (ej 94449832.0)
+            if (docVal.endsWith('.0')) docVal = docVal.slice(0, -2);
+            
             const medicoVal = String(row[medicoKey]).trim();
             if (docVal) medicosMap.set(docVal, medicoVal);
           }
@@ -202,13 +215,17 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
         const updatedData = currentData.map((row, idx) => {
           if (idx === 0) return row; // Mantener encabezado
           
-          const numDoc = String(row[3] || '').trim();
+          let numDoc = String(row[3] || '').trim();
+          if (numDoc.endsWith('.0')) numDoc = numDoc.slice(0, -2);
+
+          const newRow = [...row];
           if (numDoc && medicosMap.has(numDoc)) {
-            const newRow = [...row];
             newRow[0] = medicosMap.get(numDoc);
-            return newRow;
+          } else {
+            // El usuario pidió que se coloque explícitamente "no encontrado"
+            newRow[0] = 'no encontrado';
           }
-          return row;
+          return newRow;
         });
 
         resolve(updatedData);
@@ -279,3 +296,66 @@ export async function saveUnifiedToSupabase(data: any[][]) {
   }
 }
 
+/**
+ * Obtiene el total exacto de registros en la tabla medical_records.
+ */
+export async function getDatabaseTotalCount(): Promise<number> {
+  const supabase = createClient();
+  const { count, error } = await supabase
+    .from('medical_records')
+    .select('*', { count: 'exact', head: true });
+    
+  if (error) {
+    console.error('Error fetching total count:', error);
+    return 0;
+  }
+  return count || 0;
+}
+
+/**
+ * Obtiene los primeros N registros de Supabase y los formatea respetando GLOBAL_REPORT_COLUMNS.
+ */
+export async function fetchDatabasePreview(limit: number = 50): Promise<any[][]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('medical_records')
+    .select('extra_data')
+    .limit(limit)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching preview:', error);
+    throw new Error('No se pudo obtener la previsualización de la base de datos.');
+  }
+
+  // Si no hay datos, retornamos null
+  if (!data || data.length === 0) return [];
+
+  const previewTable = data.map(record => {
+    const rowData: any[] = [];
+    GLOBAL_REPORT_COLUMNS.forEach(col => {
+      // Recreamos la fila asegurando que cada columna quede en su índice correcto
+      rowData.push(col === '' ? '' : (record.extra_data?.[col] || ''));
+    });
+    return rowData;
+  });
+
+  return [GLOBAL_REPORT_COLUMNS, ...previewTable];
+}
+
+/**
+ * Elimina TODO el contenido de la tabla medical_records en Supabase.
+ */
+export async function deleteAllRecords() {
+  const supabase = createClient();
+  // Borrado masivo (gt uuid default)
+  const { error } = await supabase
+    .from('medical_records')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000'); // Siempre verdadero, borra todo
+    
+  if (error) {
+    console.error('Error deleting records:', error);
+    throw new Error('No se pudo borrar la base de datos: ' + error.message);
+  }
+}

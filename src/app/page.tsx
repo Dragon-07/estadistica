@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, saveUnifiedToSupabase, exportToExcel } from '@/features/data-parser/reportes';
+import { useState, useRef, useEffect } from 'react';
+import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, saveUnifiedToSupabase, exportToExcel, fetchDatabasePreview, deleteAllRecords, getDatabaseTotalCount } from '@/features/data-parser/reportes';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { ExcelUploader } from '@/features/data-parser/components/ExcelUploader';
 import { Dashboard } from '@/features/reports/components/Dashboard';
@@ -46,6 +46,37 @@ export default function Home() {
     appendReporteData,
     clearReporteFacturacionData
   } = useReportesStore();
+
+  const [dbPreviewData, setDbPreviewData] = useState<any[][] | null>(null);
+  const [dbTotalCount, setDbTotalCount] = useState<number>(0);
+  const [isLoadingDb, setIsLoadingDb] = useState(false);
+
+  const loadDbPreview = async () => {
+    try {
+      setIsLoadingDb(true);
+      const data = await fetchDatabasePreview(10000); // Cargamos todo para mostrar "Igual que arriba"
+      const total = await getDatabaseTotalCount();
+      
+      setDbTotalCount(total);
+      
+      if (data && data.length > 1) {
+        setDbPreviewData(data);
+      } else {
+        setDbPreviewData(null);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingDb(false);
+    }
+  };
+
+  // Cargar BD cada vez que entremos a process o cuando guardemos algo con éxito
+  useEffect(() => {
+    if (activeTab === 'process') {
+      loadDbPreview();
+    }
+  }, [activeTab, successStatus]);
 
   const handleFacturacionClick = () => facturacionInputRef.current?.click();
   const handleTransaccionClick = () => transaccionInputRef.current?.click();
@@ -121,9 +152,22 @@ export default function Home() {
     }
   };
 
-  const handleClearTable = () => {
-    if (confirm('¿Estás seguro de que deseas limpiar toda la tabla? Esta acción no se puede deshacer de la vista actual.')) {
-      clearReporteFacturacionData();
+  const handleClearTable = async () => {
+    if (confirm('¿Estás seguro de que deseas limpiar DE FORMA PERMANENTE la base de datos completa y la vista actual?\n\n¡Esta acción borrará TODO el histórico en el servidor!')) {
+      const isAbsoluteSure = confirm('ALERTA CRÍTICA: ¿Estás absolutamente seguro?\n\nEsto vaciará toda la tabla en Supabase y no podrás recuperar la información no respaldada.');
+      if (isAbsoluteSure) {
+        try {
+          setIsSaving(true);
+          await deleteAllRecords();
+          clearReporteFacturacionData();
+          setDbPreviewData(null);
+          alert('¡Base de datos y vista local borradas exitosamente!');
+        } catch (e: any) {
+          alert('Error al borrar la base de datos: ' + e.message);
+        } finally {
+          setIsSaving(false);
+        }
+      }
     }
   };
 
@@ -284,17 +328,16 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* Botón de Exportación Base de Datos Completa */}
-              {reporteFacturacionData && (
-                <div className="flex flex-col gap-3">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest ml-1">Base de Datos unificada</p>
-                  <div className="flex justify-start gap-4">
+              {/* Botones de Control de Base de Datos */}
+              <div className="flex justify-start gap-4 flex-wrap mt-2">
+                {reporteFacturacionData && (
+                  <>
                     <button
                       onClick={() => exportToExcel(reporteFacturacionData, 'Base_De_Datos_Unificada')}
                       className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-[4px_4px_10px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] transition-all duration-300 group"
                     >
                       <Download className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
-                      <span>Exportar Base de Datos Completa</span>
+                      <span>Exportar Local</span>
                     </button>
 
                     <button
@@ -307,19 +350,20 @@ export default function Home() {
                       } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <CloudUpload className={`w-5 h-5 ${isSaving ? 'animate-bounce' : ''}`} />
-                      <span>{isSaving ? 'Guardando...' : successStatus === 'save' ? '¡Guardado!' : 'Guardar en Base de Datos'}</span>
+                      <span>{isSaving ? 'Guardando...' : successStatus === 'save' ? '¡Guardado!' : 'Subir Cambios'}</span>
                     </button>
+                  </>
+                )}
 
-                    <button
-                      onClick={handleClearTable}
-                      className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white text-red-500 font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:bg-red-50 hover:text-red-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all duration-300 group"
-                    >
-                      <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                      <span>Limpiar Todo</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+                {/* Este botón ahora está siempre visible */}
+                <button
+                  onClick={handleClearTable}
+                  className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white text-red-500 font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:bg-red-50 hover:text-red-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all duration-300 group ml-auto"
+                >
+                  <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span>Limpiar Base de Datos</span>
+                </button>
+              </div>
               
               <input 
                 type="file" 
@@ -383,6 +427,60 @@ export default function Home() {
                   <p className="text-gray-400 italic">Selecciona una opción para procesar y cargar los datos aquí</p>
                 </div>
               )}
+
+              {/* Visor de la Base de Datos */}
+              <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[6px_6px_14px_#b8b9be,-6px_-6px_14px_#ffffff] mt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+                    <Database className="w-5 h-5 text-blue-500" />
+                    Estado Actual en Base de Datos
+                  </h2>
+                  <div className="flex items-center gap-3">
+                    <button onClick={loadDbPreview} className="text-xs text-blue-600 font-bold hover:underline">
+                      Actualizar
+                    </button>
+                    <span className="text-xs font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                      {dbTotalCount} registros (excluyendo encabezado)
+                    </span>
+                  </div>
+                </div>
+                
+                {isLoadingDb ? (
+                  <div className="py-12 flex justify-center items-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : dbPreviewData ? (
+                  <div className="overflow-x-auto rounded-xl border border-gray-200" style={{ maxHeight: '500px' }}>
+                    <table className="min-w-full text-xs text-left text-gray-600 bg-white">
+                      <thead className="text-gray-700 bg-gray-50/80 sticky top-0 shadow-sm backdrop-blur-sm z-10">
+                        <tr>
+                          {dbPreviewData[0]?.map((header: string, i: number) => (
+                            <th key={`dbh-${i}`} className="px-4 py-3 font-semibold whitespace-nowrap border-b border-gray-200">
+                              {header || <span className="text-gray-400 italic">Vacio</span>}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dbPreviewData.slice(1).map((row: any[], rowIndex: number) => (
+                          <tr key={`dbr-${rowIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
+                            {row.map((cell: any, cellIndex: number) => (
+                              <td key={`dbc-${rowIndex}-${cellIndex}`} className="px-4 py-3 whitespace-nowrap">
+                                {cell || <span className="text-gray-300">-</span>}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-300 rounded-[3rem] opacity-50">
+                    <Database className="w-8 h-8 text-gray-400 mb-2" />
+                    <p className="text-gray-400 font-medium text-sm">La base de datos está vacía</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
