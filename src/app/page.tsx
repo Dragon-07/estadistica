@@ -31,7 +31,14 @@ export default function Home() {
   const facturacionInputRef = useRef<HTMLInputElement>(null);
   const transaccionInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const { reporteFacturacionData, filteredCount, setReporteFacturacionData, appendReporteData } = useReportesStore();
+  const { 
+    reporteFacturacionData, 
+    reporteTransaccionData,
+    filteredCount, 
+    setReporteFacturacionData, 
+    setReporteTransaccionData,
+    appendReporteData 
+  } = useReportesStore();
 
   const handleFacturacionClick = () => facturacionInputRef.current?.click();
   const handleTransaccionClick = () => transaccionInputRef.current?.click();
@@ -46,7 +53,12 @@ export default function Home() {
         ? await processReporteFacturacion(file)
         : await processReporteTransaccion(file);
       
-      // La primera vez usamos set, las siguientes usamos append para sumar a la lista
+      // Guardar copia individual para exportación específica si es transacciones
+      if (type === 'transaccion') {
+        setReporteTransaccionData(result.data, result.filteredCount);
+      }
+
+      // La primera vez usamos set, las siguientes usamos append para sumar a la lista maestra
       if (!reporteFacturacionData) {
         setReporteFacturacionData(result.data, result.filteredCount);
       } else {
@@ -154,33 +166,56 @@ export default function Home() {
               <div className="flex flex-wrap gap-6">
                 {[
                   { id: 'facturacion', label: 'reporte_facturacio', icon: FileText, onClick: handleFacturacionClick, isProcessing },
-                  { id: 'transaccion', label: 'reporte_transaccio', icon: Activity, onClick: handleTransaccionClick, isProcessing },
+                  { 
+                    id: 'transaccion', 
+                    label: 'reporte_transaccio', 
+                    icon: Activity, 
+                    onClick: handleTransaccionClick, 
+                    isProcessing,
+                    showExport: !!reporteTransaccionData,
+                    exportData: reporteTransaccionData,
+                    exportName: 'Reporte_Transacciones'
+                  },
                   { id: 'database', label: 'BASE DE DATOS', icon: Database },
-                ].map(({ id, label, icon: Icon, onClick, isProcessing: loading }) => (
-                  <button
-                    key={id}
-                    onClick={onClick}
-                    disabled={loading}
-                    className={`flex items-center gap-4 px-8 py-5 rounded-3xl bg-[#e6e7ee] text-gray-700 font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all duration-300 group min-w-[240px] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <div className="w-10 h-10 rounded-2xl bg-white shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] flex items-center justify-center group-hover:scale-95 transition-transform">
-                      <Icon className={`w-5 h-5 ${loading ? 'text-gray-400 animate-pulse' : 'text-blue-500'}`} />
-                    </div>
-                    <span className="text-sm tracking-wide">{loading ? 'Procesando...' : label}</span>
-                  </button>
+                ].map(({ id, label, icon: Icon, onClick, isProcessing: loading, showExport, exportData, exportName }) => (
+                  <div key={id} className="flex flex-col gap-4">
+                    <button
+                      onClick={onClick}
+                      disabled={loading}
+                      className={`flex items-center gap-4 px-8 py-5 rounded-3xl bg-[#e6e7ee] text-gray-700 font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all duration-300 group min-w-[240px] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <div className="w-10 h-10 rounded-2xl bg-white shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] flex items-center justify-center group-hover:scale-95 transition-transform">
+                        <Icon className={`w-5 h-5 ${loading ? 'text-gray-400 animate-pulse' : 'text-blue-500'}`} />
+                      </div>
+                      <span className="text-sm tracking-wide">{loading ? 'Procesando...' : label}</span>
+                    </button>
+                    
+                    {showExport && (
+                      <button
+                        onClick={() => exportToExcel(exportData!, exportName)}
+                        className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-white text-blue-600 font-bold text-xs shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all duration-300 animate-fade-in"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Exportar Transacciones</span>
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
 
-              {/* Botón de Exportación */}
+              {/* Botón de Exportación Base de Datos Completa */}
               {reporteFacturacionData && (
-                <div className="flex justify-start">
-                  <button
-                    onClick={() => exportToExcel(reporteFacturacionData)}
-                    className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white text-blue-600 font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all duration-300 group"
-                  >
-                    <Download className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
-                    <span>Exportar a Excel</span>
-                  </button>
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest ml-1">Base de Datos unificada</p>
+                  <div className="flex justify-start">
+                    <button
+                      onClick={() => exportToExcel(reporteFacturacionData, 'Base_De_Datos_Unificada')}
+                      className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-[4px_4px_10px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] transition-all duration-300 group"
+                    >
+                      <Download className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
+                      <span>Exportar Base de Datos Completa</span>
+                    </button>
+                  </div>
                 </div>
               )}
               
