@@ -18,10 +18,37 @@ export function Dashboard() {
       setLoading(true);
       const supabase = createClient();
 
-      let query = supabase.from('medical_records').select('*');
-      if (entityFilters.length > 0) query = query.in('entity_name', entityFilters);
+      let allRecords: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
 
-      const { data: records } = await query;
+      while (hasMore) {
+        let query = supabase
+          .from('medical_records')
+          .select('*')
+          .range(from, from + step - 1);
+        
+        if (entityFilters.length > 0) query = query.in('entity_name', entityFilters);
+
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error('Error fetching records:', error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allRecords = [...allRecords, ...data];
+          from += step;
+          // Si recibimos menos del paso, es que llegamos al final
+          if (data.length < step) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const records = allRecords;
 
       // Cargar lista de entidades disponibles desde la vista optimizada si aún no existe
       if (availableEntities.length === 0) {
