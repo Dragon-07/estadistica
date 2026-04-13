@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { processReporteFacturacion } from '@/features/data-parser/reportes';
+import { processReporteFacturacion, processReporteTransaccion } from '@/features/data-parser/reportes';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { ExcelUploader } from '@/features/data-parser/components/ExcelUploader';
 import { Dashboard } from '@/features/reports/components/Dashboard';
@@ -27,24 +27,32 @@ const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const facturacionInputRef = useRef<HTMLInputElement>(null);
+  const transaccionInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const { reporteFacturacionData, setReporteFacturacionData } = useReportesStore();
+  const { reporteFacturacionData, filteredCount, setReporteFacturacionData, appendReporteData } = useReportesStore();
 
-  const handleReporteFacturacionClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleFacturacionClick = () => facturacionInputRef.current?.click();
+  const handleTransaccionClick = () => transaccionInputRef.current?.click();
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'facturacion' | 'transaccion') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       setIsProcessing(true);
-      const data = await processReporteFacturacion(file);
-      setReporteFacturacionData(data);
-      // Podríamos usar un toast, pero un alert sirve por ahora para dar feedback rápido
-      alert('Reporte facturación procesado, datos guardados y descargado exitosamente.');
+      const result = type === 'facturacion' 
+        ? await processReporteFacturacion(file)
+        : await processReporteTransaccion(file);
+      
+      // La primera vez usamos set, las siguientes usamos append para sumar a la lista
+      if (!reporteFacturacionData) {
+        setReporteFacturacionData(result.data, result.filteredCount);
+      } else {
+        appendReporteData(result.data, result.filteredCount);
+      }
+
+      alert(`${type === 'facturacion' ? 'Reporte facturación' : 'Reporte transacción'} procesado y datos integrados exitosamente.`);
     } catch (err: any) {
       console.error(err);
       alert('Error: ' + err.message);
@@ -144,8 +152,8 @@ export default function Home() {
               {/* Botones Superiores */}
               <div className="flex flex-wrap gap-6">
                 {[
-                  { id: 'facturacion', label: 'reporte_facturacio', icon: FileText, onClick: handleReporteFacturacionClick, isProcessing },
-                  { id: 'transaccion', label: 'reporte_transaccio', icon: Activity },
+                  { id: 'facturacion', label: 'reporte_facturacio', icon: FileText, onClick: handleFacturacionClick, isProcessing },
+                  { id: 'transaccion', label: 'reporte_transaccio', icon: Activity, onClick: handleTransaccionClick, isProcessing },
                   { id: 'database', label: 'BASE DE DATOS', icon: Database },
                 ].map(({ id, label, icon: Icon, onClick, isProcessing: loading }) => (
                   <button
@@ -164,10 +172,17 @@ export default function Home() {
               
               <input 
                 type="file" 
-                ref={fileInputRef} 
+                ref={facturacionInputRef} 
                 className="hidden" 
                 accept=".xlsx, .xls"
-                onChange={handleFileChange} 
+                onChange={(e) => handleFileChange(e, 'facturacion')} 
+              />
+              <input 
+                type="file" 
+                ref={transaccionInputRef} 
+                className="hidden" 
+                accept=".xlsx, .xls"
+                onChange={(e) => handleFileChange(e, 'transaccion')} 
               />
 
               {/* Controles y Visualización de los Datos de Facturación */}
