@@ -218,7 +218,7 @@ export default function Home() {
                     isProcessing: isProcessing && !successStatus,
                     isSuccess: successStatus === 'medico'
                   },
-                  { id: 'database', label: 'BASE DE DATOS', icon: Database },
+
                 ].map(({ id, label, icon: Icon, onClick, isProcessing: loading, isSuccess, showExport, exportData, exportName }) => (
                   <div key={id} className="flex flex-col gap-4">
                     <button
