@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { createClient } from '@/shared/lib/supabase/client';
 
 const GLOBAL_REPORT_COLUMNS = [
   'M Tratante',
@@ -228,3 +229,53 @@ export function exportToExcel(data: any[][], fileName: string = 'Reporte_Consoli
   const timestamp = new Date().getTime();
   XLSX.writeFile(workbook, `${fileName}_${timestamp}.xlsx`);
 }
+
+/**
+ * Guarda los datos de la tabla unificada en Supabase.
+ */
+export async function saveUnifiedToSupabase(data: any[][]) {
+  const supabase = createClient();
+  
+  // Omitir encabezado
+  const rowsToInsert = data.slice(1).map(row => {
+    // Convertir fecha a string ISO si es un objeto Date
+    let treatmentDate = row[1];
+    if (treatmentDate instanceof Date) {
+      treatmentDate = treatmentDate.toISOString().split('T')[0];
+    } else if (typeof treatmentDate === 'string' && treatmentDate.includes('/')) {
+      // Intento básico de normalización si viene como DD/MM/YYYY
+      const parts = treatmentDate.split('/');
+      if (parts.length === 3) {
+        treatmentDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+
+    // Mapeo detallado a medical_records
+    return {
+      doctor_name: row[0] ? String(row[0]).trim() : null,
+      treatment_date: treatmentDate || null,
+      invoice_number: row[2] ? String(row[2]).trim() : null,
+      patient_doc: row[3] ? String(row[3]).trim() : null,
+      patient_name: row[4] ? String(row[4]).trim() : 'Paciente Desconocido',
+      entity_name: row[5] ? String(row[5]).trim() : 'PARTICULAR',
+      treatment_name: row[21] ? String(row[21]).trim() : null,
+      extra_data: row.reduce((acc, val, idx) => {
+        const key = GLOBAL_REPORT_COLUMNS[idx] || `col_${idx}`;
+        acc[key] = val;
+        return acc;
+      }, {} as Record<string, any>)
+    };
+  });
+
+  // Dividir en lotes de 100 para evitar límites de tamaño en payloads si la tabla es gigante
+  const batchSize = 100;
+  for (let i = 0; i < rowsToInsert.length; i += batchSize) {
+    const batch = rowsToInsert.slice(i, i + batchSize);
+    const { error } = await supabase.from('medical_records').insert(batch);
+    if (error) {
+      console.error('Error in batch insert:', error);
+      throw new Error(`Error al guardar lote ${i / batchSize + 1}: ${error.message}`);
+    }
+  }
+}
+

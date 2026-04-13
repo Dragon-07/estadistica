@@ -9,8 +9,9 @@ export function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [doctors, setDoctors] = useState<DoctorSummary[]>([]);
   const [entities, setEntities] = useState<EntitySummary[]>([]);
+  const [availableEntities, setAvailableEntities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [entityFilter, setEntityFilter] = useState<string>('');
+  const [entityFilters, setEntityFilters] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -18,9 +19,24 @@ export function Dashboard() {
       const supabase = createClient();
 
       let query = supabase.from('medical_records').select('*');
-      if (entityFilter) query = query.eq('entity_name', entityFilter);
+      if (entityFilters.length > 0) query = query.in('entity_name', entityFilters);
 
       const { data: records } = await query;
+
+      // Cargar lista de entidades disponibles desde la vista optimizada si aún no existe
+      if (availableEntities.length === 0) {
+        const { data: allEntities } = await supabase.from('unique_entities_view').select('entity_name');
+        if (allEntities) {
+          const unique = allEntities.map(r => r.entity_name || 'N/A')
+
+            .sort((a, b) => {
+              if (a === 'N/A') return -1;
+              if (b === 'N/A') return 1;
+              return a.localeCompare(b, 'es', { sensitivity: 'base' });
+            });
+          setAvailableEntities(unique);
+        }
+      }
 
       if (!records) { setLoading(false); return; }
 
@@ -74,14 +90,31 @@ export function Dashboard() {
             patient_count: e.patients.size,
             record_count: e.records,
           }))
-          .sort((a, b) => b.patient_count - a.patient_count)
+          .sort((a, b) => {
+            if (a.entity_name === 'N/A') return -1;
+            if (b.entity_name === 'N/A') return 1;
+            return a.entity_name.localeCompare(b.entity_name, 'es', { sensitivity: 'base' });
+          })
       );
 
       setLoading(false);
     };
 
     fetchData();
-  }, [entityFilter]);
+  }, [entityFilters]);
+
+  const toggleEntityFilter = (name: string) => {
+    if (name === '') {
+      setEntityFilters([]);
+      return;
+    }
+
+    setEntityFilters(prev => 
+      prev.includes(name) 
+        ? prev.filter(f => f !== name)
+        : [...prev, name]
+    );
+  };
 
   if (loading) {
     return (
@@ -116,31 +149,34 @@ export function Dashboard() {
     <div className="space-y-8">
       {/* Filtro por entidad */}
       {entities.length > 0 && (
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-gray-500 text-sm font-medium">Filtrar entidad:</span>
           <button
-            onClick={() => setEntityFilter('')}
+            onClick={() => toggleEntityFilter('')}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-              !entityFilter
-                ? 'bg-blue-500 text-white shadow-[0_4px_14px_rgba(59,130,246,0.4)]'
+              entityFilters.length === 0
+                ? 'bg-blue-500 text-white shadow-[0_4px_14px_rgba(59,130,246,0.4)] ring-2 ring-blue-300 ring-offset-2'
                 : 'bg-[#e6e7ee] text-gray-600 shadow-[3px_3px_7px_#b8b9be,-3px_-3px_7px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]'
             }`}
           >
             Todas
           </button>
-          {entities.map((e) => (
-            <button
-              key={e.entity_name}
-              onClick={() => setEntityFilter(e.entity_name)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                entityFilter === e.entity_name
-                  ? 'bg-blue-500 text-white shadow-[0_4px_14px_rgba(59,130,246,0.4)]'
-                  : 'bg-[#e6e7ee] text-gray-600 shadow-[3px_3px_7px_#b8b9be,-3px_-3px_7px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]'
-              }`}
-            >
-              {e.entity_name}
-            </button>
-          ))}
+          {availableEntities.map((entityName) => {
+            const isActive = entityFilters.includes(entityName);
+            return (
+              <button
+                key={entityName}
+                onClick={() => toggleEntityFilter(entityName)}
+                className={`px-4 py-1.5 rounded-xl text-[11px] font-medium transition-all duration-200 border-2 ${
+                  isActive
+                    ? 'bg-blue-500 text-white border-blue-400 shadow-[0_4px_10px_rgba(59,130,246,0.3)]'
+                    : 'bg-[#e6e7ee] text-gray-600 border-transparent shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]'
+                }`}
+              >
+                {entityName}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -201,7 +237,7 @@ export function Dashboard() {
       )}
 
       {/* Tabla: Por Entidad */}
-      {entities.length > 0 && !entityFilter && (
+      {entities.length > 0 && entityFilters.length === 0 && (
         <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
           <h3 className="text-gray-700 font-bold text-lg mb-5 flex items-center gap-2">
             <Building2 className="w-5 h-5 text-green-500" />

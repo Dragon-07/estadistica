@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, exportToExcel } from '@/features/data-parser/reportes';
+import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, saveUnifiedToSupabase, exportToExcel } from '@/features/data-parser/reportes';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { ExcelUploader } from '@/features/data-parser/components/ExcelUploader';
 import { Dashboard } from '@/features/reports/components/Dashboard';
@@ -15,6 +15,8 @@ import {
   Database,
   Activity,
   Download,
+  CloudUpload,
+  Trash2
 } from 'lucide-react';
 
 type Tab = 'dashboard' | 'upload' | 'billing' | 'process';
@@ -32,7 +34,8 @@ export default function Home() {
   const transaccionInputRef = useRef<HTMLInputElement>(null);
   const medicoInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | 'save' | null>(null);
   const { 
     reporteFacturacionData, 
     reporteTransaccionData,
@@ -40,7 +43,8 @@ export default function Home() {
     setReporteFacturacionData, 
     setReporteTransaccionData,
     updateReporteFacturacionData,
-    appendReporteData 
+    appendReporteData,
+    clearReporteFacturacionData
   } = useReportesStore();
 
   const handleFacturacionClick = () => facturacionInputRef.current?.click();
@@ -100,6 +104,29 @@ export default function Home() {
       e.target.value = '';
     }
   };
+
+  const handleSaveToDB = async () => {
+    if (!reporteFacturacionData || reporteFacturacionData.length <= 1) return;
+
+    try {
+      setIsSaving(true);
+      await saveUnifiedToSupabase(reporteFacturacionData);
+      setSuccessStatus('save');
+      setTimeout(() => setSuccessStatus(null), 3000);
+    } catch (err: any) {
+      console.error(err);
+      alert('Error al guardar: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleClearTable = () => {
+    if (confirm('¿Estás seguro de que deseas limpiar toda la tabla? Esta acción no se puede deshacer de la vista actual.')) {
+      clearReporteFacturacionData();
+    }
+  };
+
 
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--neu-bg)' }}>
@@ -261,13 +288,34 @@ export default function Home() {
               {reporteFacturacionData && (
                 <div className="flex flex-col gap-3">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest ml-1">Base de Datos unificada</p>
-                  <div className="flex justify-start">
+                  <div className="flex justify-start gap-4">
                     <button
                       onClick={() => exportToExcel(reporteFacturacionData, 'Base_De_Datos_Unificada')}
                       className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-[4px_4px_10px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] transition-all duration-300 group"
                     >
                       <Download className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
                       <span>Exportar Base de Datos Completa</span>
+                    </button>
+
+                    <button
+                      onClick={handleSaveToDB}
+                      disabled={isSaving}
+                      className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold transition-all duration-300 group ${
+                        successStatus === 'save'
+                          ? 'bg-green-500 text-white shadow-[0_4px_14px_rgba(34,197,94,0.4)]'
+                          : 'bg-white text-blue-600 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]'
+                      } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <CloudUpload className={`w-5 h-5 ${isSaving ? 'animate-bounce' : ''}`} />
+                      <span>{isSaving ? 'Guardando...' : successStatus === 'save' ? '¡Guardado!' : 'Guardar en Base de Datos'}</span>
+                    </button>
+
+                    <button
+                      onClick={handleClearTable}
+                      className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white text-red-500 font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:bg-red-50 hover:text-red-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all duration-300 group"
+                    >
+                      <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                      <span>Limpiar Todo</span>
                     </button>
                   </div>
                 </div>
