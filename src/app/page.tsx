@@ -10,14 +10,16 @@ import {
   FileText,
   Stethoscope,
   ChevronRight,
+  Database,
 } from 'lucide-react';
 
-type Tab = 'dashboard' | 'upload' | 'billing';
+type Tab = 'dashboard' | 'upload' | 'billing' | 'process';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'upload', label: 'Cargar Datos', icon: Upload },
   { id: 'billing', label: 'Cuenta de Cobro', icon: FileText },
+  { id: 'process', label: 'Procesar Datos', icon: Database },
 ];
 
 export default function Home() {
@@ -94,6 +96,7 @@ export default function Home() {
               {activeTab === 'dashboard' && 'Resumen general de actividad médica'}
               {activeTab === 'upload' && 'Sube y consolida tus archivos Excel'}
               {activeTab === 'billing' && 'Cuenta de cobro consolidada y sin duplicados'}
+              {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
             </p>
           </div>
           <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
@@ -107,6 +110,11 @@ export default function Home() {
           {activeTab === 'dashboard' && <Dashboard />}
           {activeTab === 'upload' && <ExcelUploader />}
           {activeTab === 'billing' && <BillingReport />}
+          {activeTab === 'process' && (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+              <p className="text-gray-400 italic">Módulo de procesamiento en desarrollo...</p>
+            </div>
+          )}
         </div>
       </main>
     </div>
