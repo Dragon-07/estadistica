@@ -3,12 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, saveUnifiedToSupabase, exportToExcel, fetchDatabasePreview, deleteAllRecords, getDatabaseTotalCount } from '@/features/data-parser/reportes';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
-import { ExcelUploader } from '@/features/data-parser/components/ExcelUploader';
 import { Dashboard } from '@/features/reports/components/Dashboard';
 import { BillingReport } from '@/features/reports/components/BillingReport';
 import {
   LayoutDashboard,
-  Upload,
   FileText,
   Stethoscope,
   ChevronRight,
@@ -19,11 +17,10 @@ import {
   Trash2
 } from 'lucide-react';
 
-type Tab = 'dashboard' | 'upload' | 'billing' | 'process';
+type Tab = 'dashboard' | 'billing' | 'process';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'upload', label: 'Cargar Datos', icon: Upload },
   { id: 'billing', label: 'Cuenta de Cobro', icon: FileText },
   { id: 'process', label: 'Procesar Datos', icon: Database },
 ];
@@ -241,7 +238,6 @@ export default function Home() {
             </h1>
             <p className="text-gray-400 text-sm mt-0.5">
               {activeTab === 'dashboard' && 'Resumen general de actividad médica'}
-              {activeTab === 'upload' && 'Sube y consolida tus archivos Excel'}
               {activeTab === 'billing' && 'Cuenta de cobro consolidada y sin duplicados'}
               {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
             </p>
@@ -255,7 +251,6 @@ export default function Home() {
         {/* Contenido de cada pestaña */}
         <div className="animate-fade-in">
           {activeTab === 'dashboard' && <Dashboard />}
-          {activeTab === 'upload' && <ExcelUploader />}
           {activeTab === 'billing' && <BillingReport />}
           {activeTab === 'process' && (
             <div className="flex flex-col gap-8 animate-fade-in">
