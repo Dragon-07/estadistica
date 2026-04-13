@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 
 const GLOBAL_REPORT_COLUMNS = [
+  'M Tratante',
   'Fecha Creación',
   'Factura',
   'Número Documento',
@@ -137,15 +138,15 @@ export async function processReporteTransaccion(file: File): Promise<{ data: any
             return k ? row[k] : '';
           };
 
-          // Mapeo solicitado en la tercera imagen/texto
-          rowData[0] = getVal('Fecha');                           // Fecha Creación
-          rowData[2] = getVal('Documento');                       // Número Documento
-          rowData[3] = getVal('Paciente');                        // Cliente
-          rowData[4] = getVal('Entidad');                         // EPS/Entidad Paciente
-          rowData[19] = getVal('CUP');                            // Código (CUP)
-          rowData[20] = getVal('Servicio');                       // Concepto
-          rowData[27] = getVal('Valor Servicio (Particular o por convenio)');
-          rowData[28] = getVal('Facturado a la entidad del Paciente');
+          // Mapeo solicitado en la tercera imagen/texto - Índices desplazados por 'M Tratante'
+          rowData[1] = getVal('Fecha');                           // Fecha Creación
+          rowData[3] = getVal('Documento');                       // Número Documento
+          rowData[4] = getVal('Paciente');                        // Cliente
+          rowData[5] = getVal('Entidad');                         // EPS/Entidad Paciente
+          rowData[20] = getVal('CUP');                            // Código (CUP)
+          rowData[21] = getVal('Servicio');                       // Concepto
+          rowData[28] = getVal('Valor Servicio (Particular o por convenio)');
+          rowData[29] = getVal('Facturado a la entidad del Paciente');
 
           wsData.push(rowData);
         }
@@ -158,6 +159,67 @@ export async function processReporteTransaccion(file: File): Promise<{ data: any
     reader.readAsBinaryString(file);
   });
 }
+
+/**
+ * Procesa un archivo Excel de médicos tratantes y actualiza los datos actuales.
+ * Compara 'Documento' (Excel) con 'Número Documento' (Tabla, índice 3).
+ */
+export async function processMedicoTratante(file: File, currentData: any[][]): Promise<any[][]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
+          raw: false,
+          defval: '',
+        });
+
+        if (rawRows.length === 0) throw new Error("El archivo de médicos está vacío.");
+
+        // Crear un mapa para búsqueda rápida: Documento -> Medico Tratante
+        const medicosMap = new Map<string, string>();
+        for (const row of rawRows) {
+          const keys = Object.keys(row);
+          const docKey = keys.find(k => k.trim().toLowerCase() === 'documento');
+          const medicoKey = keys.find(k => k.trim().toLowerCase() === 'medico tratante');
+          
+          if (docKey && medicoKey) {
+            const docVal = String(row[docKey]).trim();
+            const medicoVal = String(row[medicoKey]).trim();
+            if (docVal) medicosMap.set(docVal, medicoVal);
+          }
+        }
+
+        // Clonar los datos actuales y actualizar la columna 'M Tratante' (índice 0)
+        // El índice 3 es 'Número Documento'
+        const updatedData = currentData.map((row, idx) => {
+          if (idx === 0) return row; // Mantener encabezado
+          
+          const numDoc = String(row[3] || '').trim();
+          if (numDoc && medicosMap.has(numDoc)) {
+            const newRow = [...row];
+            newRow[0] = medicosMap.get(numDoc);
+            return newRow;
+          }
+          return row;
+        });
+
+        resolve(updatedData);
+      } catch (err: any) {
+        reject(new Error('Error al procesar Médicos: ' + err.message));
+      }
+    };
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo Excel de médicos.'));
+    reader.readAsBinaryString(file);
+  });
+}
+
 export function exportToExcel(data: any[][], fileName: string = 'Reporte_Consolidado') {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet(data);

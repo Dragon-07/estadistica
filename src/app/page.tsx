@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { processReporteFacturacion, processReporteTransaccion, exportToExcel } from '@/features/data-parser/reportes';
+import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, exportToExcel } from '@/features/data-parser/reportes';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { ExcelUploader } from '@/features/data-parser/components/ExcelUploader';
 import { Dashboard } from '@/features/reports/components/Dashboard';
@@ -30,19 +30,22 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const facturacionInputRef = useRef<HTMLInputElement>(null);
   const transaccionInputRef = useRef<HTMLInputElement>(null);
+  const medicoInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | null>(null);
+  const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | null>(null);
   const { 
     reporteFacturacionData, 
     reporteTransaccionData,
     filteredCount, 
     setReporteFacturacionData, 
     setReporteTransaccionData,
+    updateReporteFacturacionData,
     appendReporteData 
   } = useReportesStore();
 
   const handleFacturacionClick = () => facturacionInputRef.current?.click();
   const handleTransaccionClick = () => transaccionInputRef.current?.click();
+  const handleMedicoClick = () => medicoInputRef.current?.click();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'facturacion' | 'transaccion') => {
     const file = e.target.files?.[0];
@@ -72,6 +75,25 @@ export default function Home() {
     } catch (err: any) {
       console.error(err);
       // Solo dejamos alert para errores críticos
+      alert('Error: ' + err.message);
+    } finally {
+      setIsProcessing(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleMedicoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !reporteFacturacionData) return;
+
+    try {
+      setIsProcessing(true);
+      const updatedData = await processMedicoTratante(file, reporteFacturacionData);
+      updateReporteFacturacionData(updatedData);
+      setSuccessStatus('medico' as any);
+      setTimeout(() => setSuccessStatus(null), 3000);
+    } catch (err: any) {
+      console.error(err);
       alert('Error: ' + err.message);
     } finally {
       setIsProcessing(false);
@@ -188,6 +210,14 @@ export default function Home() {
                     exportData: reporteTransaccionData,
                     exportName: 'Reporte_Transacciones'
                   },
+                  { 
+                    id: 'medico', 
+                    label: 'CARGAR MÉDICOS', 
+                    icon: Stethoscope, 
+                    onClick: handleMedicoClick,
+                    isProcessing: isProcessing && !successStatus,
+                    isSuccess: successStatus === 'medico'
+                  },
                   { id: 'database', label: 'BASE DE DATOS', icon: Database },
                 ].map(({ id, label, icon: Icon, onClick, isProcessing: loading, isSuccess, showExport, exportData, exportName }) => (
                   <div key={id} className="flex flex-col gap-4">
@@ -256,6 +286,13 @@ export default function Home() {
                 className="hidden" 
                 accept=".xlsx, .xls"
                 onChange={(e) => handleFileChange(e, 'transaccion')} 
+              />
+              <input 
+                type="file" 
+                ref={medicoInputRef} 
+                className="hidden" 
+                accept=".xlsx, .xls"
+                onChange={handleMedicoFileChange} 
               />
 
               {/* Controles y Visualización de los Datos de Facturación */}

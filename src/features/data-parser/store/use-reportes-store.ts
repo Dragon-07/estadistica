@@ -8,6 +8,7 @@ interface ReportesState {
   setReporteFacturacionData: (data: any[][], filteredCount: number) => void;
   setReporteTransaccionData: (data: any[][], filteredCount: number) => void;
   appendReporteData: (data: any[][], filteredCount: number) => void;
+  updateReporteFacturacionData: (data: any[][]) => void;
   clearReporteFacturacionData: () => void;
 }
 
@@ -18,6 +19,7 @@ export const useReportesStore = create<ReportesState>((set) => ({
   transaccionFilteredCount: 0,
   setReporteFacturacionData: (data, filteredCount) => set({ reporteFacturacionData: data, filteredCount }),
   setReporteTransaccionData: (data, filteredCount) => set({ reporteTransaccionData: data, transaccionFilteredCount: filteredCount }),
+  updateReporteFacturacionData: (data) => set({ reporteFacturacionData: data }),
   appendReporteData: (newData, newFilteredCount) => set((state) => {
     // Si no hay datos previos, inicializar reporteFacturacionData con los nuevos datos
     if (!state.reporteFacturacionData) {
