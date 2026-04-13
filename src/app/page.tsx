@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { processReporteFacturacion, processReporteTransaccion } from '@/features/data-parser/reportes';
+import { processReporteFacturacion, processReporteTransaccion, exportToExcel } from '@/features/data-parser/reportes';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { ExcelUploader } from '@/features/data-parser/components/ExcelUploader';
 import { Dashboard } from '@/features/reports/components/Dashboard';
@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Database,
   Activity,
+  Download,
 } from 'lucide-react';
 
 type Tab = 'dashboard' | 'upload' | 'billing' | 'process';
@@ -169,6 +170,19 @@ export default function Home() {
                   </button>
                 ))}
               </div>
+
+              {/* Botón de Exportación */}
+              {reporteFacturacionData && (
+                <div className="flex justify-start">
+                  <button
+                    onClick={() => exportToExcel(reporteFacturacionData)}
+                    className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white text-blue-600 font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all duration-300 group"
+                  >
+                    <Download className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
+                    <span>Exportar a Excel</span>
+                  </button>
+                </div>
+              )}
               
               <input 
                 type="file" 

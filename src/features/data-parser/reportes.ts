@@ -159,3 +159,11 @@ export async function processReporteTransaccion(file: File): Promise<{ data: any
     reader.readAsBinaryString(file);
   });
 }
+export function exportToExcel(data: any[][], fileName: string = 'Reporte_Consolidado') {
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
+  
+  const timestamp = new Date().getTime();
+  XLSX.writeFile(workbook, `${fileName}_${timestamp}.xlsx`);
+}
