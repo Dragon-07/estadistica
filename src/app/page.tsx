@@ -31,6 +31,7 @@ export default function Home() {
   const facturacionInputRef = useRef<HTMLInputElement>(null);
   const transaccionInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | null>(null);
   const { 
     reporteFacturacionData, 
     reporteTransaccionData,
@@ -65,9 +66,12 @@ export default function Home() {
         appendReporteData(result.data, result.filteredCount);
       }
 
-      alert(`${type === 'facturacion' ? 'Reporte facturación' : 'Reporte transacción'} procesado y datos integrados exitosamente.`);
+      // Feedback visual en lugar de alert
+      setSuccessStatus(type);
+      setTimeout(() => setSuccessStatus(null), 3000);
     } catch (err: any) {
       console.error(err);
+      // Solo dejamos alert para errores críticos
       alert('Error: ' + err.message);
     } finally {
       setIsProcessing(false);
@@ -163,31 +167,51 @@ export default function Home() {
           {activeTab === 'process' && (
             <div className="flex flex-col gap-8 animate-fade-in">
               {/* Botones Superiores */}
-              <div className="flex flex-wrap gap-6">
+               <div className="flex flex-wrap gap-6">
                 {[
-                  { id: 'facturacion', label: 'reporte_facturacio', icon: FileText, onClick: handleFacturacionClick, isProcessing },
+                   { 
+                    id: 'facturacion', 
+                    label: 'reporte_facturacio', 
+                    icon: FileText, 
+                    onClick: handleFacturacionClick, 
+                    isProcessing: isProcessing && !successStatus,
+                    isSuccess: successStatus === 'facturacion'
+                  },
                   { 
                     id: 'transaccion', 
                     label: 'reporte_transaccio', 
                     icon: Activity, 
                     onClick: handleTransaccionClick, 
-                    isProcessing,
+                    isProcessing: isProcessing && !successStatus,
+                    isSuccess: successStatus === 'transaccion',
                     showExport: !!reporteTransaccionData,
                     exportData: reporteTransaccionData,
                     exportName: 'Reporte_Transacciones'
                   },
                   { id: 'database', label: 'BASE DE DATOS', icon: Database },
-                ].map(({ id, label, icon: Icon, onClick, isProcessing: loading, showExport, exportData, exportName }) => (
+                ].map(({ id, label, icon: Icon, onClick, isProcessing: loading, isSuccess, showExport, exportData, exportName }) => (
                   <div key={id} className="flex flex-col gap-4">
                     <button
                       onClick={onClick}
-                      disabled={loading}
-                      className={`flex items-center gap-4 px-8 py-5 rounded-3xl bg-[#e6e7ee] text-gray-700 font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all duration-300 group min-w-[240px] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={loading || isSuccess}
+                      className={`flex items-center gap-4 px-8 py-5 rounded-3xl font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] transition-all duration-300 group min-w-[240px] ${
+                        isSuccess 
+                          ? 'bg-green-500 text-white shadow-[0_4px_14px_rgba(34,197,94,0.4)]' 
+                          : 'bg-[#e6e7ee] text-gray-700 hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]'
+                      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <div className="w-10 h-10 rounded-2xl bg-white shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] flex items-center justify-center group-hover:scale-95 transition-transform">
-                        <Icon className={`w-5 h-5 ${loading ? 'text-gray-400 animate-pulse' : 'text-blue-500'}`} />
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-transform ${
+                        isSuccess ? 'bg-white/20' : 'bg-white shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] group-hover:scale-95'
+                      }`}>
+                        {isSuccess ? (
+                          <span className="text-white text-lg">✓</span>
+                        ) : (
+                          <Icon className={`w-5 h-5 ${loading ? 'text-gray-400 animate-pulse' : 'text-blue-500'}`} />
+                        )}
                       </div>
-                      <span className="text-sm tracking-wide">{loading ? 'Procesando...' : label}</span>
+                      <span className="text-sm tracking-wide">
+                        {loading ? 'Procesando...' : isSuccess ? '¡Completado!' : label}
+                      </span>
                     </button>
                     
                     {showExport && (
