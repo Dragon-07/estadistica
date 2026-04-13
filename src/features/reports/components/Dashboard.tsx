@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/shared/lib/supabase/client';
 import { DashboardStats, DoctorSummary, EntitySummary } from '@/shared/types/medical';
-import { Users, Building2, Stethoscope, FileText, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, Building2, Stethoscope, FileText, TrendingUp, TrendingDown, Calendar, X } from 'lucide-react';
 
 export function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -12,6 +12,11 @@ export function Dashboard() {
   const [availableEntities, setAvailableEntities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [entityFilters, setEntityFilters] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [tempStartDate, setTempStartDate] = useState<string>('');
+  const [tempEndDate, setTempEndDate] = useState<string>('');
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,6 +35,8 @@ export function Dashboard() {
           .range(from, from + step - 1);
         
         if (entityFilters.length > 0) query = query.in('entity_name', entityFilters);
+        if (startDate) query = query.gte('treatment_date', startDate);
+        if (endDate) query = query.lte('treatment_date', endDate);
 
         const { data, error } = await query;
         
@@ -128,7 +135,28 @@ export function Dashboard() {
     };
 
     fetchData();
-  }, [entityFilters]);
+  }, [entityFilters, startDate, endDate]);
+
+  const handleDateChange = (val: string, type: 'start' | 'end') => {
+    const newStart = type === 'start' ? val : tempStartDate;
+    const newEnd = type === 'end' ? val : tempEndDate;
+    
+    setTempStartDate(newStart);
+    setTempEndDate(newEnd);
+    
+    // Si ambos están definidos, o ambos están vacíos (al limpiar), aplicamos el filtro real
+    if ((newStart && newEnd) || (!newStart && !newEnd)) {
+      setStartDate(newStart);
+      setEndDate(newEnd);
+    }
+  };
+
+  const handleClearDates = () => {
+    setTempStartDate('');
+    setTempEndDate('');
+    setStartDate('');
+    setEndDate('');
+  };
 
   const toggleEntityFilter = (name: string) => {
     if (name === '') {
@@ -174,38 +202,87 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Filtro por entidad */}
-      {entities.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-gray-500 text-sm font-medium">Filtrar entidad:</span>
-          <button
-            onClick={() => toggleEntityFilter('')}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-              entityFilters.length === 0
-                ? 'bg-blue-500 text-white shadow-[0_4px_14px_rgba(59,130,246,0.4)] ring-2 ring-blue-300 ring-offset-2'
-                : 'bg-[#e6e7ee] text-gray-600 shadow-[3px_3px_7px_#b8b9be,-3px_-3px_7px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]'
-            }`}
-          >
-            Todas
-          </button>
-          {availableEntities.map((entityName) => {
-            const isActive = entityFilters.includes(entityName);
-            return (
+      {/* Selector de Fechas y Filtros Superiores */}
+      <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-6">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]">
+              <Calendar className="w-4 h-4 text-blue-500" />
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Desde:</span>
+              <input 
+                type="date" 
+                value={tempStartDate}
+                onChange={(e) => handleDateChange(e.target.value, 'start')}
+                className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 cursor-pointer"
+              />
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]">
+              <Calendar className="w-4 h-4 text-blue-500" />
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Hasta:</span>
+              <input 
+                type="date" 
+                value={tempEndDate}
+                onChange={(e) => handleDateChange(e.target.value, 'end')}
+                className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 cursor-pointer"
+              />
+            </div>
+            {(tempStartDate || tempEndDate) && (
+              <button 
+                onClick={handleClearDates}
+                className="flex items-center gap-2 px-4 py-2 bg-white text-red-500 rounded-2xl text-xs font-bold shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:bg-red-50 transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Limpiar Fechas
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="px-4 py-2 bg-blue-50 rounded-2xl border border-blue-100">
+              <span className="text-[10px] font-bold text-blue-500 uppercase block leading-tight">Total Periodo</span>
+              <span className="text-lg font-black text-blue-700 leading-tight">{stats.totalRecords.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Filtro por entidad */}
+        {availableEntities.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 ml-1">
+              <Building2 className="w-4 h-4 text-gray-400" />
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Filtrar por Entidad</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               <button
-                key={entityName}
-                onClick={() => toggleEntityFilter(entityName)}
-                className={`px-4 py-1.5 rounded-xl text-[11px] font-medium transition-all duration-200 border-2 ${
-                  isActive
-                    ? 'bg-blue-500 text-white border-blue-400 shadow-[0_4px_10px_rgba(59,130,246,0.3)]'
-                    : 'bg-[#e6e7ee] text-gray-600 border-transparent shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]'
+                onClick={() => toggleEntityFilter('')}
+                className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] ${
+                  entityFilters.length === 0
+                    ? 'bg-blue-600 text-white shadow-[inset_2px_2px_5px_rgba(0,0,0,0.2)]'
+                    : 'bg-[#e6e7ee] text-gray-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]'
                 }`}
               >
-                {entityName}
+                Todas
               </button>
-            );
-          })}
-        </div>
-      )}
+              {availableEntities.map((entityName) => {
+                const isActive = entityFilters.includes(entityName);
+                return (
+                  <button
+                    key={entityName}
+                    onClick={() => toggleEntityFilter(entityName)}
+                    className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] ${
+                      isActive
+                        ? 'bg-blue-600 text-white shadow-[inset_2px_2px_5px_rgba(0,0,0,0.2)]'
+                        : 'bg-[#e6e7ee] text-gray-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]'
+                    }`}
+                  >
+                    {entityName}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Tarjetas de estadísticas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
