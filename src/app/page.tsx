@@ -11,6 +11,7 @@ import {
   Stethoscope,
   ChevronRight,
   Database,
+  Activity,
 } from 'lucide-react';
 
 type Tab = 'dashboard' | 'upload' | 'billing' | 'process';
@@ -111,8 +112,30 @@ export default function Home() {
           {activeTab === 'upload' && <ExcelUploader />}
           {activeTab === 'billing' && <BillingReport />}
           {activeTab === 'process' && (
-            <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-              <p className="text-gray-400 italic">Módulo de procesamiento en desarrollo...</p>
+            <div className="flex flex-col gap-8 animate-fade-in">
+              {/* Botones Superiores */}
+              <div className="flex flex-wrap gap-6">
+                {[
+                  { id: 'facturacion', label: 'reporte_facturacio', icon: FileText },
+                  { id: 'transaccion', label: 'reporte_transaccio', icon: Activity },
+                  { id: 'database', label: 'BASE DE DATOS', icon: Database },
+                ].map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    className="flex items-center gap-4 px-8 py-5 rounded-3xl bg-[#e6e7ee] text-gray-700 font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all duration-300 group min-w-[240px]"
+                  >
+                    <div className="w-10 h-10 rounded-2xl bg-white shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] flex items-center justify-center group-hover:scale-95 transition-transform">
+                      <Icon className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <span className="text-sm tracking-wide">{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Espacio para contenido futuro */}
+              <div className="flex flex-col items-center justify-center min-h-[40vh] border-2 border-dashed border-gray-300 rounded-[3rem] opacity-50">
+                <p className="text-gray-400 italic">Selecciona una opción para procesar los datos</p>
+              </div>
             </div>
           )}
         </div>
