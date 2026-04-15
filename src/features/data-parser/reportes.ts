@@ -10,11 +10,6 @@ export const GLOBAL_REPORT_COLUMNS = [
   'EPS/Entidad Paciente',
   'Pagos Recibidos',
   'Pagos Pendientes',
-  'Valor',
-  'Cantidad',
-  'IVA',
-  'TIPO DE IVA',
-  'Total Item',
   'Medios Pago',
   'Estado Factura',
   'Dirección',
@@ -31,8 +26,20 @@ export const GLOBAL_REPORT_COLUMNS = [
   'Total Item',
   'Fecha Anulación',
   'Valor Servicio (Particular o por convenio)',
-  'Facturado a la entidad del Paciente'
+  'Facturado a la entidad del Paciente',
+  'Total final'
 ];
+
+function internalParseToNumber(val: any): number {
+  if (val === undefined || val === null || val === '') return 0;
+  if (typeof val === 'number') return val;
+  const cleaned = String(val)
+    .replace(/[$\s]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
 
 const ENTIDADES_PERMITIDAS = [
   'COLSANITAS MEDICINA PREPAGADA',
@@ -76,8 +83,16 @@ export async function processReporteFacturacion(file: File): Promise<{ data: any
           for (let i = 0; i < GLOBAL_REPORT_COLUMNS.length; i++) {
             const targetCol = GLOBAL_REPORT_COLUMNS[i];
             
-            if (i >= 27) {
-              rowData.push('');
+            if (targetCol === 'Total final') {
+              // Lógica de Total final: Total Item o Valor Servicio
+              // Nuevos índices: Total Item (21), Valor Servicio (23)
+              const totalItem = rowData[21];
+              const valorServicio = rowData[23];
+              
+              let totalFinalValue = internalParseToNumber(totalItem);
+              if (totalFinalValue === 0) totalFinalValue = internalParseToNumber(valorServicio);
+              
+              rowData.push(totalFinalValue);
               continue;
             }
 
@@ -139,15 +154,22 @@ export async function processReporteTransaccion(file: File): Promise<{ data: any
             return k ? row[k] : '';
           };
 
-          // Mapeo solicitado en la tercera imagen/texto - Índices desplazados por 'M Tratante'
+          // Mapeo solicitado: Índices ajustados tras eliminar duplicados
           rowData[1] = getVal('Fecha');                           // Fecha Creación
           rowData[3] = getVal('Documento');                       // Número Documento
           rowData[4] = getVal('Paciente');                        // Cliente
           rowData[5] = getVal('Entidad');                         // EPS/Entidad Paciente
-          rowData[20] = getVal('CUP');                            // Código (CUP)
-          rowData[21] = getVal('Servicio');                       // Concepto
-          rowData[28] = getVal('Valor Servicio (Particular o por convenio)');
-          rowData[29] = getVal('Facturado a la entidad del Paciente');
+          rowData[15] = getVal('CUP');                            // Código (CUP) (antes 20)
+          rowData[16] = getVal('Servicio');                       // Concepto (antes 21)
+          rowData[23] = getVal('Valor Servicio (Particular o por convenio)'); // (antes 28)
+          rowData[24] = getVal('Facturado a la entidad del Paciente'); // (antes 29)
+
+          // Calcular Total final para transacciones
+          const totalItemVal = rowData[21] || ''; // Total Item (antes 12/26)
+          const valorServicioVal = rowData[23];
+          let totalFinalTrans = internalParseToNumber(totalItemVal);
+          if (totalFinalTrans === 0) totalFinalTrans = internalParseToNumber(valorServicioVal);
+          rowData[25] = totalFinalTrans; // Total final (antes 30)
 
           wsData.push(rowData);
         }
@@ -275,7 +297,7 @@ export async function saveUnifiedToSupabase(data: any[][]) {
       patient_doc: row[3] ? String(row[3]).trim() : null,
       patient_name: row[4] ? String(row[4]).trim() : 'Paciente Desconocido',
       entity_name: row[5] ? String(row[5]).trim() : 'PARTICULAR',
-      treatment_name: row[21] ? String(row[21]).trim() : null,
+      treatment_name: row[16] ? String(row[16]).trim() : null, // Concepto (antes 21)
       extra_data: row.reduce((acc, val, idx) => {
         const key = GLOBAL_REPORT_COLUMNS[idx] || `col_${idx}`;
         acc[key] = val;
@@ -321,7 +343,7 @@ export async function fetchDatabasePreview(limit: number = 50): Promise<any[][]>
     .from('medical_records')
     .select('extra_data')
     .limit(limit)
-    .order('created_at', { ascending: false });
+    .order('treatment_date', { ascending: true });
 
   if (error) {
     console.error('Error fetching preview:', error);

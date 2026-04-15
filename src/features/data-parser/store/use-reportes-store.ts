@@ -17,22 +17,42 @@ export const useReportesStore = create<ReportesState>((set) => ({
   reporteTransaccionData: null,
   filteredCount: 0,
   transaccionFilteredCount: 0,
-  setReporteFacturacionData: (data, filteredCount) => set({ reporteFacturacionData: data, filteredCount }),
+  setReporteFacturacionData: (data, filteredCount) => set({ 
+    reporteFacturacionData: data ? [
+      data[0], // Header
+      ...data.slice(1).sort((a, b) => String(a[1] || '').localeCompare(String(b[1] || '')))
+    ] : null, 
+    filteredCount 
+  }),
   setReporteTransaccionData: (data, filteredCount) => set({ reporteTransaccionData: data, transaccionFilteredCount: filteredCount }),
-  updateReporteFacturacionData: (data) => set({ reporteFacturacionData: data }),
+  updateReporteFacturacionData: (data) => set({ 
+    reporteFacturacionData: data ? [
+      data[0], // Header
+      ...data.slice(1).sort((a, b) => String(a[1] || '').localeCompare(String(b[1] || '')))
+    ] : null 
+  }),
   appendReporteData: (newData, newFilteredCount) => set((state) => {
     // Si no hay datos previos, inicializar reporteFacturacionData con los nuevos datos
     if (!state.reporteFacturacionData) {
+      const sorted = [
+        newData[0],
+        ...newData.slice(1).sort((a, b) => String(a[1] || '').localeCompare(String(b[1] || '')))
+      ];
       return { 
-        reporteFacturacionData: newData, 
+        reporteFacturacionData: sorted, 
         filteredCount: newFilteredCount 
       };
     }
     
     // Omitir el encabezado del nuevo set de datos al concatenar
-    const dataWithoutHeader = newData.slice(1);
+    const combinedData = [...state.reporteFacturacionData, ...newData.slice(1)];
+    const sortedCombined = [
+      combinedData[0],
+      ...combinedData.slice(1).sort((a, b) => String(a[1] || '').localeCompare(String(b[1] || '')))
+    ];
+
     return {
-      reporteFacturacionData: [...state.reporteFacturacionData, ...dataWithoutHeader],
+      reporteFacturacionData: sortedCombined,
       filteredCount: state.filteredCount + newFilteredCount
     };
   }),

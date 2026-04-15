@@ -357,6 +357,7 @@ export function BillingReport() {
         'Total Item': parseNumericField(r.extra_data, 'Total Item'),
         'Valor Servicio (Particular o por convenio)': parseNumericField(r.extra_data, 'Valor Servicio (Particular o por convenio)'),
         'Ingreso': r.revenue,
+        'Total final': r.revenue,
       };
     });
 
@@ -378,6 +379,7 @@ export function BillingReport() {
       'Total Item': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Total Item'), 0),
       'Valor Servicio (Particular o por convenio)': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Valor Servicio (Particular o por convenio)'), 0),
       'Ingreso': allRecords.reduce((acc, r) => acc + r.revenue, 0),
+      'Total final': allRecords.reduce((acc, r) => acc + r.revenue, 0),
     });
 
     const wsDetails = XLSX.utils.json_to_sheet(detailRows);
