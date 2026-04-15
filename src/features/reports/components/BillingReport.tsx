@@ -610,47 +610,103 @@ export function BillingReport() {
       </div>
 
       {/* ═══════════════════ GRÁFICA: INGRESOS POR MES ═══════════════════ */}
-      {revenueByMonth.length > 0 && (
-        <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-gray-700 font-bold text-lg flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-500" />
-              Tendencia de Ingresos Mensuales
-            </h3>
-            <span className="text-xs font-medium bg-green-100 text-green-700 px-3 py-1 rounded-full">
-              {revenueByMonth.length} meses
-            </span>
-          </div>
+      {revenueByMonth.length > 0 && (() => {
+        // Escala normalizada: usar el mínimo como base para amplificar diferencias
+        const revenues = revenueByMonth.map((m) => m.revenue);
+        const minRev = Math.min(...revenues);
+        const maxRev = Math.max(...revenues);
+        const range = maxRev - minRev;
+        const totalMonthRevenue = revenues.reduce((a, b) => a + b, 0);
+        const avgMonthRevenue = totalMonthRevenue / revenues.length;
 
-          {/* Barras verticales */}
-          <div className="flex items-end gap-3 h-52 px-2">
-            {revenueByMonth.map((m, i) => {
-              const pct = Math.max((m.revenue / maxMonthRevenue) * 100, 4);
-              const color = getColor(i);
-              return (
-                <div key={m.month} className="flex-1 flex flex-col items-center gap-2 group">
-                  <span className="text-[10px] font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {formatCurrency(m.revenue)}
-                  </span>
-                  <div
-                    className="w-full rounded-xl transition-all duration-500 hover:scale-105 cursor-pointer relative"
-                    style={{
-                      height: `${pct}%`,
-                      background: `linear-gradient(to top, ${color.from}, ${color.to})`,
-                      boxShadow: `0 4px 14px ${color.from}40`,
-                    }}
-                  >
-                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-gray-600 whitespace-nowrap">
-                      {formatCompact(m.revenue)}
+        return (
+          <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-gray-700 font-bold text-lg flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-500" />
+                Tendencia de Ingresos Mensuales
+              </h3>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium bg-blue-50 text-blue-600 px-3 py-1 rounded-full">
+                  Promedio: {formatCompact(avgMonthRevenue)}/mes
+                </span>
+                <span className="text-xs font-medium bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                  {revenueByMonth.length} meses
+                </span>
+              </div>
+            </div>
+
+            {/* Línea de promedio como referencia */}
+            <div className="relative mt-6">
+              {/* Contenedor principal de barras */}
+              <div className="flex items-end gap-4 px-2" style={{ height: '280px' }}>
+                {revenueByMonth.map((m, i) => {
+                  // Normalizar: barra mínima de 25%, máxima de 100%
+                  const normalizedPct = range > 0
+                    ? 25 + ((m.revenue - minRev) / range) * 75
+                    : 75;
+                  const color = getColor(i);
+                  
+                  // Calcular variación con mes anterior
+                  const prevRevenue = i > 0 ? revenueByMonth[i - 1].revenue : null;
+                  const changePercent = prevRevenue !== null && prevRevenue > 0
+                    ? ((m.revenue - prevRevenue) / prevRevenue) * 100
+                    : null;
+                  const isUp = changePercent !== null && changePercent >= 0;
+
+                  return (
+                    <div key={m.month} className="flex-1 flex flex-col items-center gap-1 group">
+                      {/* Valor del mes - siempre visible */}
+                      <div className="flex flex-col items-center mb-1">
+                        <span className="text-sm font-bold text-gray-700">
+                          {formatCompact(m.revenue)}
+                        </span>
+                        {/* Indicador de cambio */}
+                        {changePercent !== null && (
+                          <div className={`flex items-center gap-0.5 text-[10px] font-bold ${isUp ? 'text-green-500' : 'text-red-500'}`}>
+                            {isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                            {Math.abs(changePercent).toFixed(1)}%
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Barra */}
+                      <div className="w-full flex-1 flex items-end">
+                        <div
+                          className="w-full rounded-2xl transition-all duration-700 hover:scale-[1.03] cursor-pointer relative overflow-hidden"
+                          style={{
+                            height: `${normalizedPct}%`,
+                            background: `linear-gradient(to top, ${color.from}, ${color.to})`,
+                            boxShadow: `0 6px 20px ${color.from}35`,
+                            minHeight: '40px',
+                          }}
+                        >
+                          {/* Brillo sutil */}
+                          <div
+                            className="absolute inset-0 opacity-20 rounded-2xl"
+                            style={{
+                              background: 'linear-gradient(to right, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
+                            }}
+                          />
+                          {/* Monto completo al hacer hover */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <span className="text-white text-[10px] font-bold bg-black/30 px-2 py-1 rounded-lg backdrop-blur-sm whitespace-nowrap">
+                              {formatCurrency(m.revenue)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Etiqueta del mes */}
+                      <span className="text-xs text-gray-600 font-semibold mt-1">{m.label}</span>
                     </div>
-                  </div>
-                  <span className="text-xs text-gray-500 font-medium">{m.label}</span>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ═══════════════════ GRÁFICA: INGRESOS POR ENTIDAD ═══════════════════ */}
       {revenueByEntity.length > 0 && (
