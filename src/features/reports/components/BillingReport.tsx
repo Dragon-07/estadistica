@@ -307,6 +307,83 @@ export function BillingReport() {
     return days.map((label, i) => ({ label, revenue: totals[i] }));
   }, [allRecords]);
 
+  /* Proyecciones anuales (Forecasting) */
+  const forecast = useMemo(() => {
+    if (revenueByMonth.length === 0) return null;
+
+    const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthIdx = now.getMonth(); // 0-based
+
+    // Determinar el año a proyectar (del último dato disponible)
+    const lastDataMonth = revenueByMonth[revenueByMonth.length - 1].month;
+    const forecastYear = parseInt(lastDataMonth.split('-')[0], 10);
+
+    // Construir mapa de ingresos reales del año del forecast
+    const realMonthMap = new Map<number, number>();
+    revenueByMonth.forEach((m) => {
+      const [y, mo] = m.month.split('-');
+      if (parseInt(y, 10) === forecastYear) {
+        realMonthMap.set(parseInt(mo, 10) - 1, m.revenue); // 0-indexed
+      }
+    });
+
+    // Media ponderada de los últimos 3 meses disponibles (pesos: 50%, 30%, 20%)
+    const realEntries = Array.from(realMonthMap.entries()).sort((a, b) => a[0] - b[0]);
+    const lastN = realEntries.slice(-3);
+    const weights = [0.2, 0.3, 0.5];
+    let projectedMonthly = 0;
+    if (lastN.length >= 3) {
+      projectedMonthly = lastN.reduce((acc, [, rev], i) => acc + rev * weights[i], 0);
+    } else if (lastN.length > 0) {
+      projectedMonthly = lastN.reduce((acc, [, rev]) => acc + rev, 0) / lastN.length;
+    }
+
+    // Construir los 12 meses
+    const months: { label: string; monthIdx: number; revenue: number; isReal: boolean; isProjected: boolean }[] = [];
+    let totalReal = 0;
+    let totalProjected = 0;
+
+    for (let i = 0; i < 12; i++) {
+      const isReal = realMonthMap.has(i);
+      const rev = isReal ? realMonthMap.get(i)! : projectedMonthly;
+      
+      if (isReal) {
+        totalReal += rev;
+      } else {
+        totalProjected += rev;
+      }
+
+      months.push({
+        label: MONTH_LABELS[i],
+        monthIdx: i,
+        revenue: rev,
+        isReal,
+        isProjected: !isReal,
+      });
+    }
+
+    const totalAnnual = totalReal + totalProjected;
+    const realMonths = realEntries.length;
+    const remainingMonths = 12 - realMonths;
+    const bestMonth = months.reduce((best, m) => m.revenue > best.revenue ? m : best, months[0]);
+    const avgMonthly = totalAnnual / 12;
+
+    return {
+      year: forecastYear,
+      months,
+      totalReal,
+      totalProjected,
+      totalAnnual,
+      projectedMonthly,
+      realMonths,
+      remainingMonths,
+      bestMonth,
+      avgMonthly,
+    };
+  }, [revenueByMonth]);
+
   /* ── Handlers ── */
   const handleApplyFilters = () => {
     if (tempStartDate && tempEndDate && tempStartDate > tempEndDate) {
@@ -609,6 +686,244 @@ export function BillingReport() {
         ))}
       </div>
 
+      {/* ═══════════════════ PROYECCIONES DEL AÑO (FORECASTING) ═══════════════════ */}
+      {forecast && forecast.realMonths >= 1 && (() => {
+        const f = forecast;
+        const allRevenues = f.months.map((m) => m.revenue);
+        const chartMax = Math.max(...allRevenues) * 1.15;
+        const chartH = 220;
+        const chartW = 100; // porcentaje
+        const stepX = chartW / 11;
+
+        // Generar puntos para la línea SVG
+        const points = f.months.map((m, i) => {
+          const x = (i / 11) * 100;
+          const y = chartMax > 0 ? (1 - m.revenue / chartMax) * chartH : chartH;
+          return { x, y, ...m };
+        });
+
+        // Separar puntos reales de proyectados
+        const lastRealIdx = f.months.findLastIndex((m) => m.isReal);
+        const realPoints = points.filter((_, i) => i <= lastRealIdx);
+        const projPoints = points.filter((_, i) => i >= lastRealIdx);
+
+        // Path para líneas
+        const toPath = (pts: typeof points) =>
+          pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+        
+        // Path para área (cerrar abajo)
+        const toAreaPath = (pts: typeof points) => {
+          if (pts.length === 0) return '';
+          const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+          return `${line} L ${pts[pts.length - 1].x} ${chartH} L ${pts[0].x} ${chartH} Z`;
+        };
+
+        return (
+          <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
+            {/* Header */}
+            <div className="mb-5">
+              <h3 className="text-gray-800 font-bold text-lg flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-emerald-500" />
+                Proyecciones del Año {f.year}
+              </h3>
+              <p className="text-gray-400 text-xs mt-0.5">
+                Media ponderada de los últimos {Math.min(f.realMonths, 3)} meses. Línea punteada = futuro proyectado.
+              </p>
+            </div>
+
+            {/* Tarjetas de Forecast */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {[
+                {
+                  label: 'INGRESOS AÑO',
+                  subtitle: 'Real + proyección',
+                  value: formatCurrency(f.totalAnnual),
+                  color: 'text-emerald-600',
+                  bg: 'bg-emerald-50',
+                  border: 'border-emerald-100',
+                  icon: '📊',
+                },
+                {
+                  label: 'INGRESOS REALES',
+                  subtitle: `${f.realMonths} meses registrados`,
+                  value: formatCurrency(f.totalReal),
+                  color: 'text-blue-600',
+                  bg: 'bg-blue-50',
+                  border: 'border-blue-100',
+                  icon: '💰',
+                },
+                {
+                  label: 'PROMEDIO MENSUAL',
+                  subtitle: 'Proyectado por mes',
+                  value: formatCurrency(f.projectedMonthly),
+                  color: 'text-purple-600',
+                  bg: 'bg-purple-50',
+                  border: 'border-purple-100',
+                  icon: '📈',
+                },
+                {
+                  label: 'MESES RESTANTES',
+                  subtitle: `Para cerrar diciembre ${f.year}`,
+                  value: `${f.remainingMonths} meses`,
+                  color: 'text-amber-600',
+                  bg: 'bg-amber-50',
+                  border: 'border-amber-100',
+                  icon: '📅',
+                },
+              ].map((card) => (
+                <div
+                  key={card.label}
+                  className={`${card.bg} border ${card.border} rounded-2xl px-4 py-3.5 flex flex-col gap-1`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{card.icon}</span>
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{card.label}</span>
+                  </div>
+                  <p className="text-xs text-gray-400">{card.subtitle}</p>
+                  <p className={`text-lg font-black ${card.color} leading-tight`}>{card.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Leyenda */}
+            <div className="flex items-center justify-center gap-6 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-0.5 bg-emerald-500 rounded-full" />
+                <span className="text-xs text-gray-500 font-medium">Ingresos reales</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-0.5 border-t-2 border-dashed border-emerald-400 rounded-full" />
+                <span className="text-xs text-gray-500 font-medium">Proyección</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-3 bg-purple-200/60 rounded-sm border border-purple-300/40" />
+                <span className="text-xs text-gray-500 font-medium">Promedio</span>
+              </div>
+            </div>
+
+            {/* Gráfica SVG */}
+            <div className="bg-white rounded-2xl p-4 shadow-[inset_2px_2px_5px_#d1d1d6,inset_-2px_-2px_5px_#ffffff]">
+              <div className="relative" style={{ height: `${chartH + 40}px` }}>
+                {/* Eje Y - etiquetas */}
+                <div className="absolute left-0 top-0 bottom-8 w-14 flex flex-col justify-between text-right pr-2 z-10">
+                  {[1, 0.75, 0.5, 0.25, 0].map((pct) => (
+                    <span key={pct} className="text-[9px] font-medium text-gray-400">
+                      {formatCompact(chartMax * pct)}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Área de la gráfica */}
+                <div className="absolute left-14 right-0 top-0 bottom-0">
+                  {/* Líneas de guía horizontales */}
+                  <div className="absolute inset-0 bottom-8 flex flex-col justify-between">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div key={i} className="border-b border-gray-100 w-full" />
+                    ))}
+                  </div>
+
+                  {/* Línea de promedio */}
+                  <div
+                    className="absolute left-0 right-0 border-t border-dashed border-purple-300/60 z-10"
+                    style={{ top: `${chartMax > 0 ? (1 - f.avgMonthly / chartMax) * chartH : 0}px` }}
+                  >
+                    <span className="absolute -top-3.5 right-0 text-[8px] font-bold text-purple-400 bg-white px-1 rounded">
+                      Prom: {formatCompact(f.avgMonthly)}
+                    </span>
+                  </div>
+
+                  {/* SVG Chart */}
+                  <svg
+                    viewBox={`0 0 100 ${chartH}`}
+                    preserveAspectRatio="none"
+                    className="w-full absolute top-0"
+                    style={{ height: `${chartH}px` }}
+                  >
+                    <defs>
+                      <linearGradient id="realGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.02" />
+                      </linearGradient>
+                      <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Área real */}
+                    {realPoints.length > 1 && (
+                      <path d={toAreaPath(realPoints)} fill="url(#realGrad)" />
+                    )}
+
+                    {/* Área proyectada */}
+                    {projPoints.length > 1 && (
+                      <path d={toAreaPath(projPoints)} fill="url(#projGrad)" />
+                    )}
+
+                    {/* Línea real (sólida) */}
+                    {realPoints.length > 1 && (
+                      <path
+                        d={toPath(realPoints)}
+                        fill="none"
+                        stroke="#10b981"
+                        strokeWidth="0.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
+
+                    {/* Línea proyectada (punteada) */}
+                    {projPoints.length > 1 && (
+                      <path
+                        d={toPath(projPoints)}
+                        fill="none"
+                        stroke="#8b5cf6"
+                        strokeWidth="0.5"
+                        strokeDasharray="1.5 1"
+                        strokeLinecap="round"
+                      />
+                    )}
+
+                    {/* Puntos de datos */}
+                    {points.map((p, i) => (
+                      <circle
+                        key={i}
+                        cx={p.x}
+                        cy={p.y}
+                        r={p.isReal ? 0.9 : 0.7}
+                        fill={p.isReal ? '#10b981' : '#8b5cf6'}
+                        stroke="white"
+                        strokeWidth="0.3"
+                      />
+                    ))}
+                  </svg>
+
+                  {/* Etiquetas de meses (eje X) */}
+                  <div className="absolute bottom-0 left-0 right-0 flex justify-between" style={{ height: '28px' }}>
+                    {f.months.map((m, i) => (
+                      <div key={m.label} className="flex flex-col items-center" style={{ width: `${100 / 12}%` }}>
+                        <span className={`text-[9px] font-semibold ${m.isReal ? 'text-gray-600' : 'text-gray-400'}`}>
+                          {m.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mejor mes */}
+            <div className="flex items-center justify-between mt-4 px-2">
+              <p className="text-xs text-gray-400">
+                Mejor mes: <span className="font-bold text-gray-600">{f.bestMonth.label}</span> ({formatCurrency(f.bestMonth.revenue)})
+              </p>
+              <p className="text-xs text-gray-400">
+                Cierre estimado {f.year}: <span className="font-bold text-emerald-600">{formatCurrency(f.totalAnnual)}</span>
+              </p>
+            </div>
+          </div>
+        );
+      })()}
       {/* ═══════════════════ GRÁFICA: INGRESOS POR MES ═══════════════════ */}
       {revenueByMonth.length > 0 && (() => {
         // Escala normalizada: usar el mínimo como base para amplificar diferencias
