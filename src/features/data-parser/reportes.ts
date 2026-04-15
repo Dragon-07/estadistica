@@ -33,10 +33,44 @@ export const GLOBAL_REPORT_COLUMNS = [
 function internalParseToNumber(val: any): number {
   if (val === undefined || val === null || val === '') return 0;
   if (typeof val === 'number') return val;
-  const cleaned = String(val)
-    .replace(/[$\s]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
+  // Limpiar símbolos de moneda y espacios
+  let cleaned = String(val).replace(/[$\s]/g, '');
+  
+  // Detectar formato numérico inteligentemente:
+  // Si tiene coma y punto, determinar cuál es decimal y cuál es miles
+  const hasComma = cleaned.includes(',');
+  const hasDot = cleaned.includes('.');
+  
+  if (hasComma && hasDot) {
+    // Formato con ambos: el último separador es el decimal
+    const lastComma = cleaned.lastIndexOf(',');
+    const lastDot = cleaned.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      // Formato: 1.234,56 → quitar puntos de miles, coma es decimal
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Formato: 1,234.56 → quitar comas de miles, punto es decimal
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    // Solo coma: si hay exactamente 2 dígitos después, es decimal; sino es miles
+    const parts = cleaned.split(',');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      cleaned = cleaned.replace(',', '.');
+    } else {
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  } else if (hasDot) {
+    // Solo punto: si hay un único punto con ≤2 dígitos después, es decimal
+    const parts = cleaned.split('.');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      // Es decimal, dejarlo como está (ej: 41999.86)
+    } else {
+      // Es separador de miles (ej: 1.234.567), quitar todos los puntos
+      cleaned = cleaned.replace(/\./g, '');
+    }
+  }
+  
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : num;
 }

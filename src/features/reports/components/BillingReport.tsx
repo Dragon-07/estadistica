@@ -36,37 +36,54 @@ interface RecordWithRevenue {
 /* ─────────────────────────────────────────────
    Utilidades
    ───────────────────────────────────────────── */
-function parseRevenue(extraData: Record<string, unknown> | null): number {
-  if (!extraData) return 0;
+/** Parseo inteligente de números: distingue punto decimal de punto de miles */
+function smartParseNumber(raw: unknown): number {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return 0;
+  if (typeof raw === 'number') return raw;
 
-  // Primero intentar "Total Item"
-  let raw = extraData['Total Item'];
-  if (!raw || String(raw).trim() === '' || String(raw).trim() === '0') {
-    // Fallback a "Valor Servicio (Particular o por convenio)"
-    raw = extraData['Valor Servicio (Particular o por convenio)'];
+  let cleaned = String(raw).replace(/[$\s]/g, '');
+  
+  const hasComma = cleaned.includes(',');
+  const hasDot = cleaned.includes('.');
+  
+  if (hasComma && hasDot) {
+    const lastComma = cleaned.lastIndexOf(',');
+    const lastDot = cleaned.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    } else {
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    const parts = cleaned.split(',');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      cleaned = cleaned.replace(',', '.');
+    } else {
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  } else if (hasDot) {
+    const parts = cleaned.split('.');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      // Es decimal (ej: 41999.86), dejarlo como está
+    } else {
+      // Es separador de miles (ej: 1.234.567)
+      cleaned = cleaned.replace(/\./g, '');
+    }
   }
-  if (!raw || String(raw).trim() === '') return 0;
-
-  // Limpiar formato: quitar $, puntos de miles, espacios
-  const cleaned = String(raw)
-    .replace(/[$\s]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
+  
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : num;
+}
+
+function parseRevenue(extraData: Record<string, unknown> | null): number {
+  if (!extraData) return 0;
+  return smartParseNumber(extraData['Total final']);
 }
 
 /** Parsea un campo de extra_data a número puro (0 si no se puede) */
 function parseNumericField(extraData: Record<string, unknown> | null, key: string): number {
   if (!extraData) return 0;
-  const raw = extraData[key];
-  if (raw === undefined || raw === null || String(raw).trim() === '') return 0;
-  const cleaned = String(raw)
-    .replace(/[$\s]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
-  const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
+  return smartParseNumber(extraData[key]);
 }
 
 function formatCurrency(n: number): string {
@@ -356,7 +373,6 @@ export function BillingReport() {
         'TIPO DE IVA': parseNumericField(r.extra_data, 'TIPO DE IVA'),
         'Total Item': parseNumericField(r.extra_data, 'Total Item'),
         'Valor Servicio (Particular o por convenio)': parseNumericField(r.extra_data, 'Valor Servicio (Particular o por convenio)'),
-        'Ingreso': r.revenue,
         'Total final': r.revenue,
       };
     });
@@ -378,7 +394,6 @@ export function BillingReport() {
       'TIPO DE IVA': '',
       'Total Item': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Total Item'), 0),
       'Valor Servicio (Particular o por convenio)': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Valor Servicio (Particular o por convenio)'), 0),
-      'Ingreso': allRecords.reduce((acc, r) => acc + r.revenue, 0),
       'Total final': allRecords.reduce((acc, r) => acc + r.revenue, 0),
     });
 
