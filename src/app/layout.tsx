@@ -16,7 +16,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: 'Analizador de Facturación Médica',
-  description: 'Sistema de análisis y consolidación de facturación para unidades médicas. Elimina duplicados y genera cuentas de cobro precisas.',
+  description: 'Sistema de análisis y consolidación de facturación para unidades médicas. Elimina duplicados y genera cuentas de ingresos precisas.',
 };
 
 export default function RootLayout({

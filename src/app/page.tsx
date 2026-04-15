@@ -21,7 +21,7 @@ type Tab = 'dashboard' | 'billing' | 'process';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'billing', label: 'Cuenta de Cobro', icon: FileText },
+  { id: 'billing', label: 'Cuenta de Ingresos', icon: FileText },
   { id: 'process', label: 'Procesar Datos', icon: Database },
 ];
 
@@ -238,7 +238,7 @@ export default function Home() {
             </h1>
             <p className="text-gray-400 text-sm mt-0.5">
               {activeTab === 'dashboard' && 'Resumen general de actividad médica'}
-              {activeTab === 'billing' && 'Cuenta de cobro consolidada y sin duplicados'}
+              {activeTab === 'billing' && 'Cuenta de ingresos consolidada y sin duplicados'}
               {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
             </p>
           </div>
