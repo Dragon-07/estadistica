@@ -242,6 +242,21 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
         // Normalizador auxiliar para mejorar el emparejamiento ignorando tildes y mayúsculas
         const normalizeStr = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+        // Limpieza robusta de números de documento
+        const cleanDocument = (val: unknown): string => {
+          if (val === null || val === undefined) return '';
+          let str = String(val);
+          // 1. Eliminar todos los espacios
+          str = str.replace(/\s+/g, '');
+          // 2. Si Excel lo tomó como número y le puso .0 al final
+          if (str.endsWith('.0')) {
+            str = str.slice(0, -2);
+          }
+          // 3. Eliminar puntos, comas o guiones (ej: separadores de miles formateaods como texto)
+          str = str.replace(/[.,\-]/g, '');
+          return str.toUpperCase();
+        };
+
         // Crear un mapa para búsqueda rápida: Documento -> Medico Tratante
         const medicosMap = new Map<string, string>();
         for (const row of rawRows) {
@@ -257,12 +272,9 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
           });
           
           if (docKey && medicoKey) {
-            let docVal = String(row[docKey]).trim();
-            // A veces Excel exporta números grandes con un .0 al final (ej 94449832.0)
-            if (docVal.endsWith('.0')) docVal = docVal.slice(0, -2);
-            
+            const docVal = cleanDocument(row[docKey]);
             const medicoVal = String(row[medicoKey]).trim();
-            if (docVal) medicosMap.set(docVal, medicoVal);
+            if (docVal && medicoVal) medicosMap.set(docVal, medicoVal);
           }
         }
 
@@ -271,15 +283,14 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
         const updatedData = currentData.map((row, idx) => {
           if (idx === 0) return row; // Mantener encabezado
           
-          let numDoc = String(row[3] || '').trim();
-          if (numDoc.endsWith('.0')) numDoc = numDoc.slice(0, -2);
+          const numDoc = cleanDocument(row[3]);
 
           const newRow = [...row];
           if (numDoc && medicosMap.has(numDoc)) {
             newRow[0] = medicosMap.get(numDoc);
           } else {
-            // El usuario pidió que se coloque explícitamente "no encontrado"
-            newRow[0] = 'no encontrado';
+            // El usuario pidió dejar el espacio en vacío si no encuentra la coincidencia
+            newRow[0] = '';
           }
           return newRow;
         });
