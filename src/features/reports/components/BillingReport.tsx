@@ -417,8 +417,27 @@ export function BillingReport() {
   };
 
   const handleExportExcel = () => {
+    // Columnas numéricas que se deben exportar como número puro
+    const NUMERIC_COLUMNS = new Set([
+      'Pagos Recibidos', 'Pagos Pendientes', 'Valor', 'Cantidad',
+      'IVA', 'TIPO DE IVA', 'Total Item',
+      'Valor Servicio (Particular o por convenio)',
+      'Facturado a la entidad del Paciente', 'Total final',
+    ]);
+
+    // Todas las columnas del esquema global
+    const ALL_COLUMNS = [
+      'M Tratante', 'Fecha Creación', 'Factura', 'Número Documento',
+      'Cliente', 'EPS/Entidad Paciente', 'Pagos Recibidos', 'Pagos Pendientes',
+      'Medios Pago', 'Estado Factura', 'Dirección', 'Teléfono', 'Correo',
+      'Tipo Cliente', 'Código (CUP)', 'Concepto', 'Valor', 'Cantidad',
+      'IVA', 'TIPO DE IVA', 'Total Item', 'Fecha Anulación',
+      'Valor Servicio (Particular o por convenio)',
+      'Facturado a la entidad del Paciente', 'Total final',
+    ];
+
     // 1. Hoja de Resumen por Entidad
-    const summaryRows: any[] = revenueByEntity.map((e, i) => ({
+    const summaryRows: Record<string, unknown>[] = revenueByEntity.map((e, i) => ({
       '#': i + 1,
       'Entidad': e.name,
       'Total Ingresos': e.revenue,
@@ -426,7 +445,6 @@ export function BillingReport() {
       '# Pacientes': e.patients,
     }));
 
-    // Fila de totales al resumen
     summaryRows.push({
       '#': 'TOTAL',
       'Entidad': '',
@@ -437,59 +455,52 @@ export function BillingReport() {
 
     const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
 
-    // 2. Hoja de Detalle Completo de Registros (con columnas numéricas del extra_data)
-    const detailRows: any[] = allRecords.map((r, i) => {
-      // Número Documento: intentar como número puro
-      const docRaw = String(r.patient_doc ?? '').replace(/\s/g, '');
-      const docNum = parseFloat(docRaw);
-      return {
-        '#': i + 1,
-        'Fecha': r.treatment_date || 'Sin fecha',
-        'Paciente': r.patient_name,
-        'Número Documento': isNaN(docNum) ? (r.patient_doc || '') : docNum,
-        'Entidad': r.entity_name,
-        'Médico': r.doctor_name || 'Sin asignar',
-        'Tratamiento': r.treatment_name || 'Sin especificar',
-        'Pagos Recibidos': parseNumericField(r.extra_data, 'Pagos Recibidos'),
-        'Pagos Pendientes': parseNumericField(r.extra_data, 'Pagos Pendientes'),
-        'Valor': parseNumericField(r.extra_data, 'Valor'),
-        'Cantidad': parseNumericField(r.extra_data, 'Cantidad'),
-        'IVA': parseNumericField(r.extra_data, 'IVA'),
-        'TIPO DE IVA': parseNumericField(r.extra_data, 'TIPO DE IVA'),
-        'Total Item': parseNumericField(r.extra_data, 'Total Item'),
-        'Valor Servicio (Particular o por convenio)': parseNumericField(r.extra_data, 'Valor Servicio (Particular o por convenio)'),
-        'Total final': r.revenue,
-      };
+    // 2. Hoja de Detalle Completo - TODAS las columnas como están guardadas
+    const detailRows: Record<string, unknown>[] = allRecords.map((r, i) => {
+      const row: Record<string, unknown> = { '#': i + 1 };
+
+      ALL_COLUMNS.forEach((col) => {
+        if (!r.extra_data) {
+          row[col] = '';
+          return;
+        }
+        const rawVal = r.extra_data[col];
+
+        if (NUMERIC_COLUMNS.has(col)) {
+          row[col] = smartParseNumber(rawVal);
+        } else {
+          row[col] = rawVal !== undefined && rawVal !== null ? String(rawVal) : '';
+        }
+      });
+
+      return row;
     });
 
-    // Fila de totales al detalle
-    detailRows.push({
-      '#': 'TOTAL',
-      'Fecha': '',
-      'Paciente': '',
-      'Número Documento': '',
-      'Entidad': '',
-      'Médico': '',
-      'Tratamiento': '',
-      'Pagos Recibidos': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Pagos Recibidos'), 0),
-      'Pagos Pendientes': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Pagos Pendientes'), 0),
-      'Valor': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Valor'), 0),
-      'Cantidad': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Cantidad'), 0),
-      'IVA': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'IVA'), 0),
-      'TIPO DE IVA': '',
-      'Total Item': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Total Item'), 0),
-      'Valor Servicio (Particular o por convenio)': allRecords.reduce((acc, r) => acc + parseNumericField(r.extra_data, 'Valor Servicio (Particular o por convenio)'), 0),
-      'Total final': allRecords.reduce((acc, r) => acc + r.revenue, 0),
+    // Fila de totales
+    const totalsRow: Record<string, unknown> = { '#': 'TOTAL' };
+    ALL_COLUMNS.forEach((col) => {
+      if (NUMERIC_COLUMNS.has(col)) {
+        totalsRow[col] = allRecords.reduce((acc, r) => acc + smartParseNumber(r.extra_data?.[col]), 0);
+      } else {
+        totalsRow[col] = '';
+      }
     });
+    detailRows.push(totalsRow);
 
     const wsDetails = XLSX.utils.json_to_sheet(detailRows);
+
+    // Ajustar anchos de columnas
+    const colWidths = [{ wch: 5 }, ...ALL_COLUMNS.map((col) => ({ wch: Math.max(col.length + 2, 14) }))];
+    wsDetails['!cols'] = colWidths;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumen por Entidad');
     XLSX.utils.book_append_sheet(wb, wsDetails, 'Detalle de Registros');
 
-    const range = startDate && endDate ? `${startDate}_a_${endDate}` : 'Historico';
-    XLSX.writeFile(wb, `Reporte_Ingresos_${range}.xlsx`);
+    // Nombre del archivo con los filtros aplicados
+    const rangePart = startDate && endDate ? `${startDate}_a_${endDate}` : 'Historico';
+    const entityPart = entityFilters.length > 0 ? `_${entityFilters.length}Entidades` : '';
+    XLSX.writeFile(wb, `Reporte_Ingresos_${rangePart}${entityPart}.xlsx`);
   };
 
   /* ── Render loading ── */
