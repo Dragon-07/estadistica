@@ -130,6 +130,11 @@ export function BillingReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Simulador
+  const [simIncreasePercent, setSimIncreasePercent] = useState(0);
+  const [simPatientsPercent, setSimPatientsPercent] = useState(0);
+  const [simOpen, setSimOpen] = useState(false);
+
   // Filtros temporales (antes de "Aplicar")
   const [tempStartDate, setTempStartDate] = useState('');
   const [tempEndDate, setTempEndDate] = useState('');
@@ -278,11 +283,14 @@ export function BillingReport() {
       .slice(0, 10);
   }, [allRecords]);
 
-  /* Top médicos por ingresos */
+  /* Top médicos por ingresos (usando columna 'M Tratante') */
   const topDoctors = useMemo(() => {
     const map = new Map<string, { revenue: number; patients: Set<string>; count: number }>();
     allRecords.forEach((r) => {
-      const name = r.doctor_name || 'Sin asignar';
+      const mTratante = r.extra_data?.['M Tratante'];
+      const name = mTratante && String(mTratante).trim() !== '' && String(mTratante).trim() !== '-'
+        ? String(mTratante).trim()
+        : 'Sin asignar';
       if (!map.has(name)) map.set(name, { revenue: 0, patients: new Set(), count: 0 });
       const e = map.get(name)!;
       e.revenue += r.revenue;
@@ -921,6 +929,111 @@ export function BillingReport() {
                 Cierre estimado {f.year}: <span className="font-bold text-emerald-600">{formatCurrency(f.totalAnnual)}</span>
               </p>
             </div>
+
+            {/* ── SIMULADOR ── */}
+            <div className="mt-6 border-t border-gray-300/40 pt-4">
+              {/* Botón colapsable */}
+              <button
+                onClick={() => setSimOpen(!simOpen)}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/60 hover:bg-white/90 transition-all duration-300 shadow-[2px_2px_6px_#b8b9be,-2px_-2px_6px_#ffffff] group"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎛️</span>
+                  <span className="text-sm font-bold text-gray-700">Simulador: ¿Qué pasa si...?</span>
+                </div>
+                <svg
+                  className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${simOpen ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Panel del simulador */}
+              <div className={`overflow-hidden transition-all duration-500 ${simOpen ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
+                <div className="space-y-5 px-1">
+                  {/* Slider 1: Aumento de ingresos */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-600 font-medium flex items-center gap-1.5">
+                        📈 Aumento mis ingresos mensuales en
+                      </span>
+                      <span className={`text-sm font-black ${simIncreasePercent > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        {simIncreasePercent}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={simIncreasePercent}
+                      onChange={(e) => setSimIncreasePercent(Number(e.target.value))}
+                      className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, #10b981 0%, #10b981 ${simIncreasePercent}%, #d1d5db ${simIncreasePercent}%, #d1d5db 100%)`,
+                      }}
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                      <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                    </div>
+                  </div>
+
+                  {/* Slider 2: Aumento de pacientes */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-600 font-medium flex items-center gap-1.5">
+                        👥 Aumento de pacientes en
+                      </span>
+                      <span className={`text-sm font-black ${simPatientsPercent > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                        {simPatientsPercent}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={simPatientsPercent}
+                      onChange={(e) => setSimPatientsPercent(Number(e.target.value))}
+                      className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${simPatientsPercent}%, #d1d5db ${simPatientsPercent}%, #d1d5db 100%)`,
+                      }}
+                    />
+                    <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                      <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                    </div>
+                  </div>
+
+                  {/* Resultados del simulador */}
+                  {(simIncreasePercent > 0 || simPatientsPercent > 0) && (() => {
+                    const combinedMultiplier = (1 + simIncreasePercent / 100) * (1 + simPatientsPercent / 100);
+                    const newProjectedMonthly = f.projectedMonthly * combinedMultiplier;
+                    const newTotalProjected = newProjectedMonthly * f.remainingMonths;
+                    const newTotalAnnual = f.totalReal + newTotalProjected;
+                    const difference = newTotalAnnual - f.totalAnnual;
+
+                    return (
+                      <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl p-4 border border-emerald-100/50">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Impacto simulado</p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="text-center">
+                            <p className="text-[10px] text-gray-400">Nuevo mensual</p>
+                            <p className="text-sm font-black text-emerald-600">{formatCurrency(newProjectedMonthly)}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[10px] text-gray-400">Cierre anual</p>
+                            <p className="text-sm font-black text-blue-600">{formatCurrency(newTotalAnnual)}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[10px] text-gray-400">Diferencia</p>
+                            <p className="text-sm font-black text-purple-600">+{formatCurrency(difference)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
           </div>
         );
       })()}
@@ -1077,42 +1190,90 @@ export function BillingReport() {
       </div>
 
       {/* ═══════════════════ GRÁFICA: INGRESOS POR DÍA DE LA SEMANA ═══════════════════ */}
-      {revenueByDayOfWeek.some((d) => d.revenue > 0) && (
-        <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
-          <h3 className="text-gray-700 font-bold text-lg mb-5 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-amber-500" />
-            Distribución de Ingresos por Día de la Semana
-          </h3>
-          <div className="flex items-end gap-4 h-44 px-4">
-            {revenueByDayOfWeek.map((d, i) => {
-              const pct = Math.max((d.revenue / maxDayRevenue) * 100, 3);
-              const color = getColor(i);
-              const isWeekend = i === 0 || i === 6;
-              return (
-                <div key={d.label} className="flex-1 flex flex-col items-center gap-2 group">
-                  <span className="text-[10px] font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {formatCurrency(d.revenue)}
-                  </span>
-                  <div
-                    className="w-full rounded-xl transition-all duration-500 hover:scale-105 cursor-pointer"
-                    style={{
-                      height: `${pct}%`,
-                      background: isWeekend
-                        ? 'linear-gradient(to top, #d1d5db, #9ca3af)'
-                        : `linear-gradient(to top, ${color.from}, ${color.to})`,
-                      boxShadow: isWeekend ? 'none' : `0 4px 14px ${color.from}40`,
-                      opacity: isWeekend ? 0.6 : 1,
-                    }}
-                  />
-                  <span className={`text-xs font-semibold ${isWeekend ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {d.label}
-                  </span>
-                </div>
-              );
-            })}
+      {revenueByDayOfWeek.some((d) => d.revenue > 0) && (() => {
+        const maxDay = Math.max(...revenueByDayOfWeek.map((d) => d.revenue));
+        const totalWeekRevenue = revenueByDayOfWeek.reduce((s, d) => s + d.revenue, 0);
+        const bestDayIdx = revenueByDayOfWeek.reduce((best, d, i) => d.revenue > revenueByDayOfWeek[best].revenue ? i : best, 0);
+
+        const dayColors = [
+          { from: '#94a3b8', to: '#cbd5e1' }, // Dom - gris
+          { from: '#3b82f6', to: '#60a5fa' }, // Lun - azul
+          { from: '#10b981', to: '#34d399' }, // Mar - verde
+          { from: '#8b5cf6', to: '#a78bfa' }, // Mié - púrpura
+          { from: '#f59e0b', to: '#fbbf24' }, // Jue - ámbar
+          { from: '#ec4899', to: '#f472b6' }, // Vie - rosa
+          { from: '#94a3b8', to: '#cbd5e1' }, // Sáb - gris
+        ];
+
+        return (
+          <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-gray-700 font-bold text-lg flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-amber-500" />
+                Distribución de Ingresos por Día
+              </h3>
+              <span className="text-xs font-medium bg-amber-50 text-amber-600 px-3 py-1 rounded-full">
+                Mejor día: {revenueByDayOfWeek[bestDayIdx].label}
+              </span>
+            </div>
+
+            <div className="flex items-end gap-3 px-2" style={{ height: '240px' }}>
+              {revenueByDayOfWeek.map((d, i) => {
+                const pct = maxDay > 0 ? Math.max((d.revenue / maxDay) * 100, 5) : 5;
+                const isWeekend = i === 0 || i === 6;
+                const isBest = i === bestDayIdx;
+                const sharePercent = totalWeekRevenue > 0 ? ((d.revenue / totalWeekRevenue) * 100).toFixed(1) : '0';
+                const color = dayColors[i];
+
+                return (
+                  <div key={d.label} className="flex-1 flex flex-col items-center gap-1.5 group">
+                    {/* Valor */}
+                    <div className="flex flex-col items-center mb-1">
+                      <span className={`text-xs font-bold ${isBest ? 'text-amber-600' : 'text-gray-600'}`}>
+                        {formatCompact(d.revenue)}
+                      </span>
+                      <span className="text-[9px] text-gray-400 font-medium">
+                        {sharePercent}%
+                      </span>
+                    </div>
+
+                    {/* Barra */}
+                    <div className="w-full flex-1 flex items-end">
+                      <div
+                        className={`w-full rounded-2xl transition-all duration-500 hover:scale-[1.05] cursor-pointer relative overflow-hidden ${isBest ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-[#e6e7ee]' : ''}`}
+                        style={{
+                          height: `${pct}%`,
+                          background: `linear-gradient(to top, ${color.from}, ${color.to})`,
+                          boxShadow: isWeekend ? 'none' : `0 4px 14px ${color.from}30`,
+                          opacity: isWeekend ? 0.55 : 1,
+                          minHeight: '20px',
+                        }}
+                      >
+                        {/* Brillo */}
+                        <div className="absolute inset-0 opacity-25" style={{
+                          background: 'linear-gradient(to right, transparent 20%, rgba(255,255,255,0.5) 50%, transparent 80%)',
+                        }} />
+                        {/* Monto al hover */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-white text-[9px] font-bold bg-black/30 px-1.5 py-0.5 rounded-md backdrop-blur-sm whitespace-nowrap">
+                            {formatCurrency(d.revenue)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Etiqueta */}
+                    <span className={`text-xs font-semibold ${isBest ? 'text-amber-600' : isWeekend ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {d.label}
+                    </span>
+                    {isBest && <span className="text-[8px] text-amber-500 font-bold -mt-1">⭐</span>}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ═══════════════════ TABLA RESUMEN: DISTRIBUCIÓN SEMANAL ═══════════════════ */}
       {revenueByWeek.length > 0 && (
