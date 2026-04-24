@@ -281,11 +281,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Contenido de cada pestaña */}
+        {/* Contenido de cada pestaña (Mantenemos montados los componentes para no perder estado/caché) */}
         <div className="animate-fade-in">
-          {activeTab === 'dashboard' && <Dashboard />}
-          {activeTab === 'billing' && <BillingReport />}
-          {activeTab === 'process' && (
+          <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
+            <Dashboard />
+          </div>
+          <div className={activeTab === 'billing' ? 'block' : 'hidden'}>
+            <BillingReport />
+          </div>
+          <div className={activeTab === 'process' ? 'block' : 'hidden'}>
             <div className="flex flex-col gap-8 animate-fade-in">
               {/* Botones Superiores */}
                <div className="flex flex-wrap gap-6">
@@ -510,7 +514,7 @@ export default function Home() {
                 )}
               </div>
             </div>
-          )}
+          </div>
         </div>
       </main>
     </div>
