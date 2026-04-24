@@ -303,6 +303,45 @@ export function BillingReport() {
       .sort((a, b) => b.revenue - a.revenue);
   }, [allRecords]);
 
+  /* Top tratamientos para los 2 mejores médicos */
+  const topTreatmentsByTopDoctors = useMemo(() => {
+    if (topDoctors.length === 0) return [];
+
+    const top2DoctorNames = topDoctors.slice(0, 2).map(d => d.name);
+    const doctorTreatmentsMap = new Map<string, Map<string, { revenue: number; count: number }>>();
+    top2DoctorNames.forEach(name => doctorTreatmentsMap.set(name, new Map()));
+
+    allRecords.forEach((r) => {
+      const mTratante = r.extra_data?.['M Tratante'];
+      const docName = mTratante && String(mTratante).trim() !== '' && String(mTratante).trim() !== '-'
+        ? String(mTratante).trim()
+        : 'Sin asignar';
+
+      if (top2DoctorNames.includes(docName)) {
+        const treatmentMap = doctorTreatmentsMap.get(docName)!;
+        const tName = r.treatment_name || 'Sin especificar';
+
+        if (!treatmentMap.has(tName)) treatmentMap.set(tName, { revenue: 0, count: 0 });
+        const t = treatmentMap.get(tName)!;
+        t.revenue += r.revenue;
+        t.count += 1;
+      }
+    });
+
+    return top2DoctorNames.map(docName => {
+      const treatmentMap = doctorTreatmentsMap.get(docName)!;
+      const treatments = Array.from(treatmentMap.entries())
+        .map(([name, d]) => ({ name, revenue: d.revenue, count: d.count }))
+        .sort((a, b) => b.revenue - a.revenue);
+
+      return {
+        doctorName: docName,
+        treatments,
+        maxRevenue: treatments[0]?.revenue || 1
+      };
+    });
+  }, [allRecords, topDoctors]);
+
   /* Revenue por día de la semana */
   const revenueByDayOfWeek = useMemo(() => {
     const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -1199,6 +1238,54 @@ export function BillingReport() {
           </div>
         )}
       </div>
+
+      {/* ═══════════════════ FILA 3: Top Tratamientos por los 2 Mejores Médicos ═══════════════════ */}
+      {topTreatmentsByTopDoctors.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {topTreatmentsByTopDoctors.map((docData) => (
+            <div key={docData.doctorName} className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
+              <h3 className="text-gray-700 font-bold text-lg mb-5 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-500" />
+                Tratamientos de {docData.doctorName.split(' ').slice(0, 2).join(' ')}
+              </h3>
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+                {docData.treatments.map((t, idx) => {
+                  const pct = Math.round((t.revenue / docData.maxRevenue) * 100);
+                  const color = getColor(idx);
+                  return (
+                    <div key={t.name}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] font-bold"
+                            style={{ background: `linear-gradient(135deg, ${color.from}, ${color.to})` }}
+                          >
+                            {idx + 1}
+                          </span>
+                          <span className="text-gray-700 font-medium text-sm truncate max-w-[200px]" title={t.name}>{t.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="text-gray-400 text-xs">{t.count.toLocaleString('de-DE')} serv.</span>
+                          <span className="font-bold text-gray-700">{formatCompact(t.revenue)}</span>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-[#e6e7ee] rounded-full shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${pct}%`,
+                            background: `linear-gradient(to right, ${color.from}, ${color.to})`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ═══════════════════ GRÁFICA: INGRESOS POR DÍA DE LA SEMANA ═══════════════════ */}
       {revenueByDayOfWeek.some((d) => d.revenue > 0) && (() => {
