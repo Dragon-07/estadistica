@@ -281,8 +281,7 @@ export function BillingReport() {
     });
     return Array.from(map.entries())
       .map(([name, d]) => ({ name, revenue: d.revenue, count: d.count }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10);
+      .sort((a, b) => b.revenue - a.revenue);
   }, [allRecords]);
 
   /* Top médicos por ingresos (usando columna 'M Tratante') */
@@ -301,8 +300,7 @@ export function BillingReport() {
     });
     return Array.from(map.entries())
       .map(([name, d]) => ({ name, revenue: d.revenue, patients: d.patients.size, count: d.count }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10);
+      .sort((a, b) => b.revenue - a.revenue);
   }, [allRecords]);
 
   /* Revenue por día de la semana */
@@ -1118,9 +1116,9 @@ export function BillingReport() {
           <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
             <h3 className="text-gray-700 font-bold text-lg mb-5 flex items-center gap-2">
               <FileText className="w-5 h-5 text-purple-500" />
-              Top 10 Tratamientos por Ingreso
+              Top Tratamientos por Ingreso
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
               {topTreatments.map((t, idx) => {
                 const pct = Math.round((t.revenue / maxTreatmentRevenue) * 100);
                 const color = getColor(idx);
@@ -1162,9 +1160,9 @@ export function BillingReport() {
           <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
             <h3 className="text-gray-700 font-bold text-lg mb-5 flex items-center gap-2">
               <Stethoscope className="w-5 h-5 text-green-500" />
-              Top 10 Médicos por Ingreso
+              Top Médicos por Ingreso
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
               {topDoctors.map((doc, idx) => {
                 const pct = Math.round((doc.revenue / maxDoctorRevenue) * 100);
                 const color = getColor(idx);
