@@ -629,8 +629,8 @@ export function Dashboard() {
                       <span className="text-gray-700 font-medium text-sm">{ent.entity_name}</span>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
-                      <span className="font-bold text-blue-600">{ent.patient_count} pac.</span>
-                      <span className="text-gray-400">{ent.record_count} reg.</span>
+                      <span className="font-bold text-blue-600">{ent.patient_count} pacientes</span>
+                      <span className="font-medium text-gray-500">{ent.record_count} registros</span>
                     </div>
                   </div>
                   {/* Barra de progreso estilo Neumorphism */}
