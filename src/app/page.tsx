@@ -14,7 +14,9 @@ import {
   Activity,
   Download,
   CloudUpload,
-  Trash2
+  Trash2,
+  Menu,
+  X
 } from 'lucide-react';
 
 type Tab = 'dashboard' | 'billing' | 'process';
@@ -32,6 +34,7 @@ export default function Home() {
   const medicoInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | 'save' | null>(null);
   const { 
     reporteFacturacionData, 
@@ -170,65 +173,95 @@ export default function Home() {
 
 
   return (
-    <div className="flex min-h-screen" style={{ background: 'var(--neu-bg)' }}>
-      {/* Sidebar */}
-      <aside className="w-64 shrink-0 p-6 flex flex-col gap-6" style={{ background: 'var(--neu-bg)' }}>
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-2 py-4">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
+    <div className="flex flex-col md:flex-row min-h-screen relative" style={{ background: 'var(--neu-bg)' }}>
+      {/* Mobile Header (Solo visible en móviles) */}
+      <div className="md:hidden flex items-center justify-between p-4 z-40 bg-[#e6e7ee] shadow-[0_4px_10px_rgba(0,0,0,0.05)] sticky top-0">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_2px_8px_rgba(59,130,246,0.4)]">
             <Stethoscope className="w-5 h-5 text-white" />
           </div>
           <div>
             <p className="font-bold text-gray-800 text-sm leading-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
               MediBill
             </p>
-            <p className="text-gray-400 text-xs">Analizador de Facturación</p>
           </div>
+        </div>
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2.5 rounded-xl bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] text-gray-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Overlay Oscuro para Menú Móvil */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/30 z-40 md:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed md:sticky top-0 h-[100dvh] w-72 md:w-64 shrink-0 p-6 flex flex-col gap-6 z-50 md:z-0 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+        isMobileMenuOpen ? 'translate-x-0 shadow-[10px_0_20px_rgba(0,0,0,0.1)]' : '-translate-x-full shadow-none'
+      }`} style={{ background: 'var(--neu-bg)' }}>
+        {/* Logo */}
+        <div className="flex items-center justify-between px-2 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
+              <Stethoscope className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="font-bold text-gray-800 text-sm leading-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
+                MediBill
+              </p>
+              <p className="text-gray-400 text-xs">Analizador de Facturación</p>
+            </div>
+          </div>
+          <button 
+            className="md:hidden p-1.5 rounded-lg bg-[#e6e7ee] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] text-gray-500"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Separador */}
         <div className="h-px bg-[#e6e7ee] shadow-[0_1px_0_#ffffff,0_-1px_0_#b8b9be]" />
 
         {/* Navegación */}
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">Menú</p>
           {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
             const isActive = activeTab === id;
             return (
               <button
                 key={id}
-                onClick={() => setActiveTab(id)}
+                onClick={() => {
+                  setActiveTab(id);
+                  setIsMobileMenuOpen(false); // Cerrar en móvil al seleccionar
+                }}
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium w-full text-left transition-all duration-200 ${
                   isActive
                     ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-[0_6px_18px_rgba(59,130,246,0.35)]'
                     : 'text-gray-600 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:shadow-[inset_3px_3px_7px_#b8b9be,inset_-3px_-3px_7px_#ffffff]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-400'}`} />
-                <span className="flex-1">{label}</span>
-                {isActive && <ChevronRight className="w-3 h-3" />}
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                <span className="flex-1 truncate">{label}</span>
+                {isActive && <ChevronRight className="w-3 h-3 shrink-0" />}
               </button>
             );
           })}
         </nav>
 
-        {/* Footer Sidebar */}
-        <div className="mt-auto">
-          <div className="bg-[#e6e7ee] rounded-3xl p-5 shadow-[6px_6px_14px_#b8b9be,-6px_-6px_14px_#ffffff] text-center">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center mx-auto mb-3 shadow-[0_4px_12px_rgba(59,130,246,0.3)]">
-              <Stethoscope className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-xs font-medium leading-relaxed">
-              Facturación precisa y sin errores para su unidad médica
-            </p>
-          </div>
-        </div>
       </aside>
 
       {/* Contenido principal */}
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-4 sm:p-6 md:p-8 w-full max-w-full overflow-x-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
           <div>
             <h1
               className="text-2xl font-bold text-gray-800"

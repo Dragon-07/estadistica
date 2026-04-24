@@ -50,7 +50,7 @@ export function Dashboard() {
         const { data, error } = await query;
         
         if (error) {
-          console.error('Error fetching records:', error);
+          console.warn('Advertencia al cargar registros:', error);
           break;
         }
 
@@ -298,33 +298,33 @@ export function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Selector de Fechas y Filtros Superiores */}
-      <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-6">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]">
-              <Calendar className="w-4 h-4 text-blue-500" />
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Desde:</span>
+      <div className="bg-[#e6e7ee] rounded-3xl p-4 sm:p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] space-y-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] flex-1 sm:flex-none">
+              <Calendar className="w-4 h-4 text-blue-500 shrink-0" />
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-tight shrink-0">Desde:</span>
               <input 
                 type="date" 
                 value={tempStartDate}
                 onChange={(e) => handleDateChange(e.target.value, 'start')}
-                className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 cursor-pointer"
+                className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 cursor-pointer w-full"
               />
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]">
-              <Calendar className="w-4 h-4 text-blue-500" />
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">Hasta:</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] flex-1 sm:flex-none">
+              <Calendar className="w-4 h-4 text-blue-500 shrink-0" />
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-tight shrink-0">Hasta:</span>
               <input 
                 type="date" 
                 value={tempEndDate}
                 onChange={(e) => handleDateChange(e.target.value, 'end')}
-                className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 cursor-pointer"
+                className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 cursor-pointer w-full"
               />
             </div>
             
             <button 
               onClick={handleApplyFilters}
-              className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-2xl text-xs font-bold shadow-[4px_4px_8px_rgba(22,163,74,0.3)] hover:bg-green-700 transition-all transform active:scale-95"
+              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-2xl text-xs font-bold shadow-[4px_4px_8px_rgba(22,163,74,0.3)] hover:bg-green-700 transition-all transform active:scale-95 w-full sm:w-auto"
             >
               <Check className="w-4 h-4" />
               Aplicar Periodo
@@ -333,15 +333,15 @@ export function Dashboard() {
             {(tempStartDate || tempEndDate) && (
               <button 
                 onClick={handleClearDates}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-red-500 rounded-2xl text-xs font-bold shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:bg-red-50 transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-red-500 rounded-2xl text-xs font-bold shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:bg-red-50 transition-colors w-full sm:w-auto"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3 h-3 shrink-0" />
                 Limpiar Fechas
               </button>
             )}
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-start w-full xl:w-auto gap-3 border-t border-gray-300 xl:border-none pt-4 xl:pt-0">
             <button
               onClick={exportToExcel}
               disabled={loading || currentRecords.length === 0}
@@ -398,7 +398,7 @@ export function Dashboard() {
       </div>
 
       {/* Tarjetas de estadísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         {statCards.map(({ label, value, icon: Icon, color, bg }) => (
           <div
             key={label}
