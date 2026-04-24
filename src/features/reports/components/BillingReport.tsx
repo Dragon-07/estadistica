@@ -213,7 +213,7 @@ export function BillingReport() {
   const stats = useMemo(() => {
     const totalRevenue = allRecords.reduce((s, r) => s + r.revenue, 0);
     const totalRecords = allRecords.length;
-    const uniquePatients = new Set(allRecords.map((r) => r.patient_name)).size;
+    const uniquePatients = new Set(allRecords.map((r) => r.patient_doc ? String(r.patient_doc).trim() : r.patient_name)).size;
     const uniqueEntities = new Set(allRecords.map((r) => r.entity_name)).size;
     const avgPerPatient = uniquePatients > 0 ? totalRevenue / uniquePatients : 0;
     const avgPerRecord = totalRecords > 0 ? totalRevenue / totalRecords : 0;
@@ -228,7 +228,8 @@ export function BillingReport() {
       const e = map.get(r.entity_name)!;
       e.revenue += r.revenue;
       e.count += 1;
-      e.patients.add(r.patient_name);
+      const pId = r.patient_doc ? String(r.patient_doc).trim() : r.patient_name;
+      e.patients.add(pId);
     });
     return Array.from(map.entries())
       .map(([name, d]) => ({ name, revenue: d.revenue, count: d.count, patients: d.patients.size }))
@@ -295,7 +296,8 @@ export function BillingReport() {
       if (!map.has(name)) map.set(name, { revenue: 0, patients: new Set(), count: 0 });
       const e = map.get(name)!;
       e.revenue += r.revenue;
-      e.patients.add(r.patient_name);
+      const pId = r.patient_doc ? String(r.patient_doc).trim() : r.patient_name;
+      e.patients.add(pId);
       e.count += 1;
     });
     return Array.from(map.entries())

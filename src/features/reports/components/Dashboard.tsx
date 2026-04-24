@@ -86,7 +86,8 @@ export function Dashboard() {
       // Calcular estadísticas generales
       const patientVisitsMap = new Map<string, number>();
       records.forEach(r => {
-        patientVisitsMap.set(r.patient_name, (patientVisitsMap.get(r.patient_name) || 0) + 1);
+        const pId = r.patient_doc ? String(r.patient_doc).trim() : r.patient_name;
+        patientVisitsMap.set(pId, (patientVisitsMap.get(pId) || 0) + 1);
       });
       
       const uniquePatients = patientVisitsMap.size;
@@ -159,7 +160,8 @@ export function Dashboard() {
           doctorMap.set(r.doctor_name, { patients: new Set(), treatments: 0 });
         }
         const entry = doctorMap.get(r.doctor_name)!;
-        entry.patients.add(r.patient_name);
+        const pId = r.patient_doc ? String(r.patient_doc).trim() : r.patient_name;
+        entry.patients.add(pId);
         entry.treatments += 1;
       });
       setDoctors(
@@ -179,7 +181,8 @@ export function Dashboard() {
           entityMap.set(r.entity_name, { patients: new Set(), records: 0 });
         }
         const entry = entityMap.get(r.entity_name)!;
-        entry.patients.add(r.patient_name);
+        const pId = r.patient_doc ? String(r.patient_doc).trim() : r.patient_name;
+        entry.patients.add(pId);
         entry.records += 1;
       });
       setEntities(
@@ -429,7 +432,7 @@ export function Dashboard() {
                 <Repeat className="w-5 h-5 text-blue-500" />
                 Retención de Pacientes
               </h3>
-              <p className="text-sm text-gray-500 mb-6">Proporción de pacientes nuevos vs recurrentes y frecuencia de visita.</p>
+              <p className="text-sm text-gray-500 mb-6">Proporción de pacientes de sólo una vez vs recurrentes y frecuencia de visita.</p>
             </div>
             
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
