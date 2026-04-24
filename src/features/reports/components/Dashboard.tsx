@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/shared/lib/supabase/client';
 import { DashboardStats, DoctorSummary, EntitySummary } from '@/shared/types/medical';
-import { Users, Building2, Stethoscope, FileText, TrendingUp, TrendingDown, Calendar, X, Download, Check } from 'lucide-react';
+import { Users, Building2, Stethoscope, FileText, TrendingUp, TrendingDown, Calendar, X, Download, Check, PieChart, Activity, Repeat, BarChart3 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { GLOBAL_REPORT_COLUMNS } from '@/features/data-parser/reportes';
 
@@ -19,6 +19,12 @@ export function Dashboard() {
   const [tempStartDate, setTempStartDate] = useState<string>('');
   const [tempEndDate, setTempEndDate] = useState<string>('');
   const [currentRecords, setCurrentRecords] = useState<any[]>([]);
+
+  // Nuevos estados
+  const [patientRecurrence, setPatientRecurrence] = useState<{ new: number, returning: number, avgVisits: number } | null>(null);
+  const [volumeByMonth, setVolumeByMonth] = useState<{ month: string, count: number }[]>([]);
+  const [volumeByDay, setVolumeByDay] = useState<{ day: string, count: number }[]>([]);
+  const [topTreatments, setTopTreatments] = useState<{ name: string, count: number }[]>([]);
 
 
   useEffect(() => {
@@ -78,7 +84,12 @@ export function Dashboard() {
       if (!records) { setLoading(false); return; }
 
       // Calcular estadísticas generales
-      const uniquePatients = new Set(records.map((r) => r.patient_name)).size;
+      const patientVisitsMap = new Map<string, number>();
+      records.forEach(r => {
+        patientVisitsMap.set(r.patient_name, (patientVisitsMap.get(r.patient_name) || 0) + 1);
+      });
+      
+      const uniquePatients = patientVisitsMap.size;
       const uniqueEntities = new Set(records.map((r) => r.entity_name)).size;
       const uniqueDoctors = new Set(records.map((r) => r.doctor_name).filter(Boolean)).size;
 
@@ -88,6 +99,57 @@ export function Dashboard() {
         totalDoctors: uniqueDoctors,
         totalRecords: records.length,
       });
+
+      // 1. Recurrencia
+      let newPatientsCount = 0;
+      let returningPatientsCount = 0;
+      patientVisitsMap.forEach(count => {
+        if (count === 1) newPatientsCount++;
+        else returningPatientsCount++;
+      });
+      const avgVisits = uniquePatients > 0 ? records.length / uniquePatients : 0;
+      
+      setPatientRecurrence({ new: newPatientsCount, returning: returningPatientsCount, avgVisits });
+
+      // 2. Heatmap / Volume
+      const monthMap = new Map<string, number>();
+      const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      const dayTotals = new Array(7).fill(0);
+
+      records.forEach(r => {
+        if (r.treatment_date) {
+          // Month
+          const monthKey = r.treatment_date.slice(0, 7);
+          monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + 1);
+          // Day
+          const d = new Date(r.treatment_date + 'T00:00:00');
+          dayTotals[d.getDay()] += 1;
+        }
+      });
+      
+      setVolumeByMonth(
+        Array.from(monthMap.entries())
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([month, count]) => {
+            const [y, m] = month.split('-');
+            const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            return { month: `${monthNames[parseInt(m, 10) - 1]} ${y}`, count };
+          })
+      );
+      setVolumeByDay(days.map((day, i) => ({ day, count: dayTotals[i] })));
+
+      // 3. Top Tratamientos por volumen
+      const treatmentMap = new Map<string, number>();
+      records.forEach(r => {
+        const name = r.treatment_name || 'Sin especificar';
+        treatmentMap.set(name, (treatmentMap.get(name) || 0) + 1);
+      });
+      setTopTreatments(
+        Array.from(treatmentMap.entries())
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5)
+      );
 
       // Resumen por Doctor
       const doctorMap = new Map<string, { patients: Set<string>; treatments: number }>();
@@ -354,6 +416,159 @@ export function Dashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ═══════════════════ NUEVAS MÉTRICAS ESTRATÉGICAS ═══════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* 1. Recurrencia y Retención */}
+        {patientRecurrence && (
+          <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] flex flex-col justify-between">
+            <div>
+              <h3 className="text-gray-700 font-bold text-lg mb-2 flex items-center gap-2">
+                <Repeat className="w-5 h-5 text-blue-500" />
+                Retención de Pacientes
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">Proporción de pacientes nuevos vs recurrentes y frecuencia de visita.</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="relative w-32 h-32 flex-shrink-0">
+                <div 
+                  className="absolute inset-0 rounded-full shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,0.9)]"
+                  style={{
+                    background: `conic-gradient(#3b82f6 ${(patientRecurrence.new / stats.totalPatients) * 100}%, #10b981 0)`
+                  }}
+                />
+                <div className="absolute inset-4 bg-[#e6e7ee] rounded-full shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] flex items-center justify-center flex-col">
+                  <span className="text-xl font-black text-gray-700">{Math.round((patientRecurrence.returning / stats.totalPatients) * 100)}%</span>
+                  <span className="text-[10px] font-bold text-gray-400">Recurrentes</span>
+                </div>
+              </div>
+              
+              <div className="flex-1 w-full space-y-4">
+                <div className="bg-[#e6e7ee] rounded-2xl p-3 shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold text-gray-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"/> Nuevos</span>
+                    <span className="font-bold text-gray-700">{patientRecurrence.new.toLocaleString('de-DE')}</span>
+                  </div>
+                </div>
+                <div className="bg-[#e6e7ee] rounded-2xl p-3 shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff]">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold text-gray-500 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"/> Recurrentes</span>
+                    <span className="font-bold text-gray-700">{patientRecurrence.returning.toLocaleString('de-DE')}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center px-2 mt-2 border-t border-gray-300 pt-3">
+                  <span className="text-sm font-medium text-gray-600">Promedio de visitas:</span>
+                  <span className="font-black text-blue-600 bg-blue-100 px-3 py-1 rounded-xl">{patientRecurrence.avgVisits.toFixed(1)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. Top Tratamientos por Volumen */}
+        {topTreatments.length > 0 && (
+          <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
+            <h3 className="text-gray-700 font-bold text-lg mb-2 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-amber-500" />
+              Top 5 Tratamientos (Volumen)
+            </h3>
+            <p className="text-sm text-gray-500 mb-5">Los procedimientos que más se realizan (operatividad).</p>
+            
+            <div className="space-y-3">
+              {topTreatments.map((t, idx) => {
+                const pct = Math.round((t.count / topTreatments[0].count) * 100);
+                return (
+                  <div key={t.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-md bg-amber-100 text-amber-600 flex items-center justify-center text-[10px] font-bold">
+                          {idx + 1}
+                        </span>
+                        <span className="text-gray-700 font-medium text-sm truncate max-w-[180px]" title={t.name}>{t.name}</span>
+                      </div>
+                      <span className="font-bold text-gray-700">{t.count.toLocaleString('de-DE')} <span className="text-xs font-normal text-gray-400">veces</span></span>
+                    </div>
+                    <div className="h-1.5 bg-[#e6e7ee] rounded-full shadow-[inset_1px_1px_3px_#b8b9be,inset_-1px_-1px_3px_#ffffff] overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-700"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Mapa de Calor / Curva Operativa */}
+      <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
+        <h3 className="text-gray-700 font-bold text-lg mb-2 flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-indigo-500" />
+          Demanda Operativa
+        </h3>
+        <p className="text-sm text-gray-500 mb-6">Evolución mensual y distribución de la carga de trabajo por día de la semana.</p>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          {/* Evolución Mensual */}
+          {volumeByMonth.length > 0 && (() => {
+            const maxCount = Math.max(...volumeByMonth.map(m => m.count));
+            return (
+              <div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Evolución Mensual</h4>
+                <div className="flex items-end h-40 gap-2 border-b border-gray-300 pb-2">
+                  {volumeByMonth.slice(-12).map((m) => ( // Show last 12 months max
+                    <div key={m.month} className="flex-1 flex flex-col justify-end items-center group relative h-full">
+                      <div className="absolute -top-8 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
+                        {m.count.toLocaleString('de-DE')} atenciones
+                      </div>
+                      <div 
+                        className="w-full bg-gradient-to-t from-indigo-400 to-indigo-500 rounded-t-md transition-all duration-500 ease-out hover:brightness-110 shadow-[2px_0_5px_rgba(0,0,0,0.1)]"
+                        style={{ height: `${(m.count / maxCount) * 100}%`, minHeight: '4px' }}
+                      />
+                      <span className="text-[9px] font-medium text-gray-500 mt-2 rotate-45 origin-left truncate w-8 text-center absolute -bottom-6">{m.month.split(' ')[0]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Días de la semana */}
+          {volumeByDay.some(d => d.count > 0) && (() => {
+            const maxCount = Math.max(...volumeByDay.map(d => d.count));
+            const bestDayIdx = volumeByDay.reduce((best, d, i) => d.count > volumeByDay[best].count ? i : best, 0);
+            return (
+              <div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex justify-between items-center">
+                  Días con más pacientes
+                  <span className="text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-md shadow-sm">Pico: {volumeByDay[bestDayIdx].day}</span>
+                </h4>
+                <div className="space-y-3">
+                  {volumeByDay.map((d, i) => {
+                    const pct = Math.round((d.count / maxCount) * 100);
+                    return (
+                      <div key={d.day} className="flex items-center gap-3">
+                        <span className="w-8 text-xs font-medium text-gray-500 text-right">{d.day}</span>
+                        <div className="flex-1 h-3.5 bg-[#e6e7ee] rounded-full shadow-[inset_1px_1px_3px_#b8b9be,inset_-1px_-1px_3px_#ffffff] overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${i === bestDayIdx ? 'bg-gradient-to-r from-indigo-500 to-indigo-400' : 'bg-gradient-to-r from-gray-400 to-gray-300'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="w-10 text-xs font-bold text-gray-600 text-right">{d.count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
       {/* Tabla: Por Médico */}
