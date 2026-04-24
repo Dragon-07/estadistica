@@ -527,9 +527,13 @@ export function Dashboard() {
                         {m.count.toLocaleString('de-DE')} atenciones
                       </div>
                       <div 
-                        className="w-full bg-gradient-to-t from-indigo-400 to-indigo-500 rounded-t-md transition-all duration-500 ease-out hover:brightness-110 shadow-[2px_0_5px_rgba(0,0,0,0.1)]"
-                        style={{ height: `${(m.count / maxCount) * 100}%`, minHeight: '4px' }}
-                      />
+                        className="w-full bg-gradient-to-t from-indigo-400 to-indigo-500 rounded-t-md transition-all duration-500 ease-out hover:brightness-110 shadow-[2px_0_5px_rgba(0,0,0,0.1)] flex items-start justify-center pt-2 overflow-hidden"
+                        style={{ height: `${(m.count / maxCount) * 100}%`, minHeight: '28px' }}
+                      >
+                        <span className="text-white font-bold text-xs leading-none drop-shadow-md">
+                          {m.count.toLocaleString('de-DE')}
+                        </span>
+                      </div>
                       <span className="text-[9px] font-medium text-gray-500 mt-2 rotate-45 origin-left truncate w-8 text-center absolute -bottom-6">{m.month.split(' ')[0]}</span>
                     </div>
                   ))}
