@@ -291,7 +291,7 @@ export function Dashboard() {
 
             <div className="px-4 py-2 bg-blue-50 rounded-2xl border border-blue-100 flex flex-col items-center min-w-[100px]">
               <span className="text-[10px] font-bold text-blue-500 uppercase block leading-tight">Total Periodo</span>
-              <span className="text-lg font-black text-blue-700 leading-tight">{stats.totalRecords.toLocaleString()}</span>
+              <span className="text-lg font-black text-blue-700 leading-tight">{stats.totalRecords.toLocaleString('de-DE')}</span>
             </div>
           </div>
         </div>
@@ -349,7 +349,7 @@ export function Dashboard() {
               <TrendingUp className="w-4 h-4 text-green-400" />
             </div>
             <div>
-              <p className="text-3xl font-bold text-gray-800">{value.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-gray-800">{value.toLocaleString('de-DE')}</p>
               <p className="text-gray-500 text-sm mt-0.5">{label}</p>
             </div>
           </div>

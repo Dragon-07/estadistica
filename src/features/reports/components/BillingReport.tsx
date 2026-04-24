@@ -87,16 +87,18 @@ function parseNumericField(extraData: Record<string, unknown> | null, key: strin
 }
 
 function formatCurrency(n: number): string {
-  // Formato continuo: sin separadores de miles, punto para decimales
   const hasDecimals = n % 1 !== 0;
-  const formatted = hasDecimals ? n.toFixed(2) : n.toFixed(0);
+  const formatted = n.toLocaleString('de-DE', {
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2
+  });
   return `$ ${formatted}`;
 }
 
 function formatCompact(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toFixed(0);
+  if (n >= 1_000_000) return `${(n / 1_000_000).toLocaleString('de-DE', { maximumFractionDigits: 1 })}M`;
+  if (n >= 1_000) return `${(n / 1_000).toLocaleString('de-DE', { maximumFractionDigits: 0 })}K`;
+  return n.toLocaleString('de-DE', { maximumFractionDigits: 0 });
 }
 
 /* Generar un color consistente por índice */
@@ -654,7 +656,7 @@ export function BillingReport() {
           {
             label: 'Ingresos Totales',
             value: formatCurrency(stats.totalRevenue),
-            subtitle: `${stats.totalRecords.toString()} registros`,
+            subtitle: `${stats.totalRecords.toLocaleString('de-DE')} registros`,
             icon: DollarSign,
             bg: 'from-green-400 to-green-600',
             trend: monthTrend,
@@ -662,20 +664,20 @@ export function BillingReport() {
           {
             label: 'Promedio / Paciente',
             value: formatCurrency(stats.avgPerPatient),
-            subtitle: `${stats.uniquePatients.toString()} pacientes`,
+            subtitle: `${stats.uniquePatients.toLocaleString('de-DE')} pacientes`,
             icon: Users,
             bg: 'from-blue-400 to-blue-600',
           },
           {
             label: 'Promedio / Servicio',
             value: formatCurrency(stats.avgPerRecord),
-            subtitle: `${stats.totalRecords.toString()} servicios`,
+            subtitle: `${stats.totalRecords.toLocaleString('de-DE')} servicios`,
             icon: Activity,
             bg: 'from-purple-400 to-purple-600',
           },
           {
             label: 'Entidades Activas',
-            value: stats.uniqueEntities.toString(),
+            value: stats.uniqueEntities.toLocaleString('de-DE'),
             subtitle: revenueByEntity[0] ? `Top: ${revenueByEntity[0].name.slice(0, 20)}…` : '',
             icon: Building2,
             bg: 'from-amber-400 to-amber-600',
