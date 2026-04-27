@@ -36,6 +36,32 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | 'save' | null>(null);
+
+  // Estados para Login Temporal
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState(false);
+
+  useEffect(() => {
+    const auth = sessionStorage.getItem('app_auth');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginUsername === 'holistica' && loginPassword === '07Holistica') {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('app_auth', 'true');
+      setLoginError(false);
+    } else {
+      setLoginError(true);
+    }
+  };
   const { 
     reporteFacturacionData, 
     reporteTransaccionData,
@@ -171,6 +197,56 @@ export default function Home() {
     }
   };
 
+  if (isAuthenticated === null) return null;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#e6e7ee]" style={{ fontFamily: 'var(--font-manrope)' }}>
+        <form onSubmit={handleLogin} className="bg-[#e6e7ee] p-8 rounded-3xl shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] w-full max-w-sm flex flex-col gap-6">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.4)] mb-4">
+              <Stethoscope className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800">Acceso Restringido</h1>
+            <p className="text-sm text-gray-500 mt-2">Ingresa tus credenciales para continuar</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Usuario</label>
+            <input
+              type="text"
+              value={loginUsername}
+              onChange={(e) => setLoginUsername(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              placeholder="Usuario"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Contraseña</label>
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              placeholder="••••••••"
+            />
+          </div>
+
+          {loginError && (
+            <p className="text-red-500 text-sm text-center font-medium">Credenciales incorrectas</p>
+          )}
+
+          <button
+            type="submit"
+            className="w-full py-3 mt-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-xl shadow-[4px_4px_10px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] transition-all"
+          >
+            Ingresar
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen relative" style={{ background: 'var(--neu-bg)' }}>
