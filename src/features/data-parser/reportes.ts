@@ -380,6 +380,37 @@ export async function getDatabaseTotalCount(): Promise<number> {
 }
 
 /**
+ * Obtiene la fecha mínima y máxima de los registros.
+ */
+export async function getDatabaseDateRange(): Promise<{ min: string | null, max: string | null }> {
+  const supabase = createClient();
+  
+  const { data: minData, error: minError } = await supabase
+    .from('medical_records')
+    .select('treatment_date')
+    .not('treatment_date', 'is', null)
+    .order('treatment_date', { ascending: true })
+    .limit(1);
+
+  const { data: maxData, error: maxError } = await supabase
+    .from('medical_records')
+    .select('treatment_date')
+    .not('treatment_date', 'is', null)
+    .order('treatment_date', { ascending: false })
+    .limit(1);
+
+  if (minError || maxError) {
+    console.error('Error fetching dates', minError || maxError);
+    return { min: null, max: null };
+  }
+
+  const min = minData && minData.length > 0 ? minData[0].treatment_date : null;
+  const max = maxData && maxData.length > 0 ? maxData[0].treatment_date : null;
+
+  return { min, max };
+}
+
+/**
  * Obtiene los primeros N registros de Supabase y los formatea respetando GLOBAL_REPORT_COLUMNS.
  */
 export async function fetchDatabasePreview(limit: number = 50): Promise<any[][]> {

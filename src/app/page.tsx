@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, saveUnifiedToSupabase, exportToExcel, fetchDatabasePreview, deleteAllRecords, getDatabaseTotalCount, deleteRecordsByDateRange } from '@/features/data-parser/reportes';
+import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, saveUnifiedToSupabase, exportToExcel, fetchDatabasePreview, deleteAllRecords, getDatabaseTotalCount, deleteRecordsByDateRange, getDatabaseDateRange } from '@/features/data-parser/reportes';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { Dashboard } from '@/features/reports/components/Dashboard';
 import { BillingReport } from '@/features/reports/components/BillingReport';
@@ -81,6 +81,7 @@ export default function Home() {
 
   const [dbPreviewData, setDbPreviewData] = useState<any[][] | null>(null);
   const [dbTotalCount, setDbTotalCount] = useState<number>(0);
+  const [dbDateRange, setDbDateRange] = useState<{min: string | null, max: string | null}>({min: null, max: null});
   const [isLoadingDb, setIsLoadingDb] = useState(false);
 
   const loadDbPreview = async () => {
@@ -88,8 +89,10 @@ export default function Home() {
       setIsLoadingDb(true);
       const data = await fetchDatabasePreview(10000); // Cargamos todo para mostrar "Igual que arriba"
       const total = await getDatabaseTotalCount();
+      const dateRange = await getDatabaseDateRange();
       
       setDbTotalCount(total);
+      setDbDateRange(dateRange);
       
       if (data && data.length > 1) {
         setDbPreviewData(data);
@@ -621,13 +624,20 @@ export default function Home() {
                     <Database className="w-5 h-5 text-blue-500" />
                     Estado Actual en Base de Datos
                   </h2>
-                  <div className="flex items-center gap-3">
-                    <button onClick={loadDbPreview} className="text-xs text-blue-600 font-bold hover:underline">
-                      Actualizar
-                    </button>
-                    <span className="text-xs font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                      {dbTotalCount} registros (excluyendo encabezado)
-                    </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-3">
+                      <button onClick={loadDbPreview} className="text-xs text-blue-600 font-bold hover:underline">
+                        Actualizar
+                      </button>
+                      <span className="text-xs font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                        {dbTotalCount} registros (excluyendo encabezado)
+                      </span>
+                    </div>
+                    {dbDateRange.min && dbDateRange.max && (
+                      <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                        Reportes desde: <span className="text-gray-700 font-bold">{dbDateRange.min}</span> hasta <span className="text-gray-700 font-bold">{dbDateRange.max}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
                 
