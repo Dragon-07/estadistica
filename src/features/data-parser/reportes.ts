@@ -426,3 +426,20 @@ export async function deleteAllRecords() {
     throw new Error('No se pudo borrar la base de datos: ' + error.message);
   }
 }
+
+/**
+ * Elimina registros de la tabla medical_records en Supabase según un rango de fechas.
+ */
+export async function deleteRecordsByDateRange(startDate: string, endDate: string) {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('medical_records')
+    .delete()
+    .gte('treatment_date', startDate)
+    .lte('treatment_date', endDate);
+    
+  if (error) {
+    console.error('Error deleting records by date range:', error);
+    throw new Error('No se pudo borrar los registros: ' + error.message);
+  }
+}

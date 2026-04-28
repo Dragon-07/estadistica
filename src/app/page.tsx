@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, saveUnifiedToSupabase, exportToExcel, fetchDatabasePreview, deleteAllRecords, getDatabaseTotalCount } from '@/features/data-parser/reportes';
+import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, saveUnifiedToSupabase, exportToExcel, fetchDatabasePreview, deleteAllRecords, getDatabaseTotalCount, deleteRecordsByDateRange } from '@/features/data-parser/reportes';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { Dashboard } from '@/features/reports/components/Dashboard';
 import { BillingReport } from '@/features/reports/components/BillingReport';
@@ -36,6 +36,12 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | 'save' | null>(null);
+
+  // Estados para Borrar por Rango de Fecha
+  const [showDateRangeModal, setShowDateRangeModal] = useState(false);
+  const [deleteStartDate, setDeleteStartDate] = useState('');
+  const [deleteEndDate, setDeleteEndDate] = useState('');
+  const [isDeletingRange, setIsDeletingRange] = useState(false);
 
   // Estados para Login Temporal
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -197,6 +203,26 @@ export default function Home() {
     }
   };
 
+  const handleDeleteByDateRange = async () => {
+    if (!deleteStartDate || !deleteEndDate) {
+      alert('Por favor selecciona ambas fechas.');
+      return;
+    }
+    if (confirm(`¿Estás seguro de que deseas borrar los registros desde ${deleteStartDate} hasta ${deleteEndDate}?`)) {
+      try {
+        setIsDeletingRange(true);
+        await deleteRecordsByDateRange(deleteStartDate, deleteEndDate);
+        alert('Registros borrados exitosamente.');
+        setShowDateRangeModal(false);
+        loadDbPreview();
+      } catch (e: any) {
+        alert('Error al borrar los registros: ' + e.message);
+      } finally {
+        setIsDeletingRange(false);
+      }
+    }
+  };
+
   if (isAuthenticated === null) return null;
 
   if (!isAuthenticated) {
@@ -258,8 +284,9 @@ export default function Home() {
           </div>
           <div>
             <p className="font-bold text-gray-800 text-sm leading-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
-              MediBill
+              Holística
             </p>
+            <p className="text-gray-400 text-[10px] uppercase tracking-wide">UNIDAD DE MEDICINA INTEGRAL</p>
           </div>
         </div>
         <button 
@@ -278,6 +305,50 @@ export default function Home() {
         />
       )}
 
+      {/* Modal para Borrar por Rango de Fecha */}
+      {showDateRangeModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[6px_6px_14px_#b8b9be,-6px_-6px_14px_#ffffff] max-w-sm w-full">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Borrar Rango de Fechas</h2>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha Inicio</label>
+                <input 
+                  type="date" 
+                  value={deleteStartDate} 
+                  onChange={(e) => setDeleteStartDate(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha Fin</label>
+                <input 
+                  type="date" 
+                  value={deleteEndDate} 
+                  onChange={(e) => setDeleteEndDate(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-4 mt-2">
+                <button 
+                  onClick={() => setShowDateRangeModal(false)}
+                  className="flex-1 py-3 bg-white text-gray-600 font-bold rounded-xl shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleDeleteByDateRange}
+                  disabled={isDeletingRange}
+                  className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl shadow-[4px_4px_10px_rgba(239,68,68,0.3)] disabled:opacity-50"
+                >
+                  {isDeletingRange ? 'Borrando...' : 'Confirmar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside className={`fixed md:sticky top-0 h-[100dvh] w-72 md:w-64 shrink-0 p-6 flex flex-col gap-6 z-50 md:z-0 transition-transform duration-300 ease-in-out md:translate-x-0 ${
         isMobileMenuOpen ? 'translate-x-0 shadow-[10px_0_20px_rgba(0,0,0,0.1)]' : '-translate-x-full shadow-none'
@@ -289,10 +360,10 @@ export default function Home() {
               <Stethoscope className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-bold text-gray-800 text-sm leading-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
-                MediBill
+              <p className="font-bold text-gray-800 text-lg leading-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
+                Holística
               </p>
-              <p className="text-gray-400 text-xs">Analizador de Facturación</p>
+              <p className="text-gray-400 text-[10px] uppercase tracking-wide mt-0.5">UNIDAD DE MEDICINA INTEGRAL</p>
             </div>
           </div>
           <button 
@@ -465,8 +536,15 @@ export default function Home() {
 
                 {/* Este botón ahora está siempre visible */}
                 <button
+                  onClick={() => setShowDateRangeModal(true)}
+                  className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white text-orange-500 font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:bg-orange-50 hover:text-orange-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all duration-300 group ml-auto"
+                >
+                  <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span>Borrar por Fechas</span>
+                </button>
+                <button
                   onClick={handleClearTable}
-                  className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white text-red-500 font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:bg-red-50 hover:text-red-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all duration-300 group ml-auto"
+                  className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white text-red-500 font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:bg-red-50 hover:text-red-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all duration-300 group"
                 >
                   <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
                   <span>Limpiar Base de Datos</span>
