@@ -19,6 +19,7 @@ export function Dashboard() {
   const [tempStartDate, setTempStartDate] = useState<string>('');
   const [tempEndDate, setTempEndDate] = useState<string>('');
   const [currentRecords, setCurrentRecords] = useState<any[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Nuevos estados
   const [patientRecurrence, setPatientRecurrence] = useState<{ new: number, returning: number, avgVisits: number } | null>(null);
@@ -38,7 +39,7 @@ export function Dashboard() {
       let hasMore = true;
 
       while (hasMore) {
-        let query = supabase.from('medical_records').select('*');
+        let query = supabase.from('medical_records').select('treatment_date, entity_name, doctor_name, patient_doc, patient_name, treatment_name');
         
         // Aplicamos filtros ANTES del range para asegurar que la paginación sea sobre el set correcto
         if (entityFilters.length > 0) query = query.in('entity_name', entityFilters);
@@ -217,30 +218,63 @@ export function Dashboard() {
     setEndDate(tempEndDate);
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (currentRecords.length === 0) return;
+    setIsExporting(true);
 
-    const dataToExport = currentRecords.map(r => {
-      const rowData: Record<string, any> = {};
-      
-      GLOBAL_REPORT_COLUMNS.forEach(col => {
-        // Ignoramos la columna vacía usada como separador
-        if (col === '') return; 
+    try {
+      const supabase = createClient();
+      let allExportRecords: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase.from('medical_records').select('*');
         
-        // extra_data contiene exactamente los valores asociados a los nombres de columna originales
-        rowData[col] = r.extra_data?.[col] || '';
-      });
-      
-      return rowData;
-    });
+        if (entityFilters.length > 0) query = query.in('entity_name', entityFilters);
+        if (startDate) query = query.gte('treatment_date', startDate);
+        if (endDate) query = query.lte('treatment_date', endDate);
 
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
-    
-    // Nombre del archivo con el rango
-    const rangeStr = startDate && endDate ? `${startDate}_a_${endDate}` : 'Historico_Total';
-    XLSX.writeFile(wb, `Reporte_Todexo_${rangeStr}.xlsx`);
+        query = query.range(from, from + step - 1);
+
+        const { data, error } = await query;
+        
+        if (error) break;
+        if (data && data.length > 0) {
+          allExportRecords = [...allExportRecords, ...data];
+          from += step;
+          if (data.length < step) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const dataToExport = allExportRecords.map(r => {
+        const rowData: Record<string, any> = {};
+        
+        GLOBAL_REPORT_COLUMNS.forEach(col => {
+          // Ignoramos la columna vacía usada como separador
+          if (col === '') return; 
+          
+          rowData[col] = r.extra_data?.[col] || '';
+        });
+        
+        return rowData;
+      });
+
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
+      
+      const rangeStr = startDate && endDate ? `${startDate}_a_${endDate}` : 'Historico_Total';
+      XLSX.writeFile(wb, `Reporte_Todexo_${rangeStr}.xlsx`);
+    } catch (err) {
+      console.error(err);
+      alert('Error exportando datos');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleDateChange = (val: string, type: 'start' | 'end') => {
@@ -347,11 +381,11 @@ export function Dashboard() {
           <div className="flex items-center justify-between sm:justify-start w-full xl:w-auto gap-3 border-t border-gray-300 xl:border-none pt-4 xl:pt-0">
             <button
               onClick={exportToExcel}
-              disabled={loading || currentRecords.length === 0}
+              disabled={loading || currentRecords.length === 0 || isExporting}
               className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-2xl text-xs font-bold shadow-[4px_4px_10px_rgba(37,99,235,0.3)] hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download className="w-4 h-4" />
-              Excel
+              <Download className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} />
+              {isExporting ? 'Exportando...' : 'Excel'}
             </button>
 
             <div className="px-4 py-2 bg-blue-50 rounded-2xl border border-blue-100 flex flex-col items-center min-w-[100px]">

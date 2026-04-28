@@ -87,7 +87,7 @@ export default function Home() {
   const loadDbPreview = async () => {
     try {
       setIsLoadingDb(true);
-      const data = await fetchDatabasePreview(10000); // Cargamos todo para mostrar "Igual que arriba"
+      const data = await fetchDatabasePreview(50); // Limitado a 50 para no congelar el navegador
       const total = await getDatabaseTotalCount();
       const dateRange = await getDatabaseDateRange();
       
