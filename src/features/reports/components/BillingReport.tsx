@@ -488,7 +488,7 @@ export function BillingReport() {
     // Todas las columnas del esquema global
     const ALL_COLUMNS = [
       'M Tratante', 'Fecha Creación', 'Factura', 'Número Documento',
-      'Cliente', 'EPS/Entidad Paciente', 'Pagos Recibidos', 'Pagos Pendientes',
+      'Cliente', 'Fecha de Nacimiento', 'Género', 'EPS/Entidad Paciente', 'Pagos Recibidos', 'Pagos Pendientes',
       'Medios Pago', 'Estado Factura', 'Dirección', 'Teléfono', 'Correo',
       'Tipo Cliente', 'Código (CUP)', 'Concepto', 'Valor', 'Cantidad',
       'IVA', 'TIPO DE IVA', 'Total Item', 'Fecha Anulación',

@@ -7,6 +7,8 @@ export const GLOBAL_REPORT_COLUMNS = [
   'Factura',
   'Número Documento',
   'Cliente',
+  'Fecha de Nacimiento', // NUEVA
+  'Género',             // NUEVA
   'EPS/Entidad Paciente',
   'Pagos Recibidos',
   'Pagos Pendientes',
@@ -119,9 +121,9 @@ export async function processReporteFacturacion(file: File): Promise<{ data: any
             
             if (targetCol === 'Total final') {
               // Lógica de Total final: Total Item o Valor Servicio
-              // Nuevos índices: Total Item (21), Valor Servicio (23)
-              const totalItem = rowData[21];
-              const valorServicio = rowData[23];
+              // Nuevos índices: Total Item (23), Valor Servicio (25)
+              const totalItem = rowData[23];
+              const valorServicio = rowData[25];
               
               let totalFinalValue = internalParseToNumber(totalItem);
               if (totalFinalValue === 0) totalFinalValue = internalParseToNumber(valorServicio);
@@ -188,22 +190,22 @@ export async function processReporteTransaccion(file: File): Promise<{ data: any
             return k ? row[k] : '';
           };
 
-          // Mapeo solicitado: Índices ajustados tras eliminar duplicados
+          // Mapeo solicitado: Índices ajustados tras insertar Fecha de Nacimiento y Género
           rowData[1] = getVal('Fecha');                           // Fecha Creación
           rowData[3] = getVal('Documento');                       // Número Documento
           rowData[4] = getVal('Paciente');                        // Cliente
-          rowData[5] = getVal('Entidad');                         // EPS/Entidad Paciente
-          rowData[15] = getVal('CUP');                            // Código (CUP) (antes 20)
-          rowData[16] = getVal('Servicio');                       // Concepto (antes 21)
-          rowData[23] = getVal('Valor Servicio (Particular o por convenio)'); // (antes 28)
-          rowData[24] = getVal('Facturado a la entidad del Paciente'); // (antes 29)
+          rowData[7] = getVal('Entidad');                         // EPS/Entidad Paciente
+          rowData[17] = getVal('CUP');                            // Código (CUP)
+          rowData[18] = getVal('Servicio');                       // Concepto
+          rowData[25] = getVal('Valor Servicio (Particular o por convenio)');
+          rowData[26] = getVal('Facturado a la entidad del Paciente');
 
           // Calcular Total final para transacciones
-          const totalItemVal = rowData[21] || ''; // Total Item (antes 12/26)
-          const valorServicioVal = rowData[23];
+          const totalItemVal = rowData[23] || ''; // Total Item
+          const valorServicioVal = rowData[25];
           let totalFinalTrans = internalParseToNumber(totalItemVal);
           if (totalFinalTrans === 0) totalFinalTrans = internalParseToNumber(valorServicioVal);
-          rowData[25] = totalFinalTrans; // Total final (antes 30)
+          rowData[27] = totalFinalTrans; // Total final
 
           wsData.push(rowData);
         }
@@ -257,8 +259,8 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
           return str.toUpperCase();
         };
 
-        // Crear un mapa para búsqueda rápida: Documento -> Medico Tratante
-        const medicosMap = new Map<string, string>();
+        // Crear un mapa para búsqueda rápida: Documento -> Datos Extras
+        const medicosMap = new Map<string, { medico: string, fechaNac: string, genero: string }>();
         for (const row of rawRows) {
           const keys = Object.keys(row);
           
@@ -270,15 +272,28 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
             const norm = normalizeStr(k);
             return norm === 'medico tratante' || norm === 'medico' || norm === 'm tratante';
           });
+          const fechaNacKey = keys.find(k => {
+            const norm = normalizeStr(k);
+            return norm === 'fecha de nacimiento' || norm === 'fecha nacimiento' || norm === 'nacimiento' || norm === 'f nacimiento';
+          });
+          const generoKey = keys.find(k => {
+            const norm = normalizeStr(k);
+            return norm === 'genero' || norm === 'sexo' || norm === 'f/m';
+          });
           
-          if (docKey && medicoKey) {
+          if (docKey) {
             const docVal = cleanDocument(row[docKey]);
-            const medicoVal = String(row[medicoKey]).trim();
-            if (docVal && medicoVal) medicosMap.set(docVal, medicoVal);
+            const medicoVal = medicoKey ? String(row[medicoKey]).trim() : '';
+            const fechaNacVal = fechaNacKey ? String(row[fechaNacKey]).trim() : '';
+            const generoVal = generoKey ? String(row[generoKey]).trim() : '';
+            
+            if (docVal) {
+              medicosMap.set(docVal, { medico: medicoVal, fechaNac: fechaNacVal, genero: generoVal });
+            }
           }
         }
 
-        // Clonar los datos actuales y actualizar la columna 'M Tratante' (índice 0)
+        // Clonar los datos actuales y actualizar la columna 'M Tratante' (índice 0), 'Fecha de Nacimiento' (5) y 'Género' (6)
         // El índice 3 es 'Número Documento'
         const updatedData = currentData.map((row, idx) => {
           if (idx === 0) return row; // Mantener encabezado
@@ -287,10 +302,14 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
 
           const newRow = [...row];
           if (numDoc && medicosMap.has(numDoc)) {
-            newRow[0] = medicosMap.get(numDoc);
+            const data = medicosMap.get(numDoc)!;
+            newRow[0] = data.medico;
+            newRow[5] = data.fechaNac;
+            newRow[6] = data.genero;
           } else {
-            // El usuario pidió dejar el espacio en vacío si no encuentra la coincidencia
             newRow[0] = '';
+            newRow[5] = '';
+            newRow[6] = '';
           }
           return newRow;
         });
@@ -341,8 +360,8 @@ export async function saveUnifiedToSupabase(data: any[][]) {
       invoice_number: row[2] ? String(row[2]).trim() : null,
       patient_doc: row[3] ? String(row[3]).trim() : null,
       patient_name: row[4] ? String(row[4]).trim() : 'Paciente Desconocido',
-      entity_name: row[5] ? String(row[5]).trim() : 'PARTICULAR',
-      treatment_name: row[16] ? String(row[16]).trim() : null, // Concepto (antes 21)
+      entity_name: row[7] ? String(row[7]).trim() : 'PARTICULAR',
+      treatment_name: row[18] ? String(row[18]).trim() : null, // Concepto
       extra_data: row.reduce((acc, val, idx) => {
         const key = GLOBAL_REPORT_COLUMNS[idx] || `col_${idx}`;
         acc[key] = val;
