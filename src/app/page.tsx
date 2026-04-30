@@ -5,6 +5,7 @@ import { processReporteFacturacion, processReporteTransaccion, processMedicoTrat
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { Dashboard } from '@/features/reports/components/Dashboard';
 import { BillingReport } from '@/features/reports/components/BillingReport';
+import { FollowUps } from '@/features/reports/components/FollowUps';
 import {
   LayoutDashboard,
   FileText,
@@ -682,12 +683,8 @@ export default function Home() {
           </div>
         </div>
         <div className={activeTab === 'followups' ? 'block' : 'hidden'}>
-            <div className="flex flex-col items-center justify-center min-h-[60vh] bg-[#e6e7ee] rounded-[3rem] shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff]">
-              <Activity className="w-16 h-16 text-blue-500/30 mb-4 animate-pulse" />
-              <h2 className="text-2xl font-bold text-gray-400">Sección de Seguimientos</h2>
-              <p className="text-gray-500 mt-2">Próximamente disponible</p>
-            </div>
-          </div>
+          <FollowUps />
+        </div>
         </div>
       </main>
     </div>
