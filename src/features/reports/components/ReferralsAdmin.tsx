@@ -77,12 +77,20 @@ export function ReferralsAdmin() {
 
   const handleDeleteReferral = async (id: string) => {
     if(!confirm('¿Eliminar este registro de referido?')) return;
+    
+    setIsLoading(true);
     const supabase = createClient();
     const { error } = await supabase
       .from('referrals')
       .delete()
       .eq('id', id);
-    if (!error) fetchReferrals();
+      
+    if (error) {
+      alert('Error al eliminar referido: ' + error.message);
+      setIsLoading(false);
+    } else {
+      fetchReferrals();
+    }
   };
 
   // Agrupamiento simple para ver quién tiene recompensas pendientes
