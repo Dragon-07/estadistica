@@ -11,6 +11,8 @@ export default function PacientesPortal() {
   const [cedula, setCedula] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [patientCode, setPatientCode] = useState('');
+  const [patientName, setPatientName] = useState('');
   
   // Dashboard state
   const [referralsCount, setReferralsCount] = useState(0);
@@ -32,6 +34,8 @@ export default function PacientesPortal() {
     setIsLoading(true);
     try {
       const supabase = createClient();
+      
+      // Fetch completed referrals count
       const { count, error } = await supabase
         .from('referrals')
         .select('*', { count: 'exact', head: true })
@@ -40,8 +44,20 @@ export default function PacientesPortal() {
         
       if (error) throw error;
       setReferralsCount(count || 0);
+      
+      // Fetch patient directory info
+      const { data: patientData, error: patientError } = await supabase
+        .from('patients_directory')
+        .select('full_name, referral_code')
+        .eq('doc_id', userCedula)
+        .single();
+        
+      if (!patientError && patientData) {
+        setPatientName(patientData.full_name);
+        setPatientCode(patientData.referral_code);
+      }
     } catch (err) {
-      console.error('Error fetching referrals:', err);
+      console.error('Error fetching data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -71,12 +87,14 @@ export default function PacientesPortal() {
     setIsAuthenticated(false);
     setCedula('');
     setPin('');
+    setPatientCode('');
+    setPatientName('');
     sessionStorage.removeItem('paciente_auth');
     sessionStorage.removeItem('paciente_cedula');
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(cedula);
+    navigator.clipboard.writeText(patientCode || cedula);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -153,7 +171,7 @@ export default function PacientesPortal() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Bienvenido/a</p>
-              <p className="font-bold text-gray-800">Paciente {cedula.slice(-4)}</p>
+              <p className="font-bold text-gray-800">{patientName || `Paciente ${cedula.slice(-4)}`}</p>
             </div>
           </div>
           <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500 transition-colors" title="Cerrar sesión">
@@ -173,7 +191,7 @@ export default function PacientesPortal() {
             
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
               <div className="bg-white/20 backdrop-blur-md px-8 py-4 rounded-2xl border border-white/30 font-mono text-3xl font-bold tracking-widest">
-                {cedula}
+                {patientCode || cedula}
               </div>
               <button 
                 onClick={copyToClipboard}

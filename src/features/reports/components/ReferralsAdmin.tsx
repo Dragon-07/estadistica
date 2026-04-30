@@ -12,8 +12,18 @@ type Referral = {
   created_at: string;
 };
 
+type PatientDirectory = {
+  doc_id: string;
+  full_name: string;
+  phone: string;
+  referral_code: string;
+  created_at: string;
+};
+
 export function ReferralsAdmin() {
   const [referrals, setReferrals] = useState<Referral[]>([]);
+  const [patients, setPatients] = useState<PatientDirectory[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [newReferrer, setNewReferrer] = useState('');
   const [newReferred, setNewReferred] = useState('');
@@ -26,6 +36,8 @@ export function ReferralsAdmin() {
   const fetchReferrals = async () => {
     setIsLoading(true);
     const supabase = createClient();
+    
+    // Fetch referrals
     const { data, error } = await supabase
       .from('referrals')
       .select('*')
@@ -36,6 +48,17 @@ export function ReferralsAdmin() {
     } else {
       setReferrals(data || []);
     }
+    
+    // Fetch patient directory
+    const { data: dirData, error: dirError } = await supabase
+      .from('patients_directory')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (!dirError) {
+      setPatients(dirData || []);
+    }
+
     setIsLoading(false);
   };
 
@@ -247,6 +270,77 @@ export function ReferralsAdmin() {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Directorio de Pacientes / Códigos de Referido */}
+      <div className="bg-white p-6 rounded-3xl shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <Users className="w-5 h-5 text-indigo-500" /> Directorio de Embajadores (Pacientes Históricos)
+          </h2>
+          <div className="w-full md:w-64">
+            <input
+              type="text"
+              placeholder="Buscar por nombre o cédula..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
+            />
+          </div>
+        </div>
+        
+        {isLoading ? (
+          <div className="py-8 text-center text-gray-500">Cargando directorio...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="text-gray-700 bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-4 py-3 font-semibold rounded-l-xl">Nombres</th>
+                  <th className="px-4 py-3 font-semibold">Documento</th>
+                  <th className="px-4 py-3 font-semibold">Celular</th>
+                  <th className="px-4 py-3 font-semibold rounded-r-xl">Código de Referido</th>
+                </tr>
+              </thead>
+              <tbody>
+                {patients
+                  .filter(p => p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || p.doc_id.includes(searchQuery))
+                  .slice(0, 50) // Mostrar máximo 50 para evitar lags en el DOM
+                  .map((p) => (
+                  <tr key={p.doc_id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-800">{p.full_name}</td>
+                    <td className="px-4 py-3">{p.doc_id}</td>
+                    <td className="px-4 py-3">{p.phone || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-mono font-bold tracking-widest text-xs border border-indigo-100">
+                        {p.referral_code}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {patients.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400 italic">
+                      Aún no hay pacientes en el directorio. Carga un archivo de médicos en la página principal para poblarlos.
+                    </td>
+                  </tr>
+                )}
+                {patients.length > 0 && patients.filter(p => p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || p.doc_id.includes(searchQuery)).length === 0 && (
+                   <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400 italic">
+                      No se encontraron resultados para tu búsqueda.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            {patients.length > 50 && searchQuery === '' && (
+              <p className="text-center text-xs text-gray-400 mt-4">
+                Mostrando los últimos 50 pacientes. Usa el buscador para encontrar a alguien específico.
+              </p>
+            )}
           </div>
         )}
       </div>

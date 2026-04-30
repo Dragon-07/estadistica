@@ -261,6 +261,8 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
 
         // Crear un mapa para búsqueda rápida: Documento -> Datos Extras
         const medicosMap = new Map<string, { medico: string, fechaNac: string, genero: string }>();
+        const patientsDirectoryToSave = new Map<string, any>(); // Guardar para Supabase
+        
         for (const row of rawRows) {
           const keys = Object.keys(row);
           
@@ -280,6 +282,18 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
             const norm = normalizeStr(k);
             return norm === 'genero' || norm === 'sexo' || norm === 'f/m';
           });
+          const nameKey = keys.find(k => {
+            const norm = normalizeStr(k);
+            return norm === 'cliente' || norm === 'paciente' || norm === 'nombres' || norm === 'nombre';
+          });
+          const lastNameKey = keys.find(k => {
+            const norm = normalizeStr(k);
+            return norm === 'apellidos' || norm === 'apellido';
+          });
+          const phoneKey = keys.find(k => {
+            const norm = normalizeStr(k);
+            return norm === 'celular' || norm === 'telefono' || norm === 'tel';
+          });
           
           if (docKey) {
             const docVal = cleanDocument(row[docKey]);
@@ -289,8 +303,42 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
             
             if (docVal) {
               medicosMap.set(docVal, { medico: medicoVal, fechaNac: fechaNacVal, genero: generoVal });
+              
+              // Extraer datos para el directorio de pacientes
+              if (docVal.length >= 4 && nameKey && row[nameKey]) {
+                const firstNameStr = String(row[nameKey]).trim().split(' ')[0];
+                const phoneVal = phoneKey && row[phoneKey] ? String(row[phoneKey]).trim() : '';
+                let fullName = String(row[nameKey]).trim();
+                if (lastNameKey && row[lastNameKey]) {
+                   fullName += ' ' + String(row[lastNameKey]).trim();
+                }
+                
+                if (firstNameStr) {
+                  const safeFirstName = normalizeStr(firstNameStr).toUpperCase().replace(/[^A-Z]/g, '');
+                  const referralCode = `${safeFirstName}${docVal.slice(-4)}`;
+                  patientsDirectoryToSave.set(docVal, {
+                    doc_id: docVal,
+                    full_name: fullName,
+                    phone: phoneVal,
+                    referral_code: referralCode
+                  });
+                }
+              }
             }
           }
+        }
+        
+        // Ejecutar guardado asíncrono en Supabase sin bloquear el flujo
+        if (patientsDirectoryToSave.size > 0) {
+          const supabase = createClient();
+          const rowsToUpsert = Array.from(patientsDirectoryToSave.values());
+          // Insertamos en lotes de 500 para no saturar
+          (async () => {
+             for(let i=0; i<rowsToUpsert.length; i+=500) {
+               const batch = rowsToUpsert.slice(i, i+500);
+               await supabase.from('patients_directory').upsert(batch, { onConflict: 'doc_id', ignoreDuplicates: true });
+             }
+          })().catch(err => console.error('Error guardando directorio de pacientes:', err));
         }
 
         // Clonar los datos actuales y actualizar la columna 'M Tratante' (índice 0), 'Fecha de Nacimiento' (5) y 'Género' (6)
