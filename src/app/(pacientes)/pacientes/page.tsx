@@ -14,6 +14,12 @@ export default function PacientesPortal() {
   const [patientCode, setPatientCode] = useState('');
   const [patientName, setPatientName] = useState('');
   
+  // Registration state
+  const [viewMode, setViewMode] = useState<'login' | 'register'>('login');
+  const [registerName, setRegisterName] = useState('');
+  const [registerPhone, setRegisterPhone] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  
   // Dashboard state
   const [referralsCount, setReferralsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +89,59 @@ export default function PacientesPortal() {
     }
   };
 
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanDoc = cedula.trim();
+    const cleanName = registerName.trim().toUpperCase();
+    
+    if (cleanDoc.length < 4 || cleanName.length < 3) {
+      setError('Por favor completa todos los campos correctamente.');
+      return;
+    }
+    
+    setIsRegistering(true);
+    setError('');
+    
+    try {
+      const supabase = createClient();
+      
+      // Remove accents and special chars for the code
+      const normalizedName = cleanName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const firstName = normalizedName.split(' ')[0].replace(/[^A-Z]/g, '');
+      const referralCode = `${firstName}${cleanDoc.slice(-4)}`;
+      
+      const { error: insertError } = await supabase
+        .from('patients_directory')
+        .insert([{
+          doc_id: cleanDoc,
+          full_name: cleanName,
+          phone: registerPhone.trim() || null,
+          referral_code: referralCode
+        }]);
+        
+      if (insertError) {
+        if (insertError.code === '23505') { // Unique violation
+          setError('Esta cédula ya está registrada. Por favor ingresa en la pestaña "Ya tengo cuenta".');
+        } else {
+          throw insertError;
+        }
+      } else {
+        // Log them in immediately
+        setIsAuthenticated(true);
+        sessionStorage.setItem('paciente_auth', 'true');
+        sessionStorage.setItem('paciente_cedula', cleanDoc);
+        setPatientName(cleanName);
+        setPatientCode(referralCode);
+        fetchReferrals(cleanDoc);
+      }
+    } catch (err: any) {
+      console.error('Error registering:', err);
+      setError('Ocurrió un error al registrarse. Inténtalo de nuevo.');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     setCedula('');
@@ -113,45 +172,111 @@ export default function PacientesPortal() {
               <User className="w-8 h-8 text-blue-500" />
             </div>
             <h1 className="text-2xl font-bold text-gray-800">Portal de Pacientes</h1>
-            <p className="text-gray-500 text-sm mt-2">Ingresa para ver tus beneficios</p>
+            <p className="text-gray-500 text-sm mt-2">Únete o ingresa para ver tus beneficios</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Número de Cédula</label>
-              <input
-                type="text"
-                value={cedula}
-                onChange={(e) => setCedula(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                placeholder="Ej. 12345678"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">PIN (Últimos 4 dígitos)</label>
-              <input
-                type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                placeholder="••••"
-                required
-              />
-            </div>
-
-            {error && (
-              <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98]"
+          <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+            <button 
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${viewMode === 'login' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => { setViewMode('login'); setError(''); }}
             >
-              Ingresar
+              Ya tengo cuenta
             </button>
-          </form>
+            <button 
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${viewMode === 'register' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => { setViewMode('register'); setError(''); }}
+            >
+              Crear Cuenta
+            </button>
+          </div>
+
+          {viewMode === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Número de Cédula</label>
+                <input
+                  type="text"
+                  value={cedula}
+                  onChange={(e) => setCedula(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  placeholder="Ej. 12345678"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">PIN (Últimos 4 dígitos)</label>
+                <input
+                  type="password"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  placeholder="••••"
+                  required
+                />
+              </div>
+
+              {error && (
+                <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</p>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98]"
+              >
+                Ingresar
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombres y Apellidos</label>
+                <input
+                  type="text"
+                  value={registerName}
+                  onChange={(e) => setRegisterName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  placeholder="Ej. Maria Perez"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Número de Cédula</label>
+                <input
+                  type="text"
+                  value={cedula}
+                  onChange={(e) => setCedula(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  placeholder="Ej. 12345678"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Celular (Opcional)</label>
+                <input
+                  type="tel"
+                  value={registerPhone}
+                  onChange={(e) => setRegisterPhone(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  placeholder="Ej. 3001234567"
+                />
+              </div>
+
+              {error && (
+                <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isRegistering}
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98]"
+              >
+                {isRegistering ? 'Ingresando...' : 'Ingresar'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     );
