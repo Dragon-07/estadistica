@@ -103,85 +103,85 @@ export function ReferralsAdmin() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Formulario de Nuevo Referido */}
-        <div className="bg-white p-6 rounded-3xl shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] md:col-span-1">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Plus className="w-5 h-5 text-blue-500" /> Nuevo Referido
-          </h2>
-          <form onSubmit={handleAddReferral} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Cédula del que Invita (Embajador)</label>
-              <input
-                type="text"
-                value={newReferrer}
-                onChange={(e) => setNewReferrer(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all"
-                placeholder="Ej. 111"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Cédula del Nuevo Paciente</label>
-              <input
-                type="text"
-                value={newReferred}
-                onChange={(e) => setNewReferred(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all"
-                placeholder="Ej. 222"
-                required
-              />
-            </div>
+      {/* Formulario de Nuevo Referido */}
+      <div className="bg-white p-6 rounded-3xl shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
+        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Plus className="w-5 h-5 text-blue-500" /> Nuevo Referido
+        </h2>
+        <form onSubmit={handleAddReferral} className="flex flex-col md:flex-row items-end gap-4">
+          <div className="flex-1 w-full">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Cédula del que Invita (Embajador)</label>
+            <input
+              type="text"
+              value={newReferrer}
+              onChange={(e) => setNewReferrer(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all"
+              placeholder="Ej. 111"
+              required
+            />
+          </div>
+          <div className="flex-1 w-full">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Cédula del Nuevo Paciente</label>
+            <input
+              type="text"
+              value={newReferred}
+              onChange={(e) => setNewReferred(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all"
+              placeholder="Ej. 222"
+              required
+            />
+          </div>
+          <div className="w-full md:w-auto">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 transition-all"
+              className="w-full md:w-auto px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 transition-all whitespace-nowrap"
             >
               {isSubmitting ? 'Registrando...' : 'Registrar Referido'}
             </button>
-          </form>
-        </div>
-
-        {/* Resumen de Recompensas */}
-        <div className="bg-white p-6 rounded-3xl shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] md:col-span-2">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5 text-emerald-500" /> Recompensas a Liberar (Meta: 2)
-          </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="text-gray-700 bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 rounded-l-xl">Embajador (Cédula)</th>
-                  <th className="px-4 py-3">Referidos Asistidos</th>
-                  <th className="px-4 py-3 rounded-r-xl">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(completedByReferrer).map(([doc, count]) => (
-                  <tr key={doc} className="border-b border-gray-100 last:border-0">
-                    <td className="px-4 py-3 font-semibold text-gray-800">{doc}</td>
-                    <td className="px-4 py-3 font-bold text-blue-600">{count}</td>
-                    <td className="px-4 py-3">
-                      {count >= 2 ? (
-                        <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-                          ¡Recompensa Desbloqueada!
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-xs">Le falta {2 - count}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {Object.keys(completedByReferrer).length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">
-                      Aún no hay referidos completados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
+        </form>
+      </div>
+
+      {/* Resumen de Recompensas */}
+      <div className="bg-white p-6 rounded-3xl shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
+        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Users className="w-5 h-5 text-emerald-500" /> Recompensas a Liberar (Meta: 2)
+        </h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-gray-600">
+            <thead className="text-gray-700 bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 rounded-l-xl">Embajador (Cédula)</th>
+                <th className="px-4 py-3">Referidos Asistidos</th>
+                <th className="px-4 py-3 rounded-r-xl">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(completedByReferrer).map(([doc, count]) => (
+                <tr key={doc} className="border-b border-gray-100 last:border-0">
+                  <td className="px-4 py-3 font-semibold text-gray-800">{doc}</td>
+                  <td className="px-4 py-3 font-bold text-blue-600">{count}</td>
+                  <td className="px-4 py-3">
+                    {count >= 2 ? (
+                      <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                        ¡Recompensa Desbloqueada!
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-xs">Le falta {2 - count}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {Object.keys(completedByReferrer).length === 0 && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">
+                    Aún no hay referidos completados.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

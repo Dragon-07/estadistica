@@ -49,15 +49,19 @@ export default function PacientesPortal() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Validación simplificada para MVP: PIN debe ser los últimos 4 dígitos de la cédula
-    const expectedPin = cedula.slice(-4);
     
-    if (cedula.length >= 4 && pin === expectedPin) {
+    const cleanCedula = cedula.trim();
+    const cleanPin = pin.trim();
+    
+    // Validación simplificada para MVP: PIN debe ser los últimos 4 dígitos de la cédula
+    const expectedPin = cleanCedula.slice(-4);
+    
+    if (cleanCedula.length >= 4 && cleanPin === expectedPin) {
       setIsAuthenticated(true);
       sessionStorage.setItem('paciente_auth', 'true');
-      sessionStorage.setItem('paciente_cedula', cedula);
+      sessionStorage.setItem('paciente_cedula', cleanCedula);
       setError('');
-      fetchReferrals(cedula);
+      fetchReferrals(cleanCedula);
     } else {
       setError('Credenciales incorrectas. El PIN son los últimos 4 dígitos de su cédula.');
     }
