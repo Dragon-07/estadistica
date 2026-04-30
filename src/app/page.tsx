@@ -19,12 +19,13 @@ import {
   X
 } from 'lucide-react';
 
-type Tab = 'dashboard' | 'billing' | 'process';
+type Tab = 'dashboard' | 'billing' | 'process' | 'followups';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'billing', label: 'Cuenta de Ingresos', icon: FileText },
   { id: 'process', label: 'Procesar Datos', icon: Database },
+  { id: 'followups', label: 'Seguimientos', icon: Activity },
 ];
 
 export default function Home() {
@@ -423,6 +424,7 @@ export default function Home() {
               {activeTab === 'dashboard' && 'Resumen general de actividad médica'}
               {activeTab === 'billing' && 'Cuenta de ingresos consolidada y sin duplicados'}
               {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
+              {activeTab === 'followups' && 'Seguimientos de pacientes y procesos'}
             </p>
           </div>
           <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
@@ -677,6 +679,13 @@ export default function Home() {
                   </div>
                 )}
               </div>
+          </div>
+        </div>
+        <div className={activeTab === 'followups' ? 'block' : 'hidden'}>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] bg-[#e6e7ee] rounded-[3rem] shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff]">
+              <Activity className="w-16 h-16 text-blue-500/30 mb-4 animate-pulse" />
+              <h2 className="text-2xl font-bold text-gray-400">Sección de Seguimientos</h2>
+              <p className="text-gray-500 mt-2">Próximamente disponible</p>
             </div>
           </div>
         </div>
