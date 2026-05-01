@@ -18,6 +18,7 @@ export default function PacientesPortal() {
   const [viewMode, setViewMode] = useState<'login' | 'register'>('login');
   const [registerName, setRegisterName] = useState('');
   const [registerPhone, setRegisterPhone] = useState('');
+  const [registerReferrerCode, setRegisterReferrerCode] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   
   // Dashboard state
@@ -93,6 +94,7 @@ export default function PacientesPortal() {
     e.preventDefault();
     const cleanDoc = cedula.trim();
     const cleanName = registerName.trim().toUpperCase();
+    const cleanReferrer = registerReferrerCode.trim().toUpperCase();
     
     if (cleanDoc.length < 4 || cleanName.length < 3) {
       setError('Por favor completa todos los campos correctamente.');
@@ -104,6 +106,23 @@ export default function PacientesPortal() {
     
     try {
       const supabase = createClient();
+      let referrerDocId = null;
+
+      // Si ingresó un código de referido, verificamos que exista
+      if (cleanReferrer) {
+        const { data: referrerData, error: referrerError } = await supabase
+          .from('patients_directory')
+          .select('doc_id')
+          .eq('referral_code', cleanReferrer)
+          .single();
+          
+        if (referrerError || !referrerData) {
+          setError('El código de referido que ingresaste no existe. Verifícalo o déjalo en blanco.');
+          setIsRegistering(false);
+          return;
+        }
+        referrerDocId = referrerData.doc_id;
+      }
       
       // Remove accents and special chars for the code
       const normalizedName = cleanName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -126,6 +145,15 @@ export default function PacientesPortal() {
           throw insertError;
         }
       } else {
+        // Si se insertó con éxito y había un referido, lo guardamos en la tabla de referidos
+        if (referrerDocId) {
+          await supabase.from('referrals').insert([{
+            referrer_doc: referrerDocId,
+            referred_doc: cleanDoc,
+            status: 'pending'
+          }]);
+        }
+
         // Log them in immediately
         setIsAuthenticated(true);
         sessionStorage.setItem('paciente_auth', 'true');
@@ -262,6 +290,18 @@ export default function PacientesPortal() {
                   className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                   placeholder="Ej. 3001234567"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Referido por (Opcional)</label>
+                <input
+                  type="text"
+                  value={registerReferrerCode}
+                  onChange={(e) => setRegisterReferrerCode(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-indigo-50 border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all placeholder-indigo-300 font-mono"
+                  placeholder="Ej. MARIA6227"
+                />
+                <p className="text-xs text-gray-400 mt-1.5">Si alguien te invitó, escribe su código aquí.</p>
               </div>
 
               {error && (

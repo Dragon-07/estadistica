@@ -210,7 +210,7 @@ export function ReferralsAdmin() {
 
       {/* Lista de Referidos */}
       <div className="bg-white p-6 rounded-3xl shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Historial de Referidos</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Referidos Potenciales</h2>
         {isLoading ? (
           <div className="py-8 text-center text-gray-500">Cargando...</div>
         ) : (
