@@ -24,6 +24,7 @@ export function ReferralsAdmin() {
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [patients, setPatients] = useState<PatientDirectory[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [newReferrer, setNewReferrer] = useState('');
   const [newReferred, setNewReferred] = useState('');
@@ -123,6 +124,21 @@ export function ReferralsAdmin() {
       acc[curr.referrer_doc] = (acc[curr.referrer_doc] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+
+  // Paginación y Filtrado del Directorio
+  const itemsPerPage = 10;
+  const filteredPatients = patients.filter(p => 
+    p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.doc_id.includes(searchQuery)
+  );
+  const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
+  const paginatedPatients = filteredPatients.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -285,7 +301,10 @@ export function ReferralsAdmin() {
               type="text"
               placeholder="Buscar por nombre o cédula..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1); // Reset page on search
+              }}
               className="w-full px-4 py-2 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
             />
           </div>
@@ -305,10 +324,7 @@ export function ReferralsAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {patients
-                  .filter(p => p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || p.doc_id.includes(searchQuery))
-                  .slice(0, 50) // Mostrar máximo 50 para evitar lags en el DOM
-                  .map((p) => (
+                {paginatedPatients.map((p) => (
                   <tr key={p.doc_id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-800">{p.full_name}</td>
                     <td className="px-4 py-3">{p.doc_id}</td>
@@ -327,7 +343,7 @@ export function ReferralsAdmin() {
                     </td>
                   </tr>
                 )}
-                {patients.length > 0 && patients.filter(p => p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || p.doc_id.includes(searchQuery)).length === 0 && (
+                {patients.length > 0 && filteredPatients.length === 0 && (
                    <tr>
                     <td colSpan={4} className="px-4 py-8 text-center text-gray-400 italic">
                       No se encontraron resultados para tu búsqueda.
@@ -336,10 +352,54 @@ export function ReferralsAdmin() {
                 )}
               </tbody>
             </table>
-            {patients.length > 50 && searchQuery === '' && (
-              <p className="text-center text-xs text-gray-400 mt-4">
-                Mostrando los últimos 50 pacientes. Usa el buscador para encontrar a alguien específico.
-              </p>
+            
+            {/* Controles de Paginación */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 border-t border-gray-100 gap-4 mt-2">
+                <div className="text-sm text-gray-500">
+                  Mostrando <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredPatients.length)}</span> de <span className="font-medium">{filteredPatients.length}</span>
+                </div>
+                <div className="flex gap-1 overflow-x-auto max-w-full pb-1">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  >
+                    &larr;
+                  </button>
+                  
+                  {Array.from({ length: totalPages }).map((_, idx) => {
+                    const pageNum = idx + 1;
+                    // Mostrar max 5 botones de páginas
+                    if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3.5 py-1.5 rounded-lg border ${
+                            currentPage === pageNum 
+                              ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold' 
+                              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          } transition-colors`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                      return <span key={pageNum} className="px-2 py-1.5 text-gray-400">...</span>;
+                    }
+                    return null;
+                  })}
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  >
+                    &rarr;
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}

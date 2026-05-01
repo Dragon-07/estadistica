@@ -23,6 +23,9 @@ export default function PacientesPortal() {
   
   // Dashboard state
   const [referralsCount, setReferralsCount] = useState(0);
+  const [potentialReferrals, setPotentialReferrals] = useState<{name: string, code: string, status: string}[]>([]);
+  const [wasReferred, setWasReferred] = useState(false);
+  const [referralStatus, setReferralStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -42,15 +45,56 @@ export default function PacientesPortal() {
     try {
       const supabase = createClient();
       
-      // Fetch completed referrals count
-      const { count, error } = await supabase
+      // Fetch all referrals for this user
+      const { data: allReferrals, error: referralsError } = await supabase
         .from('referrals')
-        .select('*', { count: 'exact', head: true })
-        .eq('referrer_doc', userCedula)
-        .eq('status', 'completed');
+        .select('*')
+        .eq('referrer_doc', userCedula);
         
-      if (error) throw error;
-      setReferralsCount(count || 0);
+      if (referralsError) throw referralsError;
+      
+      const completedCount = allReferrals?.filter(r => r.status === 'completed').length || 0;
+      setReferralsCount(completedCount);
+
+      // Get referred docs to fetch their names and codes
+      const referredDocs = allReferrals?.map(r => r.referred_doc) || [];
+      
+      if (referredDocs.length > 0) {
+        const { data: dirData, error: dirError } = await supabase
+          .from('patients_directory')
+          .select('doc_id, full_name, referral_code')
+          .in('doc_id', referredDocs);
+          
+        if (!dirError && dirData) {
+          const mapped = allReferrals?.map(ref => {
+            const patient = dirData.find(p => p.doc_id === ref.referred_doc);
+            const fullName = patient?.full_name || 'Paciente Nuevo';
+            const firstName = fullName.split(' ')[0];
+            return {
+              name: firstName,
+              code: patient?.referral_code || ref.referred_doc,
+              status: ref.status
+            };
+          }) || [];
+          
+          setPotentialReferrals(mapped.filter(m => m.status === 'pending'));
+        }
+      }
+      
+      // Check if the current user was referred by someone
+      const { data: welcomeData, error: welcomeError } = await supabase
+        .from('referrals')
+        .select('status')
+        .eq('referred_doc', userCedula)
+        .maybeSingle();
+        
+      if (!welcomeError && welcomeData) {
+        setWasReferred(true);
+        setReferralStatus(welcomeData.status);
+      } else {
+        setWasReferred(false);
+        setReferralStatus(null);
+      }
       
       // Fetch patient directory info
       const { data: patientData, error: patientError } = await supabase
@@ -344,6 +388,27 @@ export default function PacientesPortal() {
           </button>
         </div>
 
+        {/* Welcome Benefit Card (for referred users) */}
+        {wasReferred && (
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl p-6 text-white shadow-lg shadow-purple-900/10">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
+                <Gift className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">¡Regalo de Bienvenida Activado!</h3>
+                <p className="text-purple-100 text-sm">
+                  Por unirte con un código de referido, tienes un <span className="font-bold text-white underline decoration-2 underline-offset-4">15% de Descuento</span> en tu primer tratamiento.
+                </p>
+                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold">
+                  <div className={`w-2 h-2 rounded-full ${referralStatus === 'completed' ? 'bg-emerald-400' : 'bg-amber-400'}`}></div>
+                  {referralStatus === 'completed' ? 'BENEFICIO UTILIZADO' : 'PENDIENTE DE ASISTENCIA'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Share Code Card */}
         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-blue-900/20 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
@@ -404,6 +469,41 @@ export default function PacientesPortal() {
             )}
           </div>
         </div>
+
+        {/* Potential Referrals Card */}
+        {potentialReferrals.length > 0 && (
+          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                <Check className="w-6 h-6 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">Referidos Potenciales</h3>
+                <p className="text-gray-500 text-sm">Amigos que usaron tu código: <span className="font-bold text-indigo-600">{potentialReferrals.length}</span></p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs text-gray-500 bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                <span className="font-bold text-indigo-700">Nota:</span> Estos amigos ya se registraron con tu código. El beneficio se aplicará a tu cuenta **solo cuando asistan a su primera cita** en la unidad médica. Y se verá reflejado En tu perfil al día siguiente.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {potentialReferrals.map((ref, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-gray-700 truncate max-w-[120px]">{ref.name}</span>
+                      <span className="text-[10px] text-gray-400 font-mono">{ref.code}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-lg">
+                      Pendiente
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
