@@ -20,6 +20,7 @@ export default function PacientesPortal() {
   const [registerPhone, setRegisterPhone] = useState('');
   const [registerReferrerCode, setRegisterReferrerCode] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   // Dashboard state
   const [referralsCount, setReferralsCount] = useState(0);
@@ -114,23 +115,54 @@ export default function PacientesPortal() {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const cleanCedula = cedula.trim();
     const cleanPin = pin.trim();
     
+    if (cleanCedula.length < 4) {
+      setError('Cédula inválida.');
+      return;
+    }
+    
     // Validación simplificada para MVP: PIN debe ser los últimos 4 dígitos de la cédula
     const expectedPin = cleanCedula.slice(-4);
     
-    if (cleanCedula.length >= 4 && cleanPin === expectedPin) {
+    if (cleanPin !== expectedPin) {
+      setError('Credenciales incorrectas. El PIN son los últimos 4 dígitos de su cédula.');
+      return;
+    }
+
+    setIsLoggingIn(true);
+    setError('');
+
+    try {
+      const supabase = createClient();
+      
+      // Check if the ID exists in the database
+      const { data, error } = await supabase
+        .from('patients_directory')
+        .select('doc_id')
+        .eq('doc_id', cleanCedula)
+        .maybeSingle();
+
+      if (!data) {
+        setError('Esta cédula no está registrada. Por favor ve a la pestaña "Crear Cuenta".');
+        setIsLoggingIn(false);
+        return;
+      }
+
+      // If it exists, proceed with login
       setIsAuthenticated(true);
       sessionStorage.setItem('paciente_auth', 'true');
       sessionStorage.setItem('paciente_cedula', cleanCedula);
-      setError('');
       fetchReferrals(cleanCedula);
-    } else {
-      setError('Credenciales incorrectas. El PIN son los últimos 4 dígitos de su cédula.');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Error de conexión. Inténtalo de nuevo.');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -140,7 +172,7 @@ export default function PacientesPortal() {
     const cleanName = registerName.trim().toUpperCase();
     const cleanReferrer = registerReferrerCode.trim().toUpperCase();
     
-    if (cleanDoc.length < 4 || cleanName.length < 3) {
+    if (cleanDoc.length < 4 || cleanName.length < 3 || registerPhone.trim().length < 5) {
       setError('Por favor completa todos los campos correctamente.');
       return;
     }
@@ -294,9 +326,10 @@ export default function PacientesPortal() {
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98]"
+                disabled={isLoggingIn}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98]"
               >
-                Ingresar
+                {isLoggingIn ? 'Verificando...' : 'Ingresar'}
               </button>
             </form>
           ) : (
@@ -326,13 +359,14 @@ export default function PacientesPortal() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Celular (Opcional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Celular</label>
                 <input
                   type="tel"
                   value={registerPhone}
                   onChange={(e) => setRegisterPhone(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                   placeholder="Ej. 3001234567"
+                  required
                 />
               </div>
 

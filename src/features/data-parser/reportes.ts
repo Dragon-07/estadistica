@@ -330,15 +330,33 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
         
         // Ejecutar guardado asíncrono en Supabase sin bloquear el flujo
         if (patientsDirectoryToSave.size > 0) {
-          const supabase = createClient();
           const rowsToUpsert = Array.from(patientsDirectoryToSave.values());
-          // Insertamos en lotes de 500 para no saturar
           (async () => {
+             const supabase = createClient();
+             
+             // 1. Guardar pacientes en el directorio
              for(let i=0; i<rowsToUpsert.length; i+=500) {
                const batch = rowsToUpsert.slice(i, i+500);
                await supabase.from('patients_directory').upsert(batch, { onConflict: 'doc_id', ignoreDuplicates: true });
              }
-          })().catch(err => console.error('Error guardando directorio de pacientes:', err));
+
+             // 2. Automatización: Marcar referidos potenciales como 'Asistió'
+             // Si un paciente del Excel aparece en la tabla de referidos pendientes, se marca automáticamente como completado.
+             const allExcelDocs = Array.from(patientsDirectoryToSave.keys());
+             if (allExcelDocs.length > 0) {
+               // Procesar en lotes de 100 para evitar que la URL de la petición sea demasiado larga (Error 414)
+               for(let i=0; i<allExcelDocs.length; i+=100) {
+                 const batchDocs = allExcelDocs.slice(i, i+100);
+                 const { error: updateError } = await supabase
+                   .from('referrals')
+                   .update({ status: 'completed' })
+                   .in('referred_doc', batchDocs)
+                   .eq('status', 'pending');
+                 
+                 if (updateError) console.error('Error automatizando asistencia de referidos:', updateError);
+               }
+             }
+          })().catch(err => console.error('Error en proceso asíncrono de directorio/referidos:', err));
         }
 
         // Clonar los datos actuales y actualizar la columna 'M Tratante' (índice 0), 'Fecha de Nacimiento' (5) y 'Género' (6)
