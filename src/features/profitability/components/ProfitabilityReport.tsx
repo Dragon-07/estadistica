@@ -311,8 +311,12 @@ export function ProfitabilityReport() {
                       </thead>
                       <tbody>
                         {dep.staff.map((worker) => {
-                          const pricePerMinute = worker.salary / worker.minutesMonth;
-                          const minutesNotWorked = worker.minutesMonth - worker.minutesWorked;
+                          const salary = worker.salary || 0;
+                          const minsMes = worker.minutesMonth || 1; // Evitar división por cero
+                          const minsTrabaja = worker.minutesWorked || 0;
+                          
+                          const pricePerMinute = salary / minsMes;
+                          const minutesNotWorked = Math.max(0, minsMes - minsTrabaja);
                           const toDistribute = minutesNotWorked * pricePerMinute;
 
                           return (
@@ -329,7 +333,7 @@ export function ProfitabilityReport() {
                                 <input
                                   type="number"
                                   value={worker.salary}
-                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value))}
+                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value) || 0)}
                                   className="w-full bg-transparent border-none focus:outline-none text-right text-[11px] font-black text-slate-600"
                                 />
                               </td>
@@ -337,7 +341,7 @@ export function ProfitabilityReport() {
                                 <input
                                   type="number"
                                   value={worker.minutesMonth}
-                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesMonth', parseFloat(e.target.value))}
+                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesMonth', parseFloat(e.target.value) || 0)}
                                   className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-indigo-600"
                                 />
                               </td>
@@ -348,7 +352,7 @@ export function ProfitabilityReport() {
                                 <input
                                   type="number"
                                   value={worker.minutesWorked}
-                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesWorked', parseFloat(e.target.value))}
+                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesWorked', parseFloat(e.target.value) || 0)}
                                   className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-emerald-600"
                                 />
                               </td>
@@ -367,7 +371,9 @@ export function ProfitabilityReport() {
                           );
                         })}
                         {/* Fila de Totales por Dependencia */}
-                        {(() => (
+                        {(() => {
+                          const safeMinsNoTrabaja = Math.max(0, totalMinsNoTrabaja);
+                          return (
                           <tr className="bg-slate-200/50">
                             <td className="p-2 pl-6 rounded-l-xl text-[10px] font-black text-slate-500 uppercase tracking-wider">
                               Totales {dep.dependency}
@@ -385,19 +391,19 @@ export function ProfitabilityReport() {
                               <input
                                 type="number"
                                 value={totalMinsTrabaja}
-                                onChange={(e) => handleUpdateDependency(dep.dependency, 'overrideMinsWorked', parseFloat(e.target.value))}
-                                className={`w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black ${dep.overrideMinsWorked !== undefined ? 'text-blue-600 underline decoration-dotted' : 'text-emerald-700'}`}
+                                onChange={(e) => handleUpdateDependency(dep.dependency, 'overrideMinsWorked', parseFloat(e.target.value) || 0)}
+                                className={`w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-emerald-600 ${dep.overrideMinsWorked !== undefined ? 'underline decoration-dotted' : ''}`}
                               />
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-orange-600">
-                              {totalMinsNoTrabaja}
+                              {safeMinsNoTrabaja}
                             </td>
                             <td className="p-2.5 text-right pr-6 rounded-r-xl text-[13px] font-black text-white bg-blue-600 shadow-[4px_4px_10px_rgba(37,99,235,0.4)]">
                               {formatCurrency(depTotalToDistribute)}
                             </td>
                             <td></td>
                           </tr>
-                        ))()}
+                        )})()}
                       </tbody>
                     </table>
                   </div>
