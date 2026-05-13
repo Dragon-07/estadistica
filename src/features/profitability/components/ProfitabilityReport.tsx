@@ -148,53 +148,53 @@ export function ProfitabilityReport() {
             </div>
 
             {/* Lista Editable */}
-            <div className="max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
-              <table className="w-full text-left border-separate border-spacing-y-1.5">
+            <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+              <table className="w-full text-left border-separate border-spacing-y-2">
                 <thead>
-                  <tr className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-4">
-                    <th className="pb-1 pl-4">Detalle del Insumo</th>
-                    <th className="pb-1 w-20 text-center">Medida</th>
-                    <th className="pb-1 w-28 text-right">Valor ($)</th>
-                    <th className="pb-1 w-14 text-center"></th>
+                  <tr className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] px-4">
+                    <th className="pb-2 pl-6">Detalle del Insumo</th>
+                    <th className="pb-2 w-20 text-center">Medida</th>
+                    <th className="pb-2 w-32 text-right pr-6">Valor ($)</th>
+                    <th className="pb-2 w-14 text-center"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredInsumos.map((insumo) => (
-                    <tr key={insumo.id} className="group">
-                      <td className="bg-[#e6e7ee] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] rounded-l-xl p-2 px-4">
+                    <tr key={insumo.id} className="group transition-all">
+                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-l-2xl p-2.5 pl-6 group-hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-shadow">
                         <input
                           type="text"
                           value={insumo.detalle}
                           onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
-                          className="w-full bg-transparent border-none focus:outline-none text-[11px] font-bold text-gray-700 placeholder-gray-400"
+                          className="w-full bg-transparent border-none focus:outline-none text-[12px] font-bold text-slate-700 placeholder-slate-400"
                           placeholder="Nombre del insumo..."
                         />
                       </td>
-                      <td className="bg-[#e6e7ee] shadow-[0_2px_4px_#b8b9be,0_-2px_4px_#ffffff] p-2">
+                      <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow">
                         <input
                           type="text"
                           value={insumo.medida}
                           onChange={(e) => handleUpdateInsumo(insumo.id, 'medida', e.target.value)}
-                          className="w-full bg-transparent border-none focus:outline-none text-center text-[10px] font-medium text-gray-500"
+                          className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-bold text-slate-500"
                         />
                       </td>
-                      <td className="bg-[#e6e7ee] shadow-[0_2px_4px_#b8b9be,0_-2px_4px_#ffffff] p-2 text-right px-4">
-                        <div className="flex items-center justify-end gap-1">
-                          <span className="text-[10px] text-gray-400 font-bold">$</span>
+                      <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 text-right pr-6 group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span className="text-[11px] text-blue-500/50 font-black">$</span>
                           <input
                             type="number"
                             value={insumo.valor}
                             onChange={(e) => handleUpdateInsumo(insumo.id, 'valor', parseFloat(e.target.value))}
-                            className="w-20 bg-transparent border-none focus:outline-none text-right text-[11px] font-bold text-blue-600"
+                            className="w-24 bg-transparent border-none focus:outline-none text-right text-[12px] font-black text-blue-600"
                           />
                         </div>
                       </td>
-                      <td className="bg-[#e6e7ee] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] rounded-r-xl p-2 text-center">
+                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-r-2xl p-2.5 text-center group-hover:shadow-[inset_-2px_2px_5px_#b8b9be,inset_2px_-2px_5px_#ffffff] transition-shadow">
                         <button 
                           onClick={() => handleDeleteInsumo(insumo.id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                          className="text-slate-400 hover:text-red-500 transition-all hover:scale-110 active:scale-90 p-1"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={16} />
                         </button>
                       </td>
                     </tr>
