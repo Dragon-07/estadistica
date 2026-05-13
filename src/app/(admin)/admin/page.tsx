@@ -7,6 +7,7 @@ import { Dashboard } from '@/features/reports/components/Dashboard';
 import { BillingReport } from '@/features/reports/components/BillingReport';
 import { FollowUps } from '@/features/reports/components/FollowUps';
 import { ReferralsAdmin } from '@/features/reports/components/ReferralsAdmin';
+import { ProfitabilityReport } from '@/features/profitability/components/ProfitabilityReport';
 import {
   LayoutDashboard,
   FileText,
@@ -19,15 +20,17 @@ import {
   Trash2,
   Menu,
   X,
-  Users
+  Users,
+  TrendingUp
 } from 'lucide-react';
 
-type Tab = 'dashboard' | 'billing' | 'process' | 'followups' | 'referrals';
+type Tab = 'dashboard' | 'billing' | 'process' | 'followups' | 'referrals' | 'profitability';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'billing', label: 'Cuenta de Ingresos', icon: FileText },
   { id: 'process', label: 'Procesar Datos', icon: Database },
+  { id: 'profitability', label: 'Rentabilidad y Costos', icon: TrendingUp },
   { id: 'followups', label: 'Seguimientos', icon: Activity },
   { id: 'referrals', label: 'Referidos', icon: Users },
 ];
@@ -428,6 +431,7 @@ export default function Home() {
               {activeTab === 'dashboard' && 'Resumen general de actividad médica'}
               {activeTab === 'billing' && 'Cuenta de ingresos consolidada y sin duplicados'}
               {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
+              {activeTab === 'profitability' && 'Análisis de rentabilidad y costos operativos'}
               {activeTab === 'followups' && 'Seguimientos de pacientes y procesos'}
               {activeTab === 'referrals' && 'Gestión y aprobación del sistema de referidos'}
             </p>
@@ -691,6 +695,9 @@ export default function Home() {
         </div>
         <div className={activeTab === 'referrals' ? 'block' : 'hidden'}>
           <ReferralsAdmin />
+        </div>
+        <div className={activeTab === 'profitability' ? 'block' : 'hidden'}>
+          <ProfitabilityReport />
         </div>
         </div>
       </main>
