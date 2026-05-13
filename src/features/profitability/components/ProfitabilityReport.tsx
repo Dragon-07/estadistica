@@ -312,12 +312,8 @@ export function ProfitabilityReport() {
                       <tbody>
                         {dep.staff.map((worker) => {
                           const salary = worker.salary || 0;
-                          const minsMes = worker.minutesMonth || 1; // Evitar división por cero
-                          const minsTrabaja = worker.minutesWorked || 0;
-                          
+                          const minsMes = worker.minutesMonth || 1;
                           const pricePerMinute = salary / minsMes;
-                          const minutesNotWorked = Math.max(0, minsMes - minsTrabaja);
-                          const toDistribute = minutesNotWorked * pricePerMinute;
 
                           return (
                             <tr key={worker.id} className="group">
@@ -326,7 +322,7 @@ export function ProfitabilityReport() {
                                   type="text"
                                   value={worker.name}
                                   onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'name', e.target.value)}
-                                  className="w-full bg-transparent border-none focus:outline-none text-[11px] font-bold text-slate-700"
+                                  className="w-full bg-white/30 shadow-inner rounded-lg px-2 py-1 border-none focus:outline-none focus:ring-1 focus:ring-blue-400/50 transition-all text-[11px] font-bold text-slate-700"
                                 />
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
@@ -334,7 +330,7 @@ export function ProfitabilityReport() {
                                   type="number"
                                   value={worker.salary}
                                   onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-transparent border-none focus:outline-none text-right text-[11px] font-black text-slate-600"
+                                  className="w-full bg-white/30 shadow-inner rounded-lg px-2 py-1 border-none focus:outline-none focus:ring-1 focus:ring-blue-400/50 transition-all text-right text-[11px] font-black text-slate-600"
                                 />
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
@@ -342,25 +338,21 @@ export function ProfitabilityReport() {
                                   type="number"
                                   value={worker.minutesMonth}
                                   onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesMonth', parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-indigo-600"
+                                  className="w-full bg-indigo-500/5 shadow-inner rounded-lg px-2 py-1 border-none focus:outline-none focus:ring-1 focus:ring-indigo-400/50 transition-all text-center text-[11px] font-black text-indigo-600"
                                 />
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
                                 {pricePerMinute.toFixed(2)}
                               </td>
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
-                                <input
-                                  type="number"
-                                  value={worker.minutesWorked}
-                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesWorked', parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-emerald-600"
-                                />
+                              {/* Celdas ahora vacías por solicitud del usuario */}
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-emerald-600/30">
+                                -
                               </td>
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-orange-400">
-                                {minutesNotWorked}
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-orange-400/30">
+                                -
                               </td>
-                              <td className="bg-blue-500/10 shadow-[inset_2px_2px_5px_rgba(59,130,246,0.1)] p-2 text-right pr-6 text-[12px] font-black text-blue-700 border-x border-blue-500/20">
-                                {formatCurrency(toDistribute)}
+                              <td className="bg-blue-500/5 shadow-[inset_2px_2px_5px_rgba(59,130,246,0.05)] p-2 text-right pr-6 text-[12px] font-black text-blue-700/20 border-x border-blue-500/10">
+                                -
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
                                 <button onClick={() => handleDeleteWorker(dep.dependency, worker.id)} className="text-slate-300 hover:text-red-500 transition-colors">
@@ -392,7 +384,7 @@ export function ProfitabilityReport() {
                                 type="number"
                                 value={totalMinsTrabaja}
                                 onChange={(e) => handleUpdateDependency(dep.dependency, 'overrideMinsWorked', parseFloat(e.target.value) || 0)}
-                                className={`w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-emerald-600 ${dep.overrideMinsWorked !== undefined ? 'underline decoration-dotted' : ''}`}
+                                className={`w-full bg-black/5 shadow-inner rounded-lg px-2 py-1.5 border-none focus:outline-none focus:ring-1 focus:ring-emerald-400/50 transition-all text-center text-[11px] font-black text-emerald-600 ${dep.overrideMinsWorked !== undefined ? 'underline decoration-dotted' : ''}`}
                               />
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-orange-600">
