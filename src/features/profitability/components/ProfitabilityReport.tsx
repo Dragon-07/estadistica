@@ -256,151 +256,161 @@ export function ProfitabilityReport() {
       {activeCategory === 'personal' && (
         <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
           <div className="flex flex-col gap-8">
-            {personalData.map((dep) => (
-              <div key={dep.dependency} className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-4">
-                  <h3 className="text-sm font-black text-slate-600 flex items-center gap-2 uppercase tracking-widest">
-                    <div className="w-2 h-6 bg-blue-500 rounded-full"></div>
-                    {dep.dependency}
-                  </h3>
-                  <button 
-                    onClick={() => handleAddWorker(dep.dependency)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-[#e6e7ee] text-blue-600 rounded-xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all text-[10px] font-black"
-                  >
-                    <UserPlus size={14} />
-                    Agregar a {dep.dependency}
-                  </button>
+            {personalData.map((dep) => {
+              const depTotalToDistribute = dep.staff.reduce((acc, w) => acc + (w.minutesWorked * (w.salary / w.minutesMonth)), 0);
+              
+              return (
+                <div key={dep.dependency} className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between px-4">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-sm font-black text-slate-600 flex items-center gap-2 uppercase tracking-widest">
+                        <div className="w-2 h-6 bg-blue-500 rounded-full"></div>
+                        {dep.dependency}
+                      </h3>
+                      <div className="px-3 py-1 bg-blue-500/10 rounded-full border border-blue-500/20">
+                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter mr-2">Subtotal:</span>
+                        <span className="text-xs font-black text-blue-700">{formatCurrency(depTotalToDistribute)}</span>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleAddWorker(dep.dependency)}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-[#e6e7ee] text-blue-600 rounded-xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all text-[10px] font-black"
+                    >
+                      <UserPlus size={14} />
+                      Agregar a {dep.dependency}
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left border-separate border-spacing-y-2">
+                      <thead>
+                        <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                          <th className="pb-1 pl-6">Nombre del Personal</th>
+                          <th className="pb-1 w-28 text-right">Sueldo Base</th>
+                          <th className="pb-1 w-20 text-center">Mins Mes</th>
+                          <th className="pb-1 w-20 text-center text-blue-500">$ Minuto</th>
+                          <th className="pb-1 w-24 text-center text-emerald-600">Mins Trabaja</th>
+                          <th className="pb-1 w-24 text-center text-orange-500">Mins No Trabaja</th>
+                          <th className="pb-1 w-32 text-right pr-6 text-blue-700 bg-blue-500/5 rounded-t-xl">$ A Distribuir</th>
+                          <th className="pb-1 w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dep.staff.map((worker) => {
+                          const pricePerMinute = worker.salary / worker.minutesMonth;
+                          const minutesNotWorked = worker.minutesMonth - worker.minutesWorked;
+                          const toDistribute = worker.minutesWorked * pricePerMinute;
+
+                          return (
+                            <tr key={worker.id} className="group">
+                              <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6">
+                                <input
+                                  type="text"
+                                  value={worker.name}
+                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'name', e.target.value)}
+                                  className="w-full bg-transparent border-none focus:outline-none text-[11px] font-bold text-slate-700"
+                                />
+                              </td>
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
+                                <input
+                                  type="number"
+                                  value={worker.salary}
+                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value))}
+                                  className="w-full bg-transparent border-none focus:outline-none text-right text-[11px] font-black text-slate-600"
+                                />
+                              </td>
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
+                                <input
+                                  type="number"
+                                  value={worker.minutesMonth}
+                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesMonth', parseFloat(e.target.value))}
+                                  className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-indigo-600"
+                                />
+                              </td>
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
+                                {pricePerMinute.toFixed(2)}
+                              </td>
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
+                                <input
+                                  type="number"
+                                  value={worker.minutesWorked}
+                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesWorked', parseFloat(e.target.value))}
+                                  className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-emerald-600"
+                                />
+                              </td>
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-orange-400">
+                                {minutesNotWorked}
+                              </td>
+                              <td className="bg-blue-500/10 shadow-[inset_2px_2px_5px_rgba(59,130,246,0.1)] p-2 text-right pr-6 text-[12px] font-black text-blue-700 border-x border-blue-500/20">
+                                {formatCurrency(toDistribute)}
+                              </td>
+                              <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
+                                <button onClick={() => handleDeleteWorker(dep.dependency, worker.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {/* Fila de Totales por Dependencia */}
+                        {(() => {
+                          const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
+                          const totalMinsMes = dep.staff.reduce((acc, w) => acc + w.minutesMonth, 0);
+                          const totalMinsTrabaja = dep.staff.reduce((acc, w) => acc + w.minutesWorked, 0);
+                          const totalMinsNoTrabaja = totalMinsMes - totalMinsTrabaja;
+                          const totalToDistribute = dep.staff.reduce((acc, w) => {
+                            const priceMin = w.salary / w.minutesMonth;
+                            return acc + (w.minutesWorked * priceMin);
+                          }, 0);
+                          const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+
+                          return (
+                            <tr className="bg-slate-200/50">
+                              <td className="p-2 pl-6 rounded-l-xl text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                                Totales {dep.dependency}
+                              </td>
+                              <td className="p-2 text-right text-[11px] font-black text-slate-600">
+                                {formatCurrency(totalSalary)}
+                              </td>
+                              <td className="p-2 text-center text-[11px] font-black text-slate-500">
+                                {totalMinsMes}
+                              </td>
+                              <td className="p-2 text-center text-[11px] font-black text-blue-600">
+                                {avgPriceMin.toFixed(2)}
+                              </td>
+                              <td className="p-2 text-center text-[11px] font-black text-emerald-700">
+                                {totalMinsTrabaja}
+                              </td>
+                              <td className="p-2 text-center text-[11px] font-black text-orange-600">
+                                {totalMinsNoTrabaja}
+                              </td>
+                              <td className="p-2.5 text-right pr-6 rounded-r-xl text-[13px] font-black text-white bg-blue-600 shadow-[4px_4px_10px_rgba(37,99,235,0.4)]">
+                                {formatCurrency(totalToDistribute)}
+                              </td>
+                              <td></td>
+                            </tr>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-
-                <div className="overflow-x-auto custom-scrollbar">
-                  <table className="w-full text-left border-separate border-spacing-y-2">
-                    <thead>
-                      <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
-                        <th className="pb-1 pl-6">Nombre del Personal</th>
-                        <th className="pb-1 w-28 text-right">Sueldo Base</th>
-                        <th className="pb-1 w-20 text-center">Mins Mes</th>
-                        <th className="pb-1 w-20 text-center text-blue-500">$ Minuto</th>
-                        <th className="pb-1 w-24 text-center text-emerald-600">Mins Trabaja</th>
-                        <th className="pb-1 w-24 text-center text-orange-500">Mins No Trabaja</th>
-                        <th className="pb-1 w-32 text-right pr-6 text-blue-700">$ A Distribuir</th>
-                        <th className="pb-1 w-10"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dep.staff.map((worker) => {
-                        const pricePerMinute = worker.salary / worker.minutesMonth;
-                        const minutesNotWorked = worker.minutesMonth - worker.minutesWorked;
-                        const toDistribute = worker.minutesWorked * pricePerMinute;
-
-                        return (
-                          <tr key={worker.id} className="group">
-                            <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6">
-                              <input
-                                type="text"
-                                value={worker.name}
-                                onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'name', e.target.value)}
-                                className="w-full bg-transparent border-none focus:outline-none text-[11px] font-bold text-slate-700"
-                              />
-                            </td>
-                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
-                              <input
-                                type="number"
-                                value={worker.salary}
-                                onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value))}
-                                className="w-full bg-transparent border-none focus:outline-none text-right text-[11px] font-black text-slate-600"
-                              />
-                            </td>
-                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
-                              <input
-                                type="number"
-                                value={worker.minutesMonth}
-                                onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesMonth', parseFloat(e.target.value))}
-                                className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-indigo-600"
-                              />
-                            </td>
-                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
-                              {pricePerMinute.toFixed(2)}
-                            </td>
-                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
-                              <input
-                                type="number"
-                                value={worker.minutesWorked}
-                                onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesWorked', parseFloat(e.target.value))}
-                                className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-emerald-600"
-                              />
-                            </td>
-                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-orange-400">
-                              {minutesNotWorked}
-                            </td>
-                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right pr-6 text-[11px] font-black text-blue-700">
-                              {formatCurrency(toDistribute)}
-                            </td>
-                            <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
-                              <button onClick={() => handleDeleteWorker(dep.dependency, worker.id)} className="text-slate-300 hover:text-red-500 transition-colors">
-                                <Trash2 size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {/* Fila de Totales por Dependencia */}
-                      {(() => {
-                        const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
-                        const totalMinsMes = dep.staff.reduce((acc, w) => acc + w.minutesMonth, 0);
-                        const totalMinsTrabaja = dep.staff.reduce((acc, w) => acc + w.minutesWorked, 0);
-                        const totalMinsNoTrabaja = totalMinsMes - totalMinsTrabaja;
-                        const totalToDistribute = dep.staff.reduce((acc, w) => {
-                          const priceMin = w.salary / w.minutesMonth;
-                          return acc + (w.minutesWorked * priceMin);
-                        }, 0);
-                        const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
-
-                        return (
-                          <tr className="bg-slate-200/50">
-                            <td className="p-2 pl-6 rounded-l-xl text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                              Totales {dep.dependency}
-                            </td>
-                            <td className="p-2 text-right text-[11px] font-black text-slate-600">
-                              {formatCurrency(totalSalary)}
-                            </td>
-                            <td className="p-2 text-center text-[11px] font-black text-slate-500">
-                              {totalMinsMes}
-                            </td>
-                            <td className="p-2 text-center text-[11px] font-black text-blue-600">
-                              {avgPriceMin.toFixed(2)}
-                            </td>
-                            <td className="p-2 text-center text-[11px] font-black text-emerald-700">
-                              {totalMinsTrabaja}
-                            </td>
-                            <td className="p-2 text-center text-[11px] font-black text-orange-600">
-                              {totalMinsNoTrabaja}
-                            </td>
-                            <td className="p-2 text-right pr-6 rounded-r-xl text-[11px] font-black text-blue-800">
-                              {formatCurrency(totalToDistribute)}
-                            </td>
-                            <td></td>
-                          </tr>
-                        );
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Gran Total Final */}
-            <div className="mt-4 p-5 rounded-[2rem] bg-gradient-to-r from-blue-600 to-indigo-700 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white">
-                  <DollarSign size={24} />
+            <div className="mt-4 p-5 rounded-[2.5rem] bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 shadow-[8px_8px_20px_#b8b9be,-8px_-8px_20px_#ffffff] flex items-center justify-between border border-white/10">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white shadow-inner border border-white/20">
+                  <DollarSign size={28} />
                 </div>
                 <div>
-                  <h4 className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Costo Total de Personal</h4>
-                  <p className="text-white text-xl font-black tracking-tight">Gran Total a Distribuir</p>
+                  <h4 className="text-blue-100 text-[11px] font-black uppercase tracking-[0.2em] mb-1 opacity-80">Consolidado General de Personal</h4>
+                  <p className="text-white text-2xl font-black tracking-tight leading-none">Gran Total a Distribuir</p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-white text-3xl font-black tracking-tighter">
+              <div className="text-right bg-black/10 px-6 py-3 rounded-2xl border border-white/5">
+                <span className="text-white text-4xl font-black tracking-tighter">
                   {formatCurrency(personalData.reduce((acc, dep) => 
                     acc + dep.staff.reduce((sAcc, w) => sAcc + (w.minutesWorked * (w.salary / w.minutesMonth)), 0)
                   , 0))}
