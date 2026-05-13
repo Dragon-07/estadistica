@@ -23,6 +23,7 @@ interface Worker {
 interface Dependency {
   dependency: string;
   staff: Worker[];
+  overrideMinsWorked?: number;
 }
 
 export function ProfitabilityReport() {
@@ -75,6 +76,12 @@ export function ProfitabilityReport() {
       }
       return dep;
     }));
+  };
+
+  const handleUpdateDependency = (depName: string, field: keyof Dependency, value: any) => {
+    setPersonalData(prev => prev.map(dep => 
+      dep.dependency === depName ? { ...dep, [field]: value } : dep
+    ));
   };
 
   const handleAddWorker = (depName: string) => {
@@ -257,7 +264,14 @@ export function ProfitabilityReport() {
         <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
           <div className="flex flex-col gap-8">
             {personalData.map((dep) => {
-              const depTotalToDistribute = dep.staff.reduce((acc, w) => acc + (w.minutesWorked * (w.salary / w.minutesMonth)), 0);
+              const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
+              const totalMinsMes = dep.staff.reduce((acc, w) => acc + w.minutesMonth, 0);
+              const staffMinsTrabaja = dep.staff.reduce((acc, w) => acc + w.minutesWorked, 0);
+              const totalMinsTrabaja = dep.overrideMinsWorked !== undefined ? dep.overrideMinsWorked : staffMinsTrabaja;
+              const totalMinsNoTrabaja = totalMinsMes - totalMinsTrabaja;
+              
+              const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+              const depTotalToDistribute = totalMinsNoTrabaja * avgPriceMin;
               
               return (
                 <div key={dep.dependency} className="flex flex-col gap-4">
@@ -299,7 +313,7 @@ export function ProfitabilityReport() {
                         {dep.staff.map((worker) => {
                           const pricePerMinute = worker.salary / worker.minutesMonth;
                           const minutesNotWorked = worker.minutesMonth - worker.minutesWorked;
-                          const toDistribute = worker.minutesWorked * pricePerMinute;
+                          const toDistribute = minutesNotWorked * pricePerMinute;
 
                           return (
                             <tr key={worker.id} className="group">
@@ -353,44 +367,37 @@ export function ProfitabilityReport() {
                           );
                         })}
                         {/* Fila de Totales por Dependencia */}
-                        {(() => {
-                          const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
-                          const totalMinsMes = dep.staff.reduce((acc, w) => acc + w.minutesMonth, 0);
-                          const totalMinsTrabaja = dep.staff.reduce((acc, w) => acc + w.minutesWorked, 0);
-                          const totalMinsNoTrabaja = totalMinsMes - totalMinsTrabaja;
-                          const totalToDistribute = dep.staff.reduce((acc, w) => {
-                            const priceMin = w.salary / w.minutesMonth;
-                            return acc + (w.minutesWorked * priceMin);
-                          }, 0);
-                          const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
-
-                          return (
-                            <tr className="bg-slate-200/50">
-                              <td className="p-2 pl-6 rounded-l-xl text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                                Totales {dep.dependency}
-                              </td>
-                              <td className="p-2 text-right text-[11px] font-black text-slate-600">
-                                {formatCurrency(totalSalary)}
-                              </td>
-                              <td className="p-2 text-center text-[11px] font-black text-slate-500">
-                                {totalMinsMes}
-                              </td>
-                              <td className="p-2 text-center text-[11px] font-black text-blue-600">
-                                {avgPriceMin.toFixed(2)}
-                              </td>
-                              <td className="p-2 text-center text-[11px] font-black text-emerald-700">
-                                {totalMinsTrabaja}
-                              </td>
-                              <td className="p-2 text-center text-[11px] font-black text-orange-600">
-                                {totalMinsNoTrabaja}
-                              </td>
-                              <td className="p-2.5 text-right pr-6 rounded-r-xl text-[13px] font-black text-white bg-blue-600 shadow-[4px_4px_10px_rgba(37,99,235,0.4)]">
-                                {formatCurrency(totalToDistribute)}
-                              </td>
-                              <td></td>
-                            </tr>
-                          );
-                        })()}
+                        {(() => (
+                          <tr className="bg-slate-200/50">
+                            <td className="p-2 pl-6 rounded-l-xl text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                              Totales {dep.dependency}
+                            </td>
+                            <td className="p-2 text-right text-[11px] font-black text-slate-600">
+                              {formatCurrency(totalSalary)}
+                            </td>
+                            <td className="p-2 text-center text-[11px] font-black text-slate-500">
+                              {totalMinsMes}
+                            </td>
+                            <td className="p-2 text-center text-[11px] font-black text-blue-600">
+                              {avgPriceMin.toFixed(2)}
+                            </td>
+                            <td className="p-2 text-center">
+                              <input
+                                type="number"
+                                value={totalMinsTrabaja}
+                                onChange={(e) => handleUpdateDependency(dep.dependency, 'overrideMinsWorked', parseFloat(e.target.value))}
+                                className={`w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black ${dep.overrideMinsWorked !== undefined ? 'text-blue-600 underline decoration-dotted' : 'text-emerald-700'}`}
+                              />
+                            </td>
+                            <td className="p-2 text-center text-[11px] font-black text-orange-600">
+                              {totalMinsNoTrabaja}
+                            </td>
+                            <td className="p-2.5 text-right pr-6 rounded-r-xl text-[13px] font-black text-white bg-blue-600 shadow-[4px_4px_10px_rgba(37,99,235,0.4)]">
+                              {formatCurrency(depTotalToDistribute)}
+                            </td>
+                            <td></td>
+                          </tr>
+                        ))()}
                       </tbody>
                     </table>
                   </div>
@@ -411,9 +418,19 @@ export function ProfitabilityReport() {
               </div>
               <div className="text-right bg-black/10 px-6 py-3 rounded-2xl border border-white/5">
                 <span className="text-white text-4xl font-black tracking-tighter">
-                  {formatCurrency(personalData.reduce((acc, dep) => 
-                    acc + dep.staff.reduce((sAcc, w) => sAcc + (w.minutesWorked * (w.salary / w.minutesMonth)), 0)
-                  , 0))}
+                  {formatCurrency(personalData.reduce((acc, dep) => {
+                    const totalSalary = dep.staff.reduce((sAcc, w) => sAcc + w.salary, 0);
+                    const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + w.minutesMonth, 0);
+                    const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+                    
+                    const depMinsTrabaja = dep.overrideMinsWorked !== undefined 
+                      ? dep.overrideMinsWorked 
+                      : dep.staff.reduce((sAcc, w) => sAcc + w.minutesWorked, 0);
+                    
+                    const depMinsNoTrabaja = totalMinsMes - depMinsTrabaja;
+                    
+                    return acc + (depMinsNoTrabaja * avgPriceMin);
+                  }, 0))}
                 </span>
               </div>
             </div>
