@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock } from 'lucide-react';
+import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock, Edit3 } from 'lucide-react';
 import initialInsumos from '../data/insumos-data.json';
 import initialPersonal from '../data/personal-data.json';
 
@@ -318,28 +318,37 @@ export function ProfitabilityReport() {
                           return (
                             <tr key={worker.id} className="group">
                               <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6">
-                                <input
-                                  type="text"
-                                  value={worker.name}
-                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'name', e.target.value)}
-                                  className="w-full bg-white/30 shadow-inner rounded-lg px-2 py-1 border-none focus:outline-none focus:ring-1 focus:ring-blue-400/50 transition-all text-[11px] font-bold text-slate-700"
-                                />
+                                <div className="relative group/input">
+                                  <input
+                                    type="text"
+                                    value={worker.name}
+                                    onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'name', e.target.value)}
+                                    className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[11px] font-bold text-slate-700"
+                                  />
+                                  <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                                </div>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
-                                <input
-                                  type="number"
-                                  value={worker.salary}
-                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-white/30 shadow-inner rounded-lg px-2 py-1 border-none focus:outline-none focus:ring-1 focus:ring-blue-400/50 transition-all text-right text-[11px] font-black text-slate-600"
-                                />
+                                <div className="relative group/input">
+                                  <input
+                                    type="number"
+                                    value={worker.salary}
+                                    onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600"
+                                  />
+                                  <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                                </div>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
-                                <input
-                                  type="number"
-                                  value={worker.minutesMonth}
-                                  onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesMonth', parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-indigo-500/5 shadow-inner rounded-lg px-2 py-1 border-none focus:outline-none focus:ring-1 focus:ring-indigo-400/50 transition-all text-center text-[11px] font-black text-indigo-600"
-                                />
+                                <div className="relative group/input">
+                                  <input
+                                    type="number"
+                                    value={worker.minutesMonth}
+                                    onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesMonth', parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-indigo-50/10 shadow-inner rounded-lg px-2 py-1 border border-indigo-200/30 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all text-center text-[11px] font-black text-indigo-600"
+                                  />
+                                  <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-indigo-400 opacity-30" size={8} />
+                                </div>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
                                 {pricePerMinute.toFixed(2)}
@@ -351,7 +360,7 @@ export function ProfitabilityReport() {
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-orange-400/30">
                                 -
                               </td>
-                              <td className="bg-blue-500/5 shadow-[inset_2px_2px_5px_rgba(59,130,246,0.05)] p-2 text-right pr-6 text-[12px] font-black text-blue-700/20 border-x border-blue-500/10">
+                              <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] p-2 text-right pr-3 text-[11px] font-black text-blue-700/20 border-x border-blue-500/10 w-24">
                                 -
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
@@ -366,7 +375,7 @@ export function ProfitabilityReport() {
                         {(() => {
                           const safeMinsNoTrabaja = Math.max(0, totalMinsNoTrabaja);
                           return (
-                          <tr className="bg-slate-200/50">
+                          <tr className="bg-slate-200/40">
                             <td className="p-2 pl-6 rounded-l-xl text-[10px] font-black text-slate-500 uppercase tracking-wider">
                               Totales {dep.dependency}
                             </td>
@@ -380,18 +389,23 @@ export function ProfitabilityReport() {
                               {avgPriceMin.toFixed(2)}
                             </td>
                             <td className="p-2 text-center">
-                              <input
-                                type="number"
-                                value={totalMinsTrabaja}
-                                onChange={(e) => handleUpdateDependency(dep.dependency, 'overrideMinsWorked', parseFloat(e.target.value) || 0)}
-                                className={`w-full bg-black/5 shadow-inner rounded-lg px-2 py-1.5 border-none focus:outline-none focus:ring-1 focus:ring-emerald-400/50 transition-all text-center text-[11px] font-black text-emerald-600 ${dep.overrideMinsWorked !== undefined ? 'underline decoration-dotted' : ''}`}
-                              />
+                              <div className="relative group/input max-w-[90px] mx-auto">
+                                <input
+                                  type="number"
+                                  value={totalMinsTrabaja}
+                                  onChange={(e) => handleUpdateDependency(dep.dependency, 'overrideMinsWorked', parseFloat(e.target.value) || 0)}
+                                  className={`w-full bg-white/50 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-emerald-300/20 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-all text-center text-[11px] font-black text-emerald-600 ${dep.overrideMinsWorked !== undefined ? 'underline decoration-dotted' : ''}`}
+                                />
+                                <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-emerald-500 opacity-40" size={10} />
+                              </div>
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-orange-600">
                               {safeMinsNoTrabaja}
                             </td>
-                            <td className="p-2.5 text-right pr-6 rounded-r-xl text-[13px] font-black text-white bg-blue-600 shadow-[4px_4px_10px_rgba(37,99,235,0.4)]">
-                              {formatCurrency(depTotalToDistribute)}
+                            <td className="p-2 text-right pr-4 rounded-r-xl">
+                              <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-blue-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-blue-600 inline-block min-w-[100px]">
+                                {formatCurrency(depTotalToDistribute)}
+                              </div>
                             </td>
                             <td></td>
                           </tr>
