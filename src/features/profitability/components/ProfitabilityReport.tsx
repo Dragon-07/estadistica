@@ -9,48 +9,50 @@ export function ProfitabilityReport() {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in max-w-6xl mx-auto py-2">
-      {/* Selector de Período - Más compacto */}
-      <div className="bg-[#e6e7ee] p-5 rounded-[2rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] flex flex-wrap items-center justify-center gap-4">
-        <div className="flex items-center gap-3 flex-1 min-w-[240px]">
-          <div className="relative flex-1 group">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none">
-              <Calendar size={16} />
+      {/* Contenedor Unificado: Selector + Botones */}
+      <div className="bg-[#e6e7ee] p-5 rounded-[2.5rem] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] flex flex-col gap-5">
+        
+        {/* Fila Superior: Selector de Período */}
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-[240px]">
+            <div className="relative flex-1 group">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none">
+                <Calendar size={16} />
+              </div>
+              <span className="absolute left-9 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-400 uppercase tracking-wider pointer-events-none">
+                Desde:
+              </span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full pl-20 pr-3 py-2.5 rounded-xl bg-[#e6e7ee] text-gray-700 text-xs font-medium border-none shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all appearance-none"
+              />
             </div>
-            <span className="absolute left-9 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-400 uppercase tracking-wider pointer-events-none">
-              Desde:
-            </span>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full pl-20 pr-3 py-2.5 rounded-xl bg-[#e6e7ee] text-gray-700 text-xs font-medium border-none shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all appearance-none"
-            />
+
+            <div className="relative flex-1 group">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none">
+                <Calendar size={16} />
+              </div>
+              <span className="absolute left-9 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-400 uppercase tracking-wider pointer-events-none">
+                Hasta:
+              </span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full pl-20 pr-3 py-2.5 rounded-xl bg-[#e6e7ee] text-gray-700 text-xs font-medium border-none shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all appearance-none"
+              />
+            </div>
           </div>
 
-          <div className="relative flex-1 group">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none">
-              <Calendar size={16} />
-            </div>
-            <span className="absolute left-9 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-400 uppercase tracking-wider pointer-events-none">
-              Hasta:
-            </span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full pl-20 pr-3 py-2.5 rounded-xl bg-[#e6e7ee] text-gray-700 text-xs font-medium border-none shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all appearance-none"
-            />
-          </div>
+          <button className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm rounded-xl shadow-[4px_4px_8px_rgba(16,185,129,0.3)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] transition-all active:scale-95 group">
+            <Check size={18} className="group-hover:scale-110 transition-transform" />
+            <span>Aplicar Periodo</span>
+          </button>
         </div>
 
-        <button className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm rounded-xl shadow-[4px_4px_8px_rgba(16,185,129,0.3)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] transition-all active:scale-95 group">
-          <Check size={18} className="group-hover:scale-110 transition-transform" />
-          <span>Aplicar Periodo</span>
-        </button>
-      </div>
-
-      {/* Botones de Categorías - En un recuadro compartido y con altura optimizada */}
-      <div className="bg-[#e6e7ee] p-5 rounded-[2rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff]">
+        {/* Fila Inferior: Botones de Categorías */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { label: 'Insumos', icon: Package, color: 'text-orange-500', bg: 'bg-orange-500/10' },
