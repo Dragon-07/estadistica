@@ -26,19 +26,31 @@ interface Dependency {
   overrideMinsWorked?: number;
 }
 
+interface AdminCost {
+  id: string;
+  detail: string;
+  cost: number;
+  units: number;
+  consumption: number;
+}
+
+const initialAdminData: AdminCost[] = [
+  { id: '1', detail: 'ENERGÍA', cost: 900000, units: 1122, consumption: 500 },
+  { id: '2', detail: 'ARRIENDO', cost: 5000000, units: 1, consumption: 0 },
+  { id: '3', detail: 'AGUA', cost: 1000000, units: 1, consumption: 0 },
+];
+
 export function ProfitabilityReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   
-  // State for Insumos
   const [insumos, setInsumos] = useState<Insumo[]>(initialInsumos);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // State for Personal
   const [personalData, setPersonalData] = useState<Dependency[]>(initialPersonal);
+  const [adminData, setAdminData] = useState<AdminCost[]>(initialAdminData);
 
-  // --- Lógica de Insumos ---
   const filteredInsumos = useMemo(() => {
     return insumos.filter(insumo => 
       insumo.detalle.toLowerCase().includes(searchTerm.toLowerCase())
@@ -65,7 +77,6 @@ export function ProfitabilityReport() {
     setInsumos(prev => prev.filter(item => item.id !== id));
   };
 
-  // --- Lógica de Personal ---
   const handleUpdateWorker = (depName: string, workerId: string, field: keyof Worker, value: string | number) => {
     setPersonalData(prev => prev.map(dep => {
       if (dep.dependency === depName) {
@@ -103,12 +114,32 @@ export function ProfitabilityReport() {
     ));
   };
 
+  const handleUpdateAdmin = (id: string, field: keyof AdminCost, value: string | number) => {
+    setAdminData(prev => prev.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const handleAddAdmin = () => {
+    const newItem: AdminCost = {
+      id: Date.now().toString(),
+      detail: 'NUEVO COSTO',
+      cost: 0,
+      units: 1,
+      consumption: 0
+    };
+    setAdminData(prev => [...prev, newItem]);
+  };
+
+  const handleDeleteAdmin = (id: string) => {
+    setAdminData(prev => prev.filter(item => item.id !== id));
+  };
+
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in max-w-6xl mx-auto py-2">
-      {/* Contenedor Unificado: Selector + Botones */}
       <div className="bg-[#e6e7ee] p-5 rounded-[2.5rem] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] flex flex-col gap-5">
         
         {/* Fila Superior: Selector de Período */}
@@ -449,10 +480,131 @@ export function ProfitabilityReport() {
         </div>
       )}
 
-      {/* Placeholder para otras categorías */}
+      {/* Módulo Administrativo */}
       {activeCategory && activeCategory === 'administrativo' && (
-        <div className="p-12 border-2 border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center opacity-30 animate-in fade-in duration-500">
-          <p className="text-gray-500 font-medium italic">Configuración de Administrativo próximamente...</p>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="bg-[#e6e7ee] p-8 rounded-[3rem] shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-white/50 relative overflow-hidden">
+            <div className="flex justify-between items-center mb-8 px-2">
+              <div className="flex items-center gap-4">
+                <div className="w-2.5 h-10 bg-purple-500 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.4)]" />
+                <div>
+                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">Costos Administrativos</h3>
+                  <p className="text-slate-500 text-sm font-medium">Gestión de servicios y gastos generales</p>
+                </div>
+              </div>
+              <button 
+                onClick={handleAddAdmin}
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] rounded-2xl text-purple-600 text-xs font-black uppercase tracking-widest transition-all group"
+              >
+                <Plus size={16} className="group-hover:rotate-90 transition-transform" />
+                Agregar Item
+              </button>
+            </div>
+
+            <div className="overflow-x-auto rounded-3xl">
+              <table className="w-full border-separate border-spacing-y-3">
+                <thead>
+                  <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                    <th className="px-6 py-4 text-left font-black">Detalle del Gasto</th>
+                    <th className="px-4 py-4 text-right font-black">Costo Total</th>
+                    <th className="px-4 py-4 text-center font-black">Unidades</th>
+                    <th className="px-4 py-4 text-center font-black">$ Unidad</th>
+                    <th className="px-4 py-4 text-center font-black">Consumo</th>
+                    <th className="px-4 py-4 text-right pr-6 font-black">$ a Distribuir</th>
+                    <th className="w-12"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminData.map((item) => {
+                    const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
+                    const toDistribute = (item.units - item.consumption) * pricePerUnit;
+
+                    return (
+                      <tr key={item.id} className="group">
+                        <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6">
+                          <div className="relative group/input">
+                            <input
+                              type="text"
+                              value={item.detail}
+                              onChange={(e) => handleUpdateAdmin(item.id, 'detail', e.target.value)}
+                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-purple-200/30 focus:outline-none focus:ring-2 focus:ring-purple-400/40 transition-all text-[11px] font-bold text-slate-700"
+                            />
+                            <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-purple-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                          </div>
+                        </td>
+                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
+                          <div className="relative group/input">
+                            <input
+                              type="number"
+                              value={item.cost}
+                              onChange={(e) => handleUpdateAdmin(item.id, 'cost', parseFloat(e.target.value) || 0)}
+                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-purple-200/30 focus:outline-none focus:ring-2 focus:ring-purple-400/40 transition-all text-right text-[11px] font-black text-slate-600"
+                            />
+                            <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-purple-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                          </div>
+                        </td>
+                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
+                          <div className="relative group/input max-w-[80px] mx-auto">
+                            <input
+                              type="number"
+                              value={item.units}
+                              onChange={(e) => handleUpdateAdmin(item.id, 'units', parseFloat(e.target.value) || 0)}
+                              className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-purple-200/30 focus:outline-none focus:ring-2 focus:ring-purple-400/40 transition-all text-center text-[11px] font-black text-slate-500"
+                            />
+                            <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-purple-400 opacity-30" size={8} />
+                          </div>
+                        </td>
+                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-purple-500/70">
+                          {pricePerUnit.toFixed(2)}
+                        </td>
+                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
+                          <div className="relative group/input max-w-[80px] mx-auto">
+                            <input
+                              type="number"
+                              value={item.consumption}
+                              onChange={(e) => handleUpdateAdmin(item.id, 'consumption', parseFloat(e.target.value) || 0)}
+                              className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-purple-200/30 focus:outline-none focus:ring-2 focus:ring-purple-400/40 transition-all text-center text-[11px] font-black text-orange-600"
+                            />
+                            <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-purple-400 opacity-30" size={8} />
+                          </div>
+                        </td>
+                        <td className="p-2 text-right pr-6">
+                          <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-purple-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-purple-600 inline-block min-w-[100px]">
+                            {formatCurrency(toDistribute)}
+                          </div>
+                        </td>
+                        <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
+                          <button onClick={() => handleDeleteAdmin(item.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Total Administrativo Consolidado */}
+            <div className="mt-8 p-4 px-8 rounded-3xl bg-[#e6e7ee] shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] flex items-center justify-between border border-white/50">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 shadow-inner border border-purple-200/20">
+                  <Briefcase size={20} />
+                </div>
+                <div>
+                  <p className="text-purple-700 text-lg font-black tracking-tight leading-none">Total a Distribuir</p>
+                </div>
+              </div>
+              <div className="text-right bg-purple-500/5 px-5 py-2 rounded-xl border border-purple-500/10 shadow-inner">
+                <span className="text-purple-600 text-2xl font-black tracking-tighter">
+                  {formatCurrency(adminData.reduce((acc, item) => {
+                    const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
+                    return acc + ((item.units - item.consumption) * pricePerUnit);
+                  }, 0))}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
