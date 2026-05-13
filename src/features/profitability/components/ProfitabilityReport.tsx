@@ -310,8 +310,13 @@ export function ProfitabilityReport() {
                                 className="w-full bg-transparent border-none focus:outline-none text-right text-[11px] font-black text-slate-600"
                               />
                             </td>
-                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-bold text-slate-400">
-                              {worker.minutesMonth}
+                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
+                              <input
+                                type="number"
+                                value={worker.minutesMonth}
+                                onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesMonth', parseFloat(e.target.value))}
+                                className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-bold text-slate-400"
+                              />
                             </td>
                             <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
                               {pricePerMinute.toFixed(2)}
