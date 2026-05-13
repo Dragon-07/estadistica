@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X } from 'lucide-react';
+import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock } from 'lucide-react';
 import initialInsumos from '../data/insumos-data.json';
+import initialPersonal from '../data/personal-data.json';
 
 interface Insumo {
   id: string;
@@ -11,15 +12,32 @@ interface Insumo {
   valor: number;
 }
 
+interface Worker {
+  id: string;
+  name: string;
+  salary: number;
+  minutesMonth: number;
+  minutesWorked: number;
+}
+
+interface Dependency {
+  dependency: string;
+  staff: Worker[];
+}
+
 export function ProfitabilityReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  
+  // State for Insumos
   const [insumos, setInsumos] = useState<Insumo[]>(initialInsumos);
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
+  
+  // State for Personal
+  const [personalData, setPersonalData] = useState<Dependency[]>(initialPersonal);
 
-  // Filtrar insumos por búsqueda
+  // --- Lógica de Insumos ---
   const filteredInsumos = useMemo(() => {
     return insumos.filter(insumo => 
       insumo.detalle.toLowerCase().includes(searchTerm.toLowerCase())
@@ -40,12 +58,46 @@ export function ProfitabilityReport() {
       valor: 0
     };
     setInsumos([newInsumo, ...insumos]);
-    setEditingId(newInsumo.id);
   };
 
   const handleDeleteInsumo = (id: string) => {
     setInsumos(prev => prev.filter(item => item.id !== id));
   };
+
+  // --- Lógica de Personal ---
+  const handleUpdateWorker = (depName: string, workerId: string, field: keyof Worker, value: string | number) => {
+    setPersonalData(prev => prev.map(dep => {
+      if (dep.dependency === depName) {
+        return {
+          ...dep,
+          staff: dep.staff.map(w => w.id === workerId ? { ...w, [field]: value } : w)
+        };
+      }
+      return dep;
+    }));
+  };
+
+  const handleAddWorker = (depName: string) => {
+    const newWorker: Worker = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: 'Nuevo Trabajador',
+      salary: 0,
+      minutesMonth: 10080,
+      minutesWorked: 0
+    };
+    setPersonalData(prev => prev.map(dep => 
+      dep.dependency === depName ? { ...dep, staff: [...dep.staff, newWorker] } : dep
+    ));
+  };
+
+  const handleDeleteWorker = (depName: string, workerId: string) => {
+    setPersonalData(prev => prev.map(dep => 
+      dep.dependency === depName ? { ...dep, staff: dep.staff.filter(w => w.id !== workerId) } : dep
+    ));
+  };
+
+  const formatCurrency = (val: number) => 
+    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in max-w-6xl mx-auto py-2">
@@ -126,16 +178,15 @@ export function ProfitabilityReport() {
       {activeCategory === 'insumos' && (
         <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
           <div className="flex flex-col gap-6">
-            {/* Cabecera de la lista */}
             <div className="flex items-center justify-between gap-4">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
                   placeholder="Buscar insumo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#e6e7ee] text-gray-700 text-sm shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#e6e7ee] text-slate-700 text-sm shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
                 />
               </div>
               <button 
@@ -147,7 +198,6 @@ export function ProfitabilityReport() {
               </button>
             </div>
 
-            {/* Lista Editable */}
             <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
               <table className="w-full text-left border-separate border-spacing-y-2">
                 <thead>
@@ -167,7 +217,6 @@ export function ProfitabilityReport() {
                           value={insumo.detalle}
                           onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
                           className="w-full bg-transparent border-none focus:outline-none text-[12px] font-bold text-slate-700 placeholder-slate-400"
-                          placeholder="Nombre del insumo..."
                         />
                       </td>
                       <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow">
@@ -190,10 +239,7 @@ export function ProfitabilityReport() {
                         </div>
                       </td>
                       <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-r-2xl p-2.5 text-center group-hover:shadow-[inset_-2px_2px_5px_#b8b9be,inset_2px_-2px_5px_#ffffff] transition-shadow">
-                        <button 
-                          onClick={() => handleDeleteInsumo(insumo.id)}
-                          className="text-slate-400 hover:text-red-500 transition-all hover:scale-110 active:scale-90 p-1"
-                        >
+                        <button onClick={() => handleDeleteInsumo(insumo.id)} className="text-slate-400 hover:text-red-500 transition-all hover:scale-110 active:scale-90 p-1">
                           <Trash2 size={16} />
                         </button>
                       </td>
@@ -206,17 +252,112 @@ export function ProfitabilityReport() {
         </div>
       )}
 
+      {/* Sección Desplegable: Sistema de Salario por Tiempo (Personal) */}
+      {activeCategory === 'personal' && (
+        <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
+          <div className="flex flex-col gap-8">
+            {personalData.map((dep) => (
+              <div key={dep.dependency} className="flex flex-col gap-4">
+                <div className="flex items-center justify-between px-4">
+                  <h3 className="text-sm font-black text-slate-600 flex items-center gap-2 uppercase tracking-widest">
+                    <div className="w-2 h-6 bg-blue-500 rounded-full"></div>
+                    {dep.dependency}
+                  </h3>
+                  <button 
+                    onClick={() => handleAddWorker(dep.dependency)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#e6e7ee] text-blue-600 rounded-xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all text-[10px] font-black"
+                  >
+                    <UserPlus size={14} />
+                    Agregar a {dep.dependency}
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-left border-separate border-spacing-y-2">
+                    <thead>
+                      <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        <th className="pb-1 pl-6">Nombre del Personal</th>
+                        <th className="pb-1 w-28 text-right">Sueldo Base</th>
+                        <th className="pb-1 w-20 text-center">Mins Mes</th>
+                        <th className="pb-1 w-20 text-center text-blue-500">$ Minuto</th>
+                        <th className="pb-1 w-24 text-center text-emerald-600">Mins Trabaja</th>
+                        <th className="pb-1 w-24 text-center text-orange-500">Mins No Trabaja</th>
+                        <th className="pb-1 w-32 text-right pr-6 text-blue-700">$ A Distribuir</th>
+                        <th className="pb-1 w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dep.staff.map((worker) => {
+                        const pricePerMinute = worker.salary / worker.minutesMonth;
+                        const minutesNotWorked = worker.minutesMonth - worker.minutesWorked;
+                        const toDistribute = worker.minutesWorked * pricePerMinute;
+
+                        return (
+                          <tr key={worker.id} className="group">
+                            <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6">
+                              <input
+                                type="text"
+                                value={worker.name}
+                                onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'name', e.target.value)}
+                                className="w-full bg-transparent border-none focus:outline-none text-[11px] font-bold text-slate-700"
+                              />
+                            </td>
+                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
+                              <input
+                                type="number"
+                                value={worker.salary}
+                                onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value))}
+                                className="w-full bg-transparent border-none focus:outline-none text-right text-[11px] font-black text-slate-600"
+                              />
+                            </td>
+                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-bold text-slate-400">
+                              {worker.minutesMonth}
+                            </td>
+                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
+                              {pricePerMinute.toFixed(2)}
+                            </td>
+                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
+                              <input
+                                type="number"
+                                value={worker.minutesWorked}
+                                onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesWorked', parseFloat(e.target.value))}
+                                className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-black text-emerald-600"
+                              />
+                            </td>
+                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-orange-400">
+                              {minutesNotWorked}
+                            </td>
+                            <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right pr-6 text-[11px] font-black text-blue-700">
+                              {formatCurrency(toDistribute)}
+                            </td>
+                            <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
+                              <button onClick={() => handleDeleteWorker(dep.dependency, worker.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Placeholder para otras categorías */}
-      {activeCategory && activeCategory !== 'insumos' && (
+      {activeCategory && activeCategory === 'administrativo' && (
         <div className="p-12 border-2 border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center opacity-30 animate-in fade-in duration-500">
-          <p className="text-gray-500 font-medium italic">Configuración de {activeCategory} próximamente...</p>
+          <p className="text-gray-500 font-medium italic">Configuración de Administrativo próximamente...</p>
         </div>
       )}
 
       {/* Estado Inicial */}
       {!activeCategory && (
         <div className="p-12 border-2 border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center opacity-20">
-          <p className="text-gray-500 font-medium italic">Selecciona una categoría para ver los precios de referencia</p>
+          <p className="text-gray-500 font-medium italic">Selecciona una categoría para gestionar los costos de referencia</p>
         </div>
       )}
     </div>

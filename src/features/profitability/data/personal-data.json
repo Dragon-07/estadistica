@@ -1,0 +1,26 @@
+[
+  {
+    "dependency": "Doctores",
+    "staff": [
+      { "id": "p1", "name": "AUGUSTO", "salary": 10576198, "minutesMonth": 10080, "minutesWorked": 5000 },
+      { "id": "p2", "name": "CRISTIAN", "salary": 11969691, "minutesMonth": 10080, "minutesWorked": 5000 }
+    ]
+  },
+  {
+    "dependency": "Enfermeras",
+    "staff": [
+      { "id": "p3", "name": "LORENA", "salary": 2911986, "minutesMonth": 10080, "minutesWorked": 6000 },
+      { "id": "p4", "name": "VANESA", "salary": 2911986, "minutesMonth": 10080, "minutesWorked": 7000 },
+      { "id": "p5", "name": "DANNA", "salary": 2911986, "minutesMonth": 10080, "minutesWorked": 7240 }
+    ]
+  },
+  {
+    "dependency": "Operativo",
+    "staff": [
+      { "id": "p6", "name": "DEYANIRA", "salary": 10576198, "minutesMonth": 10080, "minutesWorked": 0 },
+      { "id": "p7", "name": "CUSTODIO", "salary": 2500000, "minutesMonth": 10080, "minutesWorked": 0 },
+      { "id": "p8", "name": "VIVANA", "salary": 2911986, "minutesMonth": 10080, "minutesWorked": 0 },
+      { "id": "p9", "name": "MARIA DEL PILAR", "salary": 2911986, "minutesMonth": 10080, "minutesWorked": 0 }
+    ]
+  }
+]
