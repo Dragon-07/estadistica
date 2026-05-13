@@ -1,11 +1,51 @@
 'use client';
 
-import { useState } from 'react';
-import { Calendar, Check, Package, Users, Briefcase, DollarSign } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X } from 'lucide-react';
+import initialInsumos from '../data/insumos-data.json';
+
+interface Insumo {
+  id: string;
+  detalle: string;
+  medida: string;
+  valor: number;
+}
 
 export function ProfitabilityReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [insumos, setInsumos] = useState<Insumo[]>(initialInsumos);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Filtrar insumos por búsqueda
+  const filteredInsumos = useMemo(() => {
+    return insumos.filter(insumo => 
+      insumo.detalle.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [insumos, searchTerm]);
+
+  const handleUpdateInsumo = (id: string, field: keyof Insumo, value: string | number) => {
+    setInsumos(prev => prev.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const handleAddInsumo = () => {
+    const newInsumo: Insumo = {
+      id: Math.random().toString(36).substr(2, 9),
+      detalle: 'Nuevo Insumo',
+      medida: '1',
+      valor: 0
+    };
+    setInsumos([newInsumo, ...insumos]);
+    setEditingId(newInsumo.id);
+  };
+
+  const handleDeleteInsumo = (id: string) => {
+    setInsumos(prev => prev.filter(item => item.id !== id));
+  };
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in max-w-6xl mx-auto py-2">
@@ -55,13 +95,18 @@ export function ProfitabilityReport() {
         {/* Fila Inferior: Botones de Categorías */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { label: 'Insumos', icon: Package, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-            { label: 'Personal', icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-            { label: 'Administrativo', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-          ].map((item, index) => (
+            { id: 'insumos', label: 'Insumos', icon: Package, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+            { id: 'personal', label: 'Personal', icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+            { id: 'administrativo', label: 'Administrativo', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+          ].map((item) => (
             <button
-              key={index}
-              className="group relative bg-[#e6e7ee] px-4 py-3 rounded-2xl shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] transition-all duration-300 flex items-center justify-center gap-3 active:scale-[0.98]"
+              key={item.id}
+              onClick={() => setActiveCategory(activeCategory === item.id ? null : item.id)}
+              className={`group relative px-4 py-3 rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 active:scale-[0.98] ${
+                activeCategory === item.id 
+                  ? 'bg-[#e6e7ee] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]' 
+                  : 'bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]'
+              }`}
             >
               <div className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center ${item.color} shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] group-hover:scale-90 transition-transform duration-300`}>
                 <item.icon size={18} />
@@ -77,10 +122,99 @@ export function ProfitabilityReport() {
         </div>
       </div>
 
-      {/* Placeholder para resultados futuros - Más compacto */}
-      <div className="p-6 border-2 border-dashed border-gray-300 rounded-[2rem] flex flex-col items-center justify-center opacity-30">
-        <p className="text-xs text-gray-500 font-medium italic">Selecciona un período y una categoría</p>
-      </div>
+      {/* Sección Desplegable: Lista de Insumos */}
+      {activeCategory === 'insumos' && (
+        <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
+          <div className="flex flex-col gap-6">
+            {/* Cabecera de la lista */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Buscar insumo..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#e6e7ee] text-gray-700 text-sm shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
+                />
+              </div>
+              <button 
+                onClick={handleAddInsumo}
+                className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-xl shadow-[4px_4px_8px_rgba(59,130,246,0.3)] hover:shadow-none active:scale-95 transition-all font-bold text-xs"
+              >
+                <Plus size={16} />
+                Agregar Insumo
+              </button>
+            </div>
+
+            {/* Lista Editable */}
+            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <table className="w-full text-left border-separate border-spacing-y-3">
+                <thead>
+                  <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4">
+                    <th className="pb-2 pl-4">Detalle del Insumo</th>
+                    <th className="pb-2 w-24 text-center">Medida</th>
+                    <th className="pb-2 w-32 text-right">Valor ($)</th>
+                    <th className="pb-2 w-20 text-center"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredInsumos.map((insumo) => (
+                    <tr key={insumo.id} className="group">
+                      <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-3">
+                        <input
+                          type="text"
+                          value={insumo.detalle}
+                          onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
+                          className="w-full bg-transparent border-none focus:outline-none text-xs font-bold text-gray-700"
+                        />
+                      </td>
+                      <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-3">
+                        <input
+                          type="text"
+                          value={insumo.medida}
+                          onChange={(e) => handleUpdateInsumo(insumo.id, 'medida', e.target.value)}
+                          className="w-full bg-transparent border-none focus:outline-none text-center text-xs font-medium text-gray-500"
+                        />
+                      </td>
+                      <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-3 text-right">
+                        <input
+                          type="number"
+                          value={insumo.valor}
+                          onChange={(e) => handleUpdateInsumo(insumo.id, 'valor', parseFloat(e.target.value))}
+                          className="w-full bg-transparent border-none focus:outline-none text-right text-xs font-bold text-blue-600"
+                        />
+                      </td>
+                      <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-3 text-center">
+                        <button 
+                          onClick={() => handleDeleteInsumo(insumo.id)}
+                          className="text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Placeholder para otras categorías */}
+      {activeCategory && activeCategory !== 'insumos' && (
+        <div className="p-12 border-2 border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center opacity-30 animate-in fade-in duration-500">
+          <p className="text-gray-500 font-medium italic">Configuración de {activeCategory} próximamente...</p>
+        </div>
+      )}
+
+      {/* Estado Inicial */}
+      {!activeCategory && (
+        <div className="p-12 border-2 border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center opacity-20">
+          <p className="text-gray-500 font-medium italic">Selecciona una categoría para ver los precios de referencia</p>
+        </div>
+      )}
     </div>
   );
 }
