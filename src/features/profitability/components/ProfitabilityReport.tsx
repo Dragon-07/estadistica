@@ -343,11 +343,70 @@ export function ProfitabilityReport() {
                           </tr>
                         );
                       })}
+                      {/* Fila de Totales por Dependencia */}
+                      {(() => {
+                        const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
+                        const totalMinsMes = dep.staff.reduce((acc, w) => acc + w.minutesMonth, 0);
+                        const totalMinsTrabaja = dep.staff.reduce((acc, w) => acc + w.minutesWorked, 0);
+                        const totalMinsNoTrabaja = totalMinsMes - totalMinsTrabaja;
+                        const totalToDistribute = dep.staff.reduce((acc, w) => {
+                          const priceMin = w.salary / w.minutesMonth;
+                          return acc + (w.minutesWorked * priceMin);
+                        }, 0);
+                        const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+
+                        return (
+                          <tr className="bg-slate-200/50">
+                            <td className="p-2 pl-6 rounded-l-xl text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                              Totales {dep.dependency}
+                            </td>
+                            <td className="p-2 text-right text-[11px] font-black text-slate-600">
+                              {formatCurrency(totalSalary)}
+                            </td>
+                            <td className="p-2 text-center text-[11px] font-black text-slate-500">
+                              {totalMinsMes}
+                            </td>
+                            <td className="p-2 text-center text-[11px] font-black text-blue-600">
+                              {avgPriceMin.toFixed(2)}
+                            </td>
+                            <td className="p-2 text-center text-[11px] font-black text-emerald-700">
+                              {totalMinsTrabaja}
+                            </td>
+                            <td className="p-2 text-center text-[11px] font-black text-orange-600">
+                              {totalMinsNoTrabaja}
+                            </td>
+                            <td className="p-2 text-right pr-6 rounded-r-xl text-[11px] font-black text-blue-800">
+                              {formatCurrency(totalToDistribute)}
+                            </td>
+                            <td></td>
+                          </tr>
+                        );
+                      })()}
                     </tbody>
                   </table>
                 </div>
               </div>
             ))}
+
+            {/* Gran Total Final */}
+            <div className="mt-4 p-5 rounded-[2rem] bg-gradient-to-r from-blue-600 to-indigo-700 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white">
+                  <DollarSign size={24} />
+                </div>
+                <div>
+                  <h4 className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Costo Total de Personal</h4>
+                  <p className="text-white text-xl font-black tracking-tight">Gran Total a Distribuir</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-white text-3xl font-black tracking-tighter">
+                  {formatCurrency(personalData.reduce((acc, dep) => 
+                    acc + dep.staff.reduce((sAcc, w) => sAcc + (w.minutesWorked * (w.salary / w.minutesMonth)), 0)
+                  , 0))}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}
