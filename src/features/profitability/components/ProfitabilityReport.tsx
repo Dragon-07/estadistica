@@ -148,49 +148,53 @@ export function ProfitabilityReport() {
             </div>
 
             {/* Lista Editable */}
-            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-              <table className="w-full text-left border-separate border-spacing-y-3">
+            <div className="max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
+              <table className="w-full text-left border-separate border-spacing-y-1.5">
                 <thead>
-                  <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4">
-                    <th className="pb-2 pl-4">Detalle del Insumo</th>
-                    <th className="pb-2 w-24 text-center">Medida</th>
-                    <th className="pb-2 w-32 text-right">Valor ($)</th>
-                    <th className="pb-2 w-20 text-center"></th>
+                  <tr className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-4">
+                    <th className="pb-1 pl-4">Detalle del Insumo</th>
+                    <th className="pb-1 w-20 text-center">Medida</th>
+                    <th className="pb-1 w-28 text-right">Valor ($)</th>
+                    <th className="pb-1 w-14 text-center"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredInsumos.map((insumo) => (
                     <tr key={insumo.id} className="group">
-                      <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-3">
+                      <td className="bg-[#e6e7ee] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] rounded-l-xl p-2 px-4">
                         <input
                           type="text"
                           value={insumo.detalle}
                           onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
-                          className="w-full bg-transparent border-none focus:outline-none text-xs font-bold text-gray-700"
+                          className="w-full bg-transparent border-none focus:outline-none text-[11px] font-bold text-gray-700 placeholder-gray-400"
+                          placeholder="Nombre del insumo..."
                         />
                       </td>
-                      <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-3">
+                      <td className="bg-[#e6e7ee] shadow-[0_2px_4px_#b8b9be,0_-2px_4px_#ffffff] p-2">
                         <input
                           type="text"
                           value={insumo.medida}
                           onChange={(e) => handleUpdateInsumo(insumo.id, 'medida', e.target.value)}
-                          className="w-full bg-transparent border-none focus:outline-none text-center text-xs font-medium text-gray-500"
+                          className="w-full bg-transparent border-none focus:outline-none text-center text-[10px] font-medium text-gray-500"
                         />
                       </td>
-                      <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-3 text-right">
-                        <input
-                          type="number"
-                          value={insumo.valor}
-                          onChange={(e) => handleUpdateInsumo(insumo.id, 'valor', parseFloat(e.target.value))}
-                          className="w-full bg-transparent border-none focus:outline-none text-right text-xs font-bold text-blue-600"
-                        />
+                      <td className="bg-[#e6e7ee] shadow-[0_2px_4px_#b8b9be,0_-2px_4px_#ffffff] p-2 text-right px-4">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-[10px] text-gray-400 font-bold">$</span>
+                          <input
+                            type="number"
+                            value={insumo.valor}
+                            onChange={(e) => handleUpdateInsumo(insumo.id, 'valor', parseFloat(e.target.value))}
+                            className="w-20 bg-transparent border-none focus:outline-none text-right text-[11px] font-bold text-blue-600"
+                          />
+                        </div>
                       </td>
-                      <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-3 text-center">
+                      <td className="bg-[#e6e7ee] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] rounded-r-xl p-2 text-center">
                         <button 
                           onClick={() => handleDeleteInsumo(insumo.id)}
-                          className="text-red-400 hover:text-red-600 transition-colors"
+                          className="text-gray-400 hover:text-red-500 transition-colors p-1"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </td>
                     </tr>
