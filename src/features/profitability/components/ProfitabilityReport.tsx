@@ -417,19 +417,18 @@ export function ProfitabilityReport() {
               );
             })}
 
-            {/* Gran Total Final */}
-            <div className="mt-4 p-5 rounded-[2.5rem] bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 shadow-[8px_8px_20px_#b8b9be,-8px_-8px_20px_#ffffff] flex items-center justify-between border border-white/10">
-              <div className="flex items-center gap-5">
-                <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white shadow-inner border border-white/20">
-                  <DollarSign size={28} />
+            {/* Gran Total Final Refinado */}
+            <div className="mt-6 p-4 px-8 rounded-3xl bg-[#e6e7ee] shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] flex items-center justify-between border border-white/50">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-inner border border-blue-200/20">
+                  <DollarSign size={20} />
                 </div>
                 <div>
-                  <h4 className="text-blue-100 text-[11px] font-black uppercase tracking-[0.2em] mb-1 opacity-80">Consolidado General de Personal</h4>
-                  <p className="text-white text-2xl font-black tracking-tight leading-none">Gran Total a Distribuir</p>
+                  <p className="text-blue-700 text-lg font-black tracking-tight leading-none">Total a Distribuir</p>
                 </div>
               </div>
-              <div className="text-right bg-black/10 px-6 py-3 rounded-2xl border border-white/5">
-                <span className="text-white text-4xl font-black tracking-tighter">
+              <div className="text-right bg-blue-500/5 px-5 py-2 rounded-xl border border-blue-500/10 shadow-inner">
+                <span className="text-blue-600 text-2xl font-black tracking-tighter">
                   {formatCurrency(personalData.reduce((acc, dep) => {
                     const totalSalary = dep.staff.reduce((sAcc, w) => sAcc + w.salary, 0);
                     const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + w.minutesMonth, 0);
