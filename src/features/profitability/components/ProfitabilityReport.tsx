@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock, Edit3 } from 'lucide-react';
+import { createClient } from '@/shared/lib/supabase/client';
 import initialInsumos from '../data/insumos-data.json';
 import initialPersonal from '../data/personal-data.json';
 
@@ -93,43 +94,72 @@ export function ProfitabilityReport() {
   });
   
   // Estado para los insumos asignados a cada servicio
-  const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string; cantidad: number }[]>>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('profitability_service_insumos');
-      return saved ? JSON.parse(saved) : {
-        'acupuntura': [],
-        'TERAPIA NEURAL': [],
-        'SUERO VITAMINA C': [],
-      };
-    }
-    return { 'acupuntura': [], 'TERAPIA NEURAL': [], 'SUERO VITAMINA C': [] };
+  const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string; cantidad: number }[]>>({
+    'acupuntura': [],
+    'TERAPIA NEURAL': [],
+    'SUERO VITAMINA C': [],
   });
 
   // Estado para los tiempos y valores de personal por servicio
-  const [serviceStaffTimes, setServiceStaffTimes] = useState<Record<string, { id: string, tipo: string, mins: number, valor: number }[]>>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('profitability_service_staff_times');
-      const defaultTimes = {
-        'acupuntura': [
-          { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
-          { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
-          { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
-        ],
-        'TERAPIA NEURAL': [
-          { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
-          { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
-          { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
-        ],
-        'SUERO VITAMINA C': [
-          { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
-          { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
-          { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
-        ],
-      };
-      return saved ? JSON.parse(saved) : defaultTimes;
-    }
-    return {};
+  const [serviceStaffTimes, setServiceStaffTimes] = useState<Record<string, { id: string, tipo: string, mins: number, valor: number }[]>>({
+    'acupuntura': [
+      { id: '1', tipo: 'Doctor', mins: 0, valor: 0 },
+      { id: '2', tipo: 'Enfermera', mins: 0, valor: 0 },
+      { id: '3', tipo: 'Administrativos', mins: 0, valor: 0 },
+    ],
+    'TERAPIA NEURAL': [
+      { id: '1', tipo: 'Doctor', mins: 0, valor: 0 },
+      { id: '2', tipo: 'Enfermera', mins: 0, valor: 0 },
+      { id: '3', tipo: 'Administrativos', mins: 0, valor: 0 },
+    ],
+    'SUERO VITAMINA C': [
+      { id: '1', tipo: 'Doctor', mins: 0, valor: 0 },
+      { id: '2', tipo: 'Enfermera', mins: 0, valor: 0 },
+      { id: '3', tipo: 'Administrativos', mins: 0, valor: 0 },
+    ],
   });
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const supabase = createClient();
+
+  // Cargar datos desde Supabase al montar
+  useEffect(() => {
+    async function loadData() {
+      const { data, error } = await supabase
+        .from('service_settings')
+        .select('*');
+      
+      if (data && data.length > 0) {
+        const newInsumos: Record<string, any> = { ...serviceInsumos };
+        const newStaffTimes: Record<string, any> = { ...serviceStaffTimes };
+        
+        data.forEach(setting => {
+          newInsumos[setting.service_name] = setting.insumos;
+          newStaffTimes[setting.service_name] = setting.staff_times;
+        });
+        
+        setServiceInsumos(newInsumos);
+        setServiceStaffTimes(newStaffTimes);
+      }
+    }
+    loadData();
+  }, []);
+
+  // Función para guardar en Supabase (compartido)
+  const saveToSupabase = async (serviceName: string, staffTimes: any, insumos: any) => {
+    setIsSyncing(true);
+    const { error } = await supabase
+      .from('service_settings')
+      .upsert({
+        service_name: serviceName,
+        staff_times: staffTimes,
+        insumos: insumos,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'service_name' });
+    
+    if (error) console.error('Error syncing with Supabase:', error);
+    setIsSyncing(false);
+  };
 
   // Efectos para persistencia
   useEffect(() => {
@@ -144,13 +174,7 @@ export function ProfitabilityReport() {
     localStorage.setItem('profitability_admin', JSON.stringify(adminData));
   }, [adminData]);
 
-  useEffect(() => {
-    localStorage.setItem('profitability_service_insumos', JSON.stringify(serviceInsumos));
-  }, [serviceInsumos]);
-
-  useEffect(() => {
-    localStorage.setItem('profitability_service_staff_times', JSON.stringify(serviceStaffTimes));
-  }, [serviceStaffTimes]);
+  // Eliminados los efectos de localStorage para sincronización compartida
 
   const filteredInsumos = useMemo(() => {
     return insumos.filter(insumo => 
@@ -245,38 +269,46 @@ export function ProfitabilityReport() {
 
   const handleAddInsumoToService = (serviceName: string, insumoId: string) => {
     if (!insumoId) return;
+    const newItems = [
+      ...serviceInsumos[serviceName],
+      { id: Math.random().toString(36).substr(2, 9), insumoId, cantidad: 1 }
+    ];
     setServiceInsumos(prev => ({
       ...prev,
-      [serviceName]: [
-        ...prev[serviceName],
-        { id: Math.random().toString(36).substr(2, 9), insumoId, cantidad: 1 }
-      ]
+      [serviceName]: newItems
     }));
+    saveToSupabase(serviceName, serviceStaffTimes[serviceName], newItems);
   };
 
   const handleUpdateServiceInsumoQuantity = (serviceName: string, id: string, cantidad: number) => {
+    const newItems = serviceInsumos[serviceName].map(item => 
+      item.id === id ? { ...item, cantidad: Math.max(1, cantidad) } : item
+    );
     setServiceInsumos(prev => ({
       ...prev,
-      [serviceName]: prev[serviceName].map(item => 
-        item.id === id ? { ...item, cantidad: Math.max(1, cantidad) } : item
-      )
+      [serviceName]: newItems
     }));
+    saveToSupabase(serviceName, serviceStaffTimes[serviceName], newItems);
   };
 
   const handleRemoveInsumoFromService = (serviceName: string, id: string) => {
+    const newItems = serviceInsumos[serviceName].filter(item => item.id !== id);
     setServiceInsumos(prev => ({
       ...prev,
-      [serviceName]: prev[serviceName].filter(item => item.id !== id)
+      [serviceName]: newItems
     }));
+    saveToSupabase(serviceName, serviceStaffTimes[serviceName], newItems);
   };
 
   const handleUpdateServiceStaffTime = (serviceName: string, id: string, field: 'mins' | 'valor', value: number) => {
+    const newTimes = serviceStaffTimes[serviceName].map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    );
     setServiceStaffTimes(prev => ({
       ...prev,
-      [serviceName]: prev[serviceName].map(item => 
-        item.id === id ? { ...item, [field]: value } : item
-      )
+      [serviceName]: newTimes
     }));
+    saveToSupabase(serviceName, newTimes, serviceInsumos[serviceName]);
   };
 
   const handleDeleteAdmin = (id: string) => {
@@ -306,6 +338,13 @@ export function ProfitabilityReport() {
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full pl-20 pr-3 py-2.5 rounded-xl bg-[#e6e7ee] text-gray-700 text-xs font-medium border-none shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:ring-1 focus:ring-blue-500/30 transition-all appearance-none"
               />
+            </div>
+
+            <div className="flex items-center gap-2 px-2">
+              <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isSyncing ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]'}`} />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                {isSyncing ? 'Sincronizando...' : 'Nube Sincronizada'}
+              </span>
             </div>
 
             <div className="relative flex-1 group">
