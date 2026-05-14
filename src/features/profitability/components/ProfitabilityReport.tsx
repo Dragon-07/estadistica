@@ -92,6 +92,10 @@ export function ProfitabilityReport() {
     }
     return initialAdminData;
   });
+
+  // Estados dinámicos para los tratamientos
+  const [availableTreatments, setAvailableTreatments] = useState<string[]>([]);
+  const [activeDashboardTreatments, setActiveDashboardTreatments] = useState<string[]>(['acupuntura', 'TERAPIA NEURAL', 'SUERO VITAMINA C']);
   
   // Estado para los insumos asignados a cada servicio
   const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string; cantidad: number }[]>>({
@@ -126,12 +130,43 @@ export function ProfitabilityReport() {
     'SUERO VITAMINA C': [],
   });
 
+  const handleAddTreatment = (name: string) => {
+    if (!name || activeDashboardTreatments.includes(name)) return;
+    
+    setActiveDashboardTreatments(prev => [...prev, name]);
+    
+    // Inicializar los estados del nuevo tratamiento si no existen
+    if (!serviceInsumos[name]) {
+      setServiceInsumos(prev => ({ ...prev, [name]: [] }));
+    }
+    if (!serviceStaffTimes[name]) {
+      setServiceStaffTimes(prev => ({
+        ...prev,
+        [name]: [
+          { id: Math.random().toString(), tipo: 'Doctor', mins: 0, valor: 0 },
+          { id: Math.random().toString(), tipo: 'Enfermera', mins: 0, valor: 0 },
+          { id: Math.random().toString(), tipo: 'Administrativos', mins: 0, valor: 0 },
+        ]
+      }));
+    }
+    if (!serviceAdminCosts[name]) {
+      setServiceAdminCosts(prev => ({ ...prev, [name]: [] }));
+    }
+  };
+
   const [isSyncing, setIsSyncing] = useState(false);
   const supabase = createClient();
 
   // Cargar datos desde Supabase al montar
   useEffect(() => {
     async function loadData() {
+      // Cargar tratamientos únicos de Supabase
+      const { data: treatmentsData } = await supabase.rpc('get_unique_treatments');
+      if (treatmentsData) {
+        setAvailableTreatments(treatmentsData.map((d: any) => d.treatment_name));
+      }
+
+      // Cargar configuraciones de servicio
       const { data, error } = await supabase
         .from('service_settings')
         .select('*');
@@ -140,8 +175,10 @@ export function ProfitabilityReport() {
         const newInsumos: Record<string, any> = { ...serviceInsumos };
         const newStaffTimes: Record<string, any> = { ...serviceStaffTimes };
         const newAdminCosts: Record<string, any> = { ...serviceAdminCosts };
+        const loadedTreatments: string[] = [];
         
         data.forEach(setting => {
+          loadedTreatments.push(setting.service_name);
           if (setting.insumos) newInsumos[setting.service_name] = setting.insumos;
           if (setting.staff_times) newStaffTimes[setting.service_name] = setting.staff_times;
           if (setting.admin_costs) newAdminCosts[setting.service_name] = setting.admin_costs;
@@ -150,6 +187,9 @@ export function ProfitabilityReport() {
         setServiceInsumos(newInsumos);
         setServiceStaffTimes(newStaffTimes);
         setServiceAdminCosts(newAdminCosts);
+        if (loadedTreatments.length > 0) {
+          setActiveDashboardTreatments(loadedTreatments);
+        }
       }
     }
     loadData();
@@ -444,7 +484,24 @@ export function ProfitabilityReport() {
         </div>
       </div>
 
-
+      {/* Nuevo Desplegable: Agregar Tratamientos Dinámicos */}
+      <div className="flex justify-start px-2 mt-2 z-10">
+        <div className="relative group w-auto min-w-[250px]">
+          <select 
+            onChange={(e) => {
+              handleAddTreatment(e.target.value);
+              e.target.value = '';
+            }}
+            className="w-full appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
+          >
+            <option value="">+ AGREGAR TRATAMIENTOS</option>
+            {availableTreatments.map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <Plus size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none" />
+        </div>
+      </div>
 
       {/* Sección Desplegable: Lista de Insumos */}
       {activeCategory === 'insumos' && (
@@ -853,69 +910,48 @@ export function ProfitabilityReport() {
 
       {/* Rejilla de Servicios y Costos Consolidados (Al final para que baje al desplegar) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2 pb-4">
-        {[
-          { 
-            title: 'acupuntura', 
-            insumos: serviceInsumos['acupuntura'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), 
-            personal: serviceStaffTimes['acupuntura'].reduce((acc, row) => {
-              const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
-              const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
-              return acc + val;
-            }, 0),
-            admin: serviceAdminCosts['acupuntura'].reduce((acc, row) => acc + row.valor, 0)
-          },
-          { 
-            title: 'TERAPIA NEURAL', 
-            insumos: serviceInsumos['TERAPIA NEURAL'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), 
-            personal: serviceStaffTimes['TERAPIA NEURAL'].reduce((acc, row) => {
-              const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
-              const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
-              return acc + val;
-            }, 0),
-            admin: serviceAdminCosts['TERAPIA NEURAL'].reduce((acc, row) => acc + row.valor, 0)
-          },
-          { 
-            title: 'SUERO VITAMINA C', 
-            insumos: serviceInsumos['SUERO VITAMINA C'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), 
-            personal: serviceStaffTimes['SUERO VITAMINA C'].reduce((acc, row) => {
-              const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
-              const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
-              return acc + val;
-            }, 0),
-            admin: serviceAdminCosts['SUERO VITAMINA C'].reduce((acc, row) => acc + row.valor, 0)
-          },
-        ].map((service, idx) => (
-          <button 
-            key={idx} 
-            onClick={() => setActiveService(activeService === service.title ? null : service.title)}
-            className={`bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] text-left ${
-              activeService === service.title ? 'shadow-[inset_10px_10px_20px_#b8b9be,inset_-10px_-10px_20px_#ffffff]' : ''
-            }`}
-          >
-            {/* Título del Servicio */}
-            <div className="bg-[#e6e7ee] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] p-4 rounded-2xl text-center">
-              <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">{service.title}</h4>
-            </div>
+        {activeDashboardTreatments.map((serviceName, idx) => {
+          const insumosCost = (serviceInsumos[serviceName] || []).reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0);
+          const personalCost = (serviceStaffTimes[serviceName] || []).reduce((acc, row) => {
+            const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
+            const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
+            return acc + val;
+          }, 0);
+          const adminCost = (serviceAdminCosts[serviceName] || []).reduce((acc, row) => acc + row.valor, 0);
 
-            {/* Detalles de Costos */}
-            <div className="space-y-3">
-              {[
-                { label: '$ Insumos', value: service.insumos, color: 'text-orange-500' },
-                { label: '$ Personal', value: service.personal, color: 'text-blue-500' },
-                { label: '$ Administrati', value: service.admin, color: 'text-emerald-500' },
-              ].map((row, rIdx) => (
-                <div key={rIdx} className="flex items-stretch">
-                  <div className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] px-4 py-2 rounded-l-xl flex-1 flex items-center">
-                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-tighter">{row.label}</span>
+          return (
+            <button 
+              key={idx} 
+              onClick={() => setActiveService(activeService === serviceName ? null : serviceName)}
+              className={`bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] text-left ${
+                activeService === serviceName ? 'shadow-[inset_10px_10px_20px_#b8b9be,inset_-10px_-10px_20px_#ffffff]' : ''
+              }`}
+            >
+              {/* Título del Servicio */}
+              <div className="bg-[#e6e7ee] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] p-4 rounded-2xl text-center">
+                <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">{serviceName}</h4>
+              </div>
+
+              {/* Detalles de Costos */}
+              <div className="space-y-3">
+                {[
+                  { label: '$ Insumos', value: insumosCost, color: 'text-orange-500' },
+                  { label: '$ Personal', value: personalCost, color: 'text-blue-500' },
+                  { label: '$ Administrati', value: adminCost, color: 'text-emerald-500' },
+                ].map((row, rIdx) => (
+                  <div key={rIdx} className="flex items-stretch">
+                    <div className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] px-4 py-2 rounded-l-xl flex-1 flex items-center">
+                      <span className="text-[11px] font-black text-slate-500 uppercase tracking-tighter">{row.label}</span>
+                    </div>
+                    <div className="bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] px-4 py-2 rounded-r-xl w-28 flex items-center justify-end">
+                      <span className={`text-[13px] font-black ${row.color}`}>{row.value.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div className="bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] px-4 py-2 rounded-r-xl w-28 flex items-center justify-end">
-                    <span className={`text-[13px] font-black ${row.color}`}>{row.value.toLocaleString()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </button>
-        ))}
+                ))}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Desplegable Detallado del Servicio Seleccionado */}
