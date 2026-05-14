@@ -80,6 +80,25 @@ export function ProfitabilityReport() {
     'SUERO VITAMINA C': [],
   });
 
+  // Estado para los tiempos y valores de personal por servicio
+  const [serviceStaffTimes, setServiceStaffTimes] = useState<Record<string, { id: string, tipo: string, mins: number, valor: number }[]>>({
+    'acupuntura': [
+      { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
+      { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
+      { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
+    ],
+    'TERAPIA NEURAL': [
+      { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
+      { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
+      { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
+    ],
+    'SUERO VITAMINA C': [
+      { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
+      { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
+      { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
+    ],
+  });
+
   const filteredInsumos = useMemo(() => {
     return insumos.filter(insumo => 
       insumo.detalle.toLowerCase().includes(searchTerm.toLowerCase())
@@ -184,6 +203,15 @@ export function ProfitabilityReport() {
     setServiceInsumos(prev => ({
       ...prev,
       [serviceName]: prev[serviceName].filter(item => item.id !== id)
+    }));
+  };
+
+  const handleUpdateServiceStaffTime = (serviceName: string, id: string, field: 'mins' | 'valor', value: number) => {
+    setServiceStaffTimes(prev => ({
+      ...prev,
+      [serviceName]: prev[serviceName].map(item => 
+        item.id === id ? { ...item, [field]: value } : item
+      )
     }));
   };
 
@@ -678,9 +706,24 @@ export function ProfitabilityReport() {
       {/* Rejilla de Servicios y Costos Consolidados (Al final para que baje al desplegar) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2 pb-4">
         {[
-          { title: 'acupuntura', insumos: serviceInsumos['acupuntura'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), personal: 5000, admin: 1000 },
-          { title: 'TERAPIA NEURAL', insumos: serviceInsumos['TERAPIA NEURAL'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), personal: 5000, admin: 1000 },
-          { title: 'SUERO VITAMINA C', insumos: serviceInsumos['SUERO VITAMINA C'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), personal: 5000, admin: 1000 },
+          { 
+            title: 'acupuntura', 
+            insumos: serviceInsumos['acupuntura'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), 
+            personal: serviceStaffTimes['acupuntura'].reduce((acc, item) => acc + item.valor, 0),
+            admin: 1000 
+          },
+          { 
+            title: 'TERAPIA NEURAL', 
+            insumos: serviceInsumos['TERAPIA NEURAL'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), 
+            personal: serviceStaffTimes['TERAPIA NEURAL'].reduce((acc, item) => acc + item.valor, 0),
+            admin: 1000 
+          },
+          { 
+            title: 'SUERO VITAMINA C', 
+            insumos: serviceInsumos['SUERO VITAMINA C'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), 
+            personal: serviceStaffTimes['SUERO VITAMINA C'].reduce((acc, item) => acc + item.valor, 0),
+            admin: 1000 
+          },
         ].map((service, idx) => (
           <button 
             key={idx} 
@@ -843,30 +886,36 @@ export function ProfitabilityReport() {
                 </div>
 
                 {/* Filas de Personal */}
-                {[
-                  { tipo: 'Doctor', mins: 10, valor: 30000, color: 'text-blue-600' },
-                  { tipo: 'Enfermera', mins: 7, valor: 12000, color: 'text-emerald-600' },
-                  { tipo: 'Administrativos', mins: 0, valor: 14000, color: 'text-slate-600' },
-                ].map((row, idx) => (
-                  <div key={idx} className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
+                {serviceStaffTimes[activeService]?.map((row) => (
+                  <div key={row.id} className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
                     <span className="flex-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.tipo}</span>
                     
                     <div className="w-20 flex justify-center">
-                      {row.tipo !== 'Administrativos' && (
+                      {row.tipo !== 'Administrativos' ? (
                         <div className="relative group/qty w-14">
                           <input 
                             type="number"
                             value={row.mins}
+                            onChange={(e) => handleUpdateServiceStaffTime(activeService, row.id, 'mins', parseFloat(e.target.value) || 0)}
                             className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
-                            readOnly
                           />
                         </div>
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-300">-</span>
                       )}
                     </div>
 
-                    <span className={`w-24 text-right text-[11px] font-black ${row.color} tabular-nums`}>
-                      {formatCurrency(row.valor)}
-                    </span>
+                    <div className="w-24 flex justify-end items-center gap-1">
+                      <span className="text-[10px] text-slate-400 font-black">$</span>
+                      <input 
+                        type="number"
+                        value={row.valor}
+                        onChange={(e) => handleUpdateServiceStaffTime(activeService, row.id, 'valor', parseFloat(e.target.value) || 0)}
+                        className={`w-20 bg-transparent border-none focus:outline-none text-right text-[11px] font-black tabular-nums ${
+                          row.tipo === 'Doctor' ? 'text-blue-600' : row.tipo === 'Enfermera' ? 'text-emerald-600' : 'text-slate-600'
+                        }`}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -877,7 +926,7 @@ export function ProfitabilityReport() {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Personal del Servicio</span>
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-black text-blue-600 tracking-tighter">
-                      {formatCurrency(56000)}
+                      {formatCurrency(serviceStaffTimes[activeService]?.reduce((acc, row) => acc + row.valor, 0) || 0)}
                     </span>
                   </div>
                 </div>
