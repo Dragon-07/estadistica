@@ -392,13 +392,13 @@ export function ProfitabilityReport() {
                     <table className="w-full text-left border-separate border-spacing-y-2">
                       <thead>
                         <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
-                          <th className="pb-1 pl-6">Nombre del Personal</th>
-                          <th className="pb-1 w-26 text-right">Sueldo Base</th>
-                          <th className="pb-1 w-20 text-center">Mins Mes</th>
-                          <th className="pb-1 w-20 text-center text-blue-500">$ Minuto</th>
-                          <th className="pb-1 w-24 text-center text-emerald-600">Mins Trabaja</th>
-                          <th className="pb-1 w-24 text-center text-orange-500">Mins No Trabaja</th>
-                          <th className="pb-1 w-36 text-right pr-6 text-blue-700 bg-blue-500/5 rounded-t-xl">$ A Distribuir</th>
+                          <th className="pb-1 pl-6 min-w-[150px]">Nombre del Personal</th>
+                          <th className="pb-1 w-36 text-right">Sueldo Base</th>
+                          <th className="pb-1 w-24 text-center">Mins Mes</th>
+                          <th className="pb-1 w-24 text-center text-blue-500">$ Minuto</th>
+                          <th className="pb-1 w-20 text-center text-emerald-600">Mins Trabaja</th>
+                          <th className="pb-1 w-20 text-center text-orange-500">Mins No Trabaja</th>
+                          <th className="pb-1 w-40 text-right pr-6 text-blue-700 bg-blue-500/5 rounded-t-xl">$ A Distribuir</th>
                           <th className="pb-1 w-10"></th>
                         </tr>
                       </thead>
@@ -410,7 +410,7 @@ export function ProfitabilityReport() {
 
                           return (
                             <tr key={worker.id} className="group">
-                              <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6 min-w-0">
+                              <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6 min-w-0 max-w-[200px]">
                                 <NeumorphicTooltip text={worker.name}>
                                   <div className="relative group/input">
                                     <input
@@ -423,7 +423,7 @@ export function ProfitabilityReport() {
                                   </div>
                                 </NeumorphicTooltip>
                               </td>
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-26">
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-36">
                                 <div className="relative group/input">
                                   <input
                                     type="number"
@@ -434,8 +434,8 @@ export function ProfitabilityReport() {
                                   <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
                                 </div>
                               </td>
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
-                                <div className="relative group/input">
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24">
+                                <div className="relative group/input max-w-[80px] mx-auto">
                                   <input
                                     type="number"
                                     value={worker.minutesMonth}
@@ -445,17 +445,17 @@ export function ProfitabilityReport() {
                                   <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-indigo-400 opacity-30" size={8} />
                                 </div>
                               </td>
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24 text-[11px] font-black text-blue-500/70 tabular-nums">
                                 {pricePerMinute.toFixed(2)}
                               </td>
                               {/* Celdas ahora vacías por solicitud del usuario */}
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-emerald-600/30">
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-20 text-[11px] font-black text-emerald-600/30">
                                 -
                               </td>
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-orange-400/30">
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-20 text-[11px] font-black text-orange-400/30">
                                 -
                               </td>
-                              <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] p-2 text-right pr-3 text-[11px] font-black text-blue-700/20 border-x border-blue-500/10 w-36">
+                              <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] p-2 text-right pr-6 text-[11px] font-black text-blue-700/20 border-x border-blue-500/10 w-40">
                                 -
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
