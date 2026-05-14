@@ -158,6 +158,17 @@ export function ProfitabilityReport() {
     );
   }, [insumos, searchTerm]);
 
+  // Cálculo de precios promedio por minuto por dependencia
+  const dependencyPrices = useMemo(() => {
+    const prices: Record<string, number> = {};
+    personalData.forEach(dep => {
+      const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
+      const totalMinsMes = dep.staff.reduce((acc, w) => acc + w.minutesMonth, 0);
+      prices[dep.dependency] = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+    });
+    return prices;
+  }, [personalData]);
+
   const handleUpdateInsumo = (id: string, field: keyof Insumo, value: string | number) => {
     setInsumos(prev => prev.map(item => 
       item.id === id ? { ...item, [field]: value } : item
@@ -762,19 +773,31 @@ export function ProfitabilityReport() {
           { 
             title: 'acupuntura', 
             insumos: serviceInsumos['acupuntura'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), 
-            personal: serviceStaffTimes['acupuntura'].reduce((acc, item) => acc + item.valor, 0),
+            personal: serviceStaffTimes['acupuntura'].reduce((acc, row) => {
+              const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
+              const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
+              return acc + val;
+            }, 0),
             admin: 1000 
           },
           { 
             title: 'TERAPIA NEURAL', 
             insumos: serviceInsumos['TERAPIA NEURAL'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), 
-            personal: serviceStaffTimes['TERAPIA NEURAL'].reduce((acc, item) => acc + item.valor, 0),
+            personal: serviceStaffTimes['TERAPIA NEURAL'].reduce((acc, row) => {
+              const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
+              const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
+              return acc + val;
+            }, 0),
             admin: 1000 
           },
           { 
             title: 'SUERO VITAMINA C', 
             insumos: serviceInsumos['SUERO VITAMINA C'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), 
-            personal: serviceStaffTimes['SUERO VITAMINA C'].reduce((acc, item) => acc + item.valor, 0),
+            personal: serviceStaffTimes['SUERO VITAMINA C'].reduce((acc, row) => {
+              const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
+              const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
+              return acc + val;
+            }, 0),
             admin: 1000 
           },
         ].map((service, idx) => (
@@ -939,38 +962,47 @@ export function ProfitabilityReport() {
                 </div>
 
                 {/* Filas de Personal */}
-                {serviceStaffTimes[activeService]?.map((row) => (
-                  <div key={row.id} className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
-                    <span className="flex-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.tipo}</span>
-                    
-                    <div className="w-20 flex justify-center">
-                      {row.tipo !== 'Administrativos' ? (
-                        <div className="relative group/qty w-14">
+                {serviceStaffTimes[activeService]?.map((row) => {
+                  const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
+                  const calculatedValor = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
+                  
+                  return (
+                    <div key={row.id} className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
+                      <span className="flex-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.tipo}</span>
+                      
+                      <div className="w-20 flex justify-center">
+                        {row.tipo !== 'Administrativos' ? (
+                          <div className="relative group/qty w-14">
+                            <input 
+                              type="number"
+                              value={row.mins}
+                              onChange={(e) => handleUpdateServiceStaffTime(activeService, row.id, 'mins', parseFloat(e.target.value) || 0)}
+                              className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-300">-</span>
+                        )}
+                      </div>
+
+                      <div className="w-24 flex justify-end items-center gap-1">
+                        <span className="text-[10px] text-slate-400 font-black">$</span>
+                        {row.tipo === 'Administrativos' ? (
                           <input 
                             type="number"
-                            value={row.mins}
-                            onChange={(e) => handleUpdateServiceStaffTime(activeService, row.id, 'mins', parseFloat(e.target.value) || 0)}
-                            className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
+                            value={row.valor}
+                            onChange={(e) => handleUpdateServiceStaffTime(activeService, row.id, 'valor', parseFloat(e.target.value) || 0)}
+                            className="w-20 bg-transparent border-none focus:outline-none text-right text-[11px] font-black tabular-nums text-slate-600"
                           />
-                        </div>
-                      ) : (
-                        <span className="text-[10px] font-bold text-slate-300">-</span>
-                      )}
+                        ) : (
+                          <span className={`text-[11px] font-black tabular-nums ${row.tipo === 'Doctor' ? 'text-blue-600' : 'text-emerald-600'}`}>
+                            {calculatedValor.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </span>
+                        )}
+                      </div>
                     </div>
-
-                    <div className="w-24 flex justify-end items-center gap-1">
-                      <span className="text-[10px] text-slate-400 font-black">$</span>
-                      <input 
-                        type="number"
-                        value={row.valor}
-                        onChange={(e) => handleUpdateServiceStaffTime(activeService, row.id, 'valor', parseFloat(e.target.value) || 0)}
-                        className={`w-20 bg-transparent border-none focus:outline-none text-right text-[11px] font-black tabular-nums ${
-                          row.tipo === 'Doctor' ? 'text-blue-600' : row.tipo === 'Enfermera' ? 'text-emerald-600' : 'text-slate-600'
-                        }`}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Sumatoria Total de Personal */}
@@ -979,7 +1011,10 @@ export function ProfitabilityReport() {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Personal del Servicio</span>
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-black text-blue-600 tracking-tighter">
-                      {formatCurrency(serviceStaffTimes[activeService]?.reduce((acc, row) => acc + row.valor, 0) || 0)}
+                      {formatCurrency(serviceStaffTimes[activeService]?.reduce((acc, row) => {
+                        const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
+                        return acc + (row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice);
+                      }, 0) || 0)}
                     </span>
                   </div>
                 </div>
