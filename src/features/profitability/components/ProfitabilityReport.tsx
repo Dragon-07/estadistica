@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock, Edit3 } from 'lucide-react';
 import initialInsumos from '../data/insumos-data.json';
 import initialPersonal from '../data/personal-data.json';
@@ -67,37 +67,90 @@ export function ProfitabilityReport() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
   
-  const [insumos, setInsumos] = useState<Insumo[]>(initialInsumos);
+  const [insumos, setInsumos] = useState<Insumo[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('profitability_insumos');
+      return saved ? JSON.parse(saved) : initialInsumos;
+    }
+    return initialInsumos;
+  });
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [personalData, setPersonalData] = useState<Dependency[]>(initialPersonal);
-  const [adminData, setAdminData] = useState<AdminCost[]>(initialAdminData);
+  const [personalData, setPersonalData] = useState<Dependency[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('profitability_personal');
+      return saved ? JSON.parse(saved) : initialPersonal;
+    }
+    return initialPersonal;
+  });
+  
+  const [adminData, setAdminData] = useState<AdminCost[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('profitability_admin');
+      return saved ? JSON.parse(saved) : initialAdminData;
+    }
+    return initialAdminData;
+  });
   
   // Estado para los insumos asignados a cada servicio
-  const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string; cantidad: number }[]>>({
-    'acupuntura': [],
-    'TERAPIA NEURAL': [],
-    'SUERO VITAMINA C': [],
+  const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string; cantidad: number }[]>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('profitability_service_insumos');
+      return saved ? JSON.parse(saved) : {
+        'acupuntura': [],
+        'TERAPIA NEURAL': [],
+        'SUERO VITAMINA C': [],
+      };
+    }
+    return { 'acupuntura': [], 'TERAPIA NEURAL': [], 'SUERO VITAMINA C': [] };
   });
 
   // Estado para los tiempos y valores de personal por servicio
-  const [serviceStaffTimes, setServiceStaffTimes] = useState<Record<string, { id: string, tipo: string, mins: number, valor: number }[]>>({
-    'acupuntura': [
-      { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
-      { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
-      { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
-    ],
-    'TERAPIA NEURAL': [
-      { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
-      { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
-      { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
-    ],
-    'SUERO VITAMINA C': [
-      { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
-      { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
-      { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
-    ],
+  const [serviceStaffTimes, setServiceStaffTimes] = useState<Record<string, { id: string, tipo: string, mins: number, valor: number }[]>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('profitability_service_staff_times');
+      const defaultTimes = {
+        'acupuntura': [
+          { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
+          { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
+          { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
+        ],
+        'TERAPIA NEURAL': [
+          { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
+          { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
+          { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
+        ],
+        'SUERO VITAMINA C': [
+          { id: '1', tipo: 'Doctor', mins: 10, valor: 30000 },
+          { id: '2', tipo: 'Enfermera', mins: 7, valor: 12000 },
+          { id: '3', tipo: 'Administrativos', mins: 0, valor: 14000 },
+        ],
+      };
+      return saved ? JSON.parse(saved) : defaultTimes;
+    }
+    return {};
   });
+
+  // Efectos para persistencia
+  useEffect(() => {
+    localStorage.setItem('profitability_insumos', JSON.stringify(insumos));
+  }, [insumos]);
+
+  useEffect(() => {
+    localStorage.setItem('profitability_personal', JSON.stringify(personalData));
+  }, [personalData]);
+
+  useEffect(() => {
+    localStorage.setItem('profitability_admin', JSON.stringify(adminData));
+  }, [adminData]);
+
+  useEffect(() => {
+    localStorage.setItem('profitability_service_insumos', JSON.stringify(serviceInsumos));
+  }, [serviceInsumos]);
+
+  useEffect(() => {
+    localStorage.setItem('profitability_service_staff_times', JSON.stringify(serviceStaffTimes));
+  }, [serviceStaffTimes]);
 
   const filteredInsumos = useMemo(() => {
     return insumos.filter(insumo => 
