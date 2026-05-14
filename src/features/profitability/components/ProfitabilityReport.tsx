@@ -40,16 +40,22 @@ const initialAdminData: AdminCost[] = [
   { id: '3', detail: 'AGUA', cost: 1000000, units: 1, consumption: 0 },
 ];
 
-function NeumorphicTooltip({ text, children }: { text: string; children: React.ReactNode }) {
+function NeumorphicTooltip({ text, children, position = 'top' }: { text: string; children: React.ReactNode, position?: 'top' | 'bottom' }) {
   return (
     <div className="relative group/tooltip flex-1 min-w-0">
       {children}
-      <div className="absolute z-[9999] bottom-full left-0 mb-4 px-4 py-3 bg-[#e6e7ee] rounded-[1.5rem] shadow-[10px_10px_20px_#b8b9be,-10px_-10px_20px_#ffffff] border border-white/60 invisible group-hover/tooltip:visible opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none w-max max-w-[350px]">
+      <div className={`absolute z-[9999] left-0 px-4 py-2.5 bg-[#e6e7ee] rounded-xl shadow-[10px_10px_20px_#b8b9be,-10px_-10px_20px_#ffffff] border border-white/60 invisible group-hover/tooltip:visible opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none w-max whitespace-nowrap ${
+        position === 'top' ? 'bottom-full mb-4' : 'top-full mt-4'
+      }`}>
         <div className="flex flex-col">
-          <p className="text-[11px] font-black text-slate-800 leading-snug break-words tracking-tight">{text}</p>
+          <p className="text-[11px] font-black text-slate-800 leading-none tracking-tight">{text}</p>
         </div>
-        {/* Triángulo alineado a la izquierda */}
-        <div className="absolute -bottom-2 left-6 w-4 h-4 bg-[#e6e7ee] rotate-45 border-r border-b border-white/30 shadow-[4px_4px_8px_rgba(0,0,0,0.1)]"></div>
+        {/* Triángulo dinámico */}
+        <div className={`absolute left-6 w-4 h-4 bg-[#e6e7ee] rotate-45 border-white/30 shadow-[4px_4px_8px_rgba(0,0,0,0.1)] ${
+          position === 'top' 
+            ? '-bottom-2 border-r border-b' 
+            : '-top-2 border-l border-t'
+        }`}></div>
       </div>
     </div>
   );
@@ -731,7 +737,7 @@ export function ProfitabilityReport() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Columna de Insumos del Servicio */}
             <div className="space-y-6">
-              <div className="flex flex-col gap-4 px-2">
+              <div className="flex flex-col gap-4 px-2 relative z-0">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 shadow-inner border border-orange-200/20">
                     <Package size={18} />
@@ -755,19 +761,19 @@ export function ProfitabilityReport() {
                 </div>
               </div>
 
-              <div className="space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 pt-12 pb-4 custom-scrollbar">
+              <div className="relative z-10 space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 pt-1 pb-1 custom-scrollbar">
                 {serviceInsumos[activeService]?.length === 0 ? (
                   <div className="py-10 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin insumos asignados</p>
                   </div>
                 ) : (
-                  serviceInsumos[activeService].map((item) => {
+                  serviceInsumos[activeService].map((item, index) => {
                     const insumoDetails = insumos.find(i => i.id === item.insumoId);
                     return (
                       <div key={item.id} className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-4 duration-300 w-full min-w-0">
                         <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40 min-w-0">
                           <div className="flex-1 min-w-0 mr-2 py-2">
-                            <NeumorphicTooltip text={insumoDetails?.detalle || ''}>
+                            <NeumorphicTooltip text={insumoDetails?.detalle || ''} position={index === 0 ? 'bottom' : 'top'}>
                               <span className="text-[10px] font-bold text-slate-600 block truncate">{insumoDetails?.detalle}</span>
                             </NeumorphicTooltip>
                           </div>
@@ -802,7 +808,7 @@ export function ProfitabilityReport() {
               
               {/* Sumatoria Total de Insumos */}
               {serviceInsumos[activeService]?.length > 0 && (
-                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-300/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex items-center gap-3 mt-1 pt-1 border-t border-slate-300/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
                   <div className="flex-1 flex items-center h-12 bg-white/40 shadow-inner rounded-2xl px-6 border border-orange-200/30">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Insumos del Servicio</span>
                     <div className="flex items-center gap-2">
