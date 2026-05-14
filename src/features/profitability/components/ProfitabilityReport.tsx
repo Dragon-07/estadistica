@@ -396,8 +396,8 @@ export function ProfitabilityReport() {
                           <th className="pb-1 w-36 text-right">Sueldo Base</th>
                           <th className="pb-1 w-24 text-center">Mins Mes</th>
                           <th className="pb-1 w-24 text-center text-blue-500">$ Minuto</th>
-                          <th className="pb-1 w-20 text-center text-emerald-600">Mins Trabaja</th>
-                          <th className="pb-1 w-20 text-center text-orange-500">Mins No Trabaja</th>
+                          <th className="pb-1 w-28 text-center text-emerald-600">Mins Trabaja</th>
+                          <th className="pb-1 w-28 text-center text-orange-500">Mins No Trabaja</th>
                           <th className="pb-1 w-40 text-right pr-6 text-blue-700 bg-blue-500/5 rounded-t-xl">$ A Distribuir</th>
                           <th className="pb-1 w-10"></th>
                         </tr>
@@ -449,10 +449,10 @@ export function ProfitabilityReport() {
                                 {pricePerMinute.toFixed(2)}
                               </td>
                               {/* Celdas ahora vacías por solicitud del usuario */}
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-20 text-[11px] font-black text-emerald-600/30">
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-28 text-[11px] font-black text-emerald-600/30">
                                 -
                               </td>
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-20 text-[11px] font-black text-orange-400/30">
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-28 text-[11px] font-black text-orange-400/30">
                                 -
                               </td>
                               <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] p-2 text-right pr-6 text-[11px] font-black text-blue-700/20 border-x border-blue-500/10 w-40">
@@ -610,7 +610,7 @@ export function ProfitabilityReport() {
                           </div>
                         </td>
                         <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
-                          <div className="relative group/input max-w-[80px] mx-auto">
+                          <div className="relative group/input max-w-[90px] mx-auto">
                             <input
                               type="number"
                               value={item.units}
