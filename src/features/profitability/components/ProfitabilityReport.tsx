@@ -119,6 +119,13 @@ export function ProfitabilityReport() {
     ],
   });
 
+  // Estado para los costos administrativos por servicio
+  const [serviceAdminCosts, setServiceAdminCosts] = useState<Record<string, { id: string, adminId: string, valor: number }[]>>({
+    'acupuntura': [],
+    'TERAPIA NEURAL': [],
+    'SUERO VITAMINA C': [],
+  });
+
   const [isSyncing, setIsSyncing] = useState(false);
   const supabase = createClient();
 
@@ -132,21 +139,24 @@ export function ProfitabilityReport() {
       if (data && data.length > 0) {
         const newInsumos: Record<string, any> = { ...serviceInsumos };
         const newStaffTimes: Record<string, any> = { ...serviceStaffTimes };
+        const newAdminCosts: Record<string, any> = { ...serviceAdminCosts };
         
         data.forEach(setting => {
-          newInsumos[setting.service_name] = setting.insumos;
-          newStaffTimes[setting.service_name] = setting.staff_times;
+          if (setting.insumos) newInsumos[setting.service_name] = setting.insumos;
+          if (setting.staff_times) newStaffTimes[setting.service_name] = setting.staff_times;
+          if (setting.admin_costs) newAdminCosts[setting.service_name] = setting.admin_costs;
         });
         
         setServiceInsumos(newInsumos);
         setServiceStaffTimes(newStaffTimes);
+        setServiceAdminCosts(newAdminCosts);
       }
     }
     loadData();
   }, []);
 
   // Función para guardar en Supabase (compartido)
-  const saveToSupabase = async (serviceName: string, staffTimes: any, insumos: any) => {
+  const saveToSupabase = async (serviceName: string, staffTimes: any, insumos: any, adminCosts?: any) => {
     setIsSyncing(true);
     const { error } = await supabase
       .from('service_settings')
@@ -154,6 +164,7 @@ export function ProfitabilityReport() {
         service_name: serviceName,
         staff_times: staffTimes,
         insumos: insumos,
+        admin_costs: adminCosts || serviceAdminCosts[serviceName] || [],
         updated_at: new Date().toISOString()
       }, { onConflict: 'service_name' });
     
@@ -309,6 +320,40 @@ export function ProfitabilityReport() {
       [serviceName]: newTimes
     }));
     saveToSupabase(serviceName, newTimes, serviceInsumos[serviceName]);
+  };
+
+  const handleAddAdminToService = (serviceName: string, adminId: string) => {
+    if (!adminId) return;
+    const adminDetails = adminData.find(a => a.id === adminId);
+    const newItems = [
+      ...serviceAdminCosts[serviceName],
+      { id: Math.random().toString(36).substr(2, 9), adminId, valor: adminDetails?.cost || 0 }
+    ];
+    setServiceAdminCosts(prev => ({
+      ...prev,
+      [serviceName]: newItems
+    }));
+    saveToSupabase(serviceName, serviceStaffTimes[serviceName], serviceInsumos[serviceName], newItems);
+  };
+
+  const handleUpdateServiceAdminCostValue = (serviceName: string, id: string, valor: number) => {
+    const newItems = serviceAdminCosts[serviceName].map(item => 
+      item.id === id ? { ...item, valor } : item
+    );
+    setServiceAdminCosts(prev => ({
+      ...prev,
+      [serviceName]: newItems
+    }));
+    saveToSupabase(serviceName, serviceStaffTimes[serviceName], serviceInsumos[serviceName], newItems);
+  };
+
+  const handleRemoveAdminFromService = (serviceName: string, id: string) => {
+    const newItems = serviceAdminCosts[serviceName].filter(item => item.id !== id);
+    setServiceAdminCosts(prev => ({
+      ...prev,
+      [serviceName]: newItems
+    }));
+    saveToSupabase(serviceName, serviceStaffTimes[serviceName], serviceInsumos[serviceName], newItems);
   };
 
   const handleDeleteAdmin = (id: string) => {
@@ -817,7 +862,7 @@ export function ProfitabilityReport() {
               const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
               return acc + val;
             }, 0),
-            admin: 1000 
+            admin: serviceAdminCosts['acupuntura'].reduce((acc, row) => acc + row.valor, 0)
           },
           { 
             title: 'TERAPIA NEURAL', 
@@ -827,7 +872,7 @@ export function ProfitabilityReport() {
               const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
               return acc + val;
             }, 0),
-            admin: 1000 
+            admin: serviceAdminCosts['TERAPIA NEURAL'].reduce((acc, row) => acc + row.valor, 0)
           },
           { 
             title: 'SUERO VITAMINA C', 
@@ -837,7 +882,7 @@ export function ProfitabilityReport() {
               const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
               return acc + val;
             }, 0),
-            admin: 1000 
+            admin: serviceAdminCosts['SUERO VITAMINA C'].reduce((acc, row) => acc + row.valor, 0)
           },
         ].map((service, idx) => (
           <button 
@@ -892,7 +937,7 @@ export function ProfitabilityReport() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Columna de Insumos del Servicio */}
             <div className="space-y-6">
               <div className="flex flex-col gap-4 px-2 relative z-0">
@@ -1054,6 +1099,87 @@ export function ProfitabilityReport() {
                         const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
                         return acc + (row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice);
                       }, 0) || 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Columna de Gastos Administrativos del Servicio */}
+            <div className="space-y-6">
+              <div className="flex flex-col gap-4 px-2 relative z-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 shadow-inner border border-emerald-200/20">
+                    <Briefcase size={18} />
+                  </div>
+                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Gastos Administrativos</h4>
+                </div>
+                <div className="relative group w-full">
+                  <select 
+                    onChange={(e) => {
+                      handleAddAdminToService(activeService, e.target.value);
+                      e.target.value = '';
+                    }}
+                    className="w-full appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-emerald-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
+                  >
+                    <option value="">+ Asignar Gasto Administrativo</option>
+                    {adminData.map(adm => (
+                      <option key={adm.id} value={adm.id}>{adm.detail} - {formatCurrency(adm.cost)}</option>
+                    ))}
+                  </select>
+                  <Plus size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="space-y-2 pr-2">
+                {/* Encabezado Simple */}
+                <div className="flex px-4 mb-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <span className="flex-1">Detalle del Gasto</span>
+                  <span className="w-24 text-right">Valor</span>
+                </div>
+
+                {/* Filas de Gastos Administrativos */}
+                {serviceAdminCosts[activeService]?.length === 0 ? (
+                  <div className="py-6 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin gastos asignados</p>
+                  </div>
+                ) : (
+                  serviceAdminCosts[activeService].map((row) => {
+                    const adminDetails = adminData.find(a => a.id === row.adminId);
+                    return (
+                      <div key={row.id} className="flex items-center gap-2 group">
+                        <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
+                          <span className="flex-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight truncate">{adminDetails?.detail || 'Gasto Eliminado'}</span>
+                          
+                          <div className="w-24 flex justify-end items-center gap-1">
+                            <span className="text-[10px] text-emerald-400 font-black">$</span>
+                            <input 
+                              type="number"
+                              value={row.valor}
+                              onChange={(e) => handleUpdateServiceAdminCostValue(activeService, row.id, parseFloat(e.target.value) || 0)}
+                              className="w-20 bg-transparent border-none focus:outline-none text-right text-[11px] font-black tabular-nums text-emerald-600"
+                            />
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => handleRemoveAdminFromService(activeService, row.id)}
+                          className="w-10 h-10 flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] rounded-xl text-slate-400 hover:text-red-500 transition-all shrink-0"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Sumatoria Total de Administrativos */}
+              <div className="flex items-center gap-3 mt-0 pt-0.5 border-t border-slate-300/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex-1 flex items-center h-12 bg-white/40 shadow-inner rounded-2xl px-6 border border-emerald-200/30">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Administrativo</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-black text-emerald-600 tracking-tighter">
+                      {formatCurrency(serviceAdminCosts[activeService]?.reduce((acc, row) => acc + row.valor, 0) || 0)}
                     </span>
                   </div>
                 </div>
