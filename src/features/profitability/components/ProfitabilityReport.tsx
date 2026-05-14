@@ -327,7 +327,7 @@ export function ProfitabilityReport() {
                             type="number"
                             value={insumo.valor}
                             onChange={(e) => handleUpdateInsumo(insumo.id, 'valor', parseFloat(e.target.value))}
-                            className="w-28 bg-transparent border-none focus:outline-none text-right text-[12px] font-black text-blue-600 tabular-nums"
+                            className="w-20 bg-transparent border-none focus:outline-none text-right text-[12px] font-black text-blue-600 tabular-nums"
                           />
                         </div>
                       </td>
@@ -386,7 +386,7 @@ export function ProfitabilityReport() {
                       <thead>
                         <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
                           <th className="pb-1 pl-6">Nombre del Personal</th>
-                          <th className="pb-1 w-32 text-right">Sueldo Base</th>
+                          <th className="pb-1 w-26 text-right">Sueldo Base</th>
                           <th className="pb-1 w-20 text-center">Mins Mes</th>
                           <th className="pb-1 w-20 text-center text-blue-500">$ Minuto</th>
                           <th className="pb-1 w-24 text-center text-emerald-600">Mins Trabaja</th>
@@ -416,7 +416,7 @@ export function ProfitabilityReport() {
                                   </div>
                                 </NeumorphicTooltip>
                               </td>
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-32">
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-26">
                                 <div className="relative group/input">
                                   <input
                                     type="number"
@@ -563,7 +563,7 @@ export function ProfitabilityReport() {
                 <thead>
                   <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                     <th className="px-6 py-4 text-left font-black">Detalle del Gasto</th>
-                    <th className="px-4 py-4 text-right font-black w-32">Costo Total</th>
+                    <th className="px-4 py-4 text-right font-black w-26">Costo Total</th>
                     <th className="px-4 py-4 text-center font-black w-24">Unidades</th>
                     <th className="px-4 py-4 text-center font-black w-24">$ Unidad</th>
                     <th className="px-4 py-4 text-center font-black w-24">Consumo</th>
@@ -591,7 +591,7 @@ export function ProfitabilityReport() {
                             </div>
                           </NeumorphicTooltip>
                         </td>
-                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-32">
+                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-26">
                           <div className="relative group/input">
                             <input
                               type="number"
@@ -772,7 +772,6 @@ export function ProfitabilityReport() {
                           </div>
                           
                           <div className="flex items-center shrink-0 ml-auto">
-                            <div className="h-6 w-[2px] bg-slate-300/30 mx-2" />
                             {/* Selector de Cantidad */}
                             <div className="relative group/qty w-12 shrink-0">
                               <input 
@@ -783,8 +782,7 @@ export function ProfitabilityReport() {
                                 className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
                               />
                             </div>
-                            <div className="h-6 w-[2px] bg-slate-300/30 mx-2" />
-                            <span className="text-[11px] font-black text-orange-600 w-28 text-right tabular-nums shrink-0">
+                            <span className="text-[11px] font-black text-orange-600 w-16 text-right tabular-nums shrink-0">
                               {formatCurrency((insumoDetails?.valor || 0) * item.cantidad)}
                             </span>
                           </div>
