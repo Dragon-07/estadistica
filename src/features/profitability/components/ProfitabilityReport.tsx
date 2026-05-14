@@ -154,6 +154,11 @@ export function ProfitabilityReport() {
     }
   };
 
+  const handleRemoveTreatment = (name: string) => {
+    setActiveDashboardTreatments(prev => prev.filter(t => t !== name));
+    if (activeService === name) setActiveService(null);
+  };
+
   const [isSyncing, setIsSyncing] = useState(false);
   const supabase = createClient();
 
@@ -920,17 +925,17 @@ export function ProfitabilityReport() {
           const adminCost = (serviceAdminCosts[serviceName] || []).reduce((acc, row) => acc + row.valor, 0);
 
           return (
-            <button 
-              key={idx} 
-              onClick={() => setActiveService(activeService === serviceName ? null : serviceName)}
-              className={`bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] text-left ${
-                activeService === serviceName ? 'shadow-[inset_10px_10px_20px_#b8b9be,inset_-10px_-10px_20px_#ffffff]' : ''
-              }`}
-            >
-              {/* Título del Servicio */}
-              <div className="bg-[#e6e7ee] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] p-4 rounded-2xl text-center">
-                <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">{serviceName}</h4>
-              </div>
+            <div key={idx} className="relative group/card">
+              <button 
+                onClick={() => setActiveService(activeService === serviceName ? null : serviceName)}
+                className={`w-full bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] text-left ${
+                  activeService === serviceName ? 'shadow-[inset_10px_10px_20px_#b8b9be,inset_-10px_-10px_20px_#ffffff]' : ''
+                }`}
+              >
+                {/* Título del Servicio */}
+                <div className="bg-[#e6e7ee] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] p-4 rounded-2xl text-center">
+                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">{serviceName}</h4>
+                </div>
 
               {/* Detalles de Costos */}
               <div className="space-y-3">
@@ -950,6 +955,7 @@ export function ProfitabilityReport() {
                 ))}
               </div>
             </button>
+            </div>
           );
         })}
       </div>
@@ -965,12 +971,25 @@ export function ProfitabilityReport() {
                 <p className="text-slate-500 text-sm font-medium">Análisis detallado de rentabilidad y costos unitarios</p>
               </div>
             </div>
-            <button 
-              onClick={() => setActiveService(null)}
-              className="p-3 bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] rounded-2xl text-slate-400 hover:text-red-500 transition-all"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-4">
+              {/* Botón para quitar tratamiento */}
+              <button
+                onClick={() => handleRemoveTreatment(activeService)}
+                className="p-3 px-5 bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] rounded-2xl text-slate-400 hover:text-red-500 transition-all flex items-center gap-3 group/delete"
+                title="Quitar tratamiento del panel"
+              >
+                <Trash2 size={20} className="transition-transform group-hover/delete:scale-110" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] hidden sm:inline">Quitar del Panel</span>
+              </button>
+
+              {/* Botón cerrar */}
+              <button 
+                onClick={() => setActiveService(null)}
+                className="p-3 bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] rounded-2xl text-slate-400 hover:text-blue-500 transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -1001,7 +1020,7 @@ export function ProfitabilityReport() {
               </div>
 
               <div className="relative z-10 space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 pt-1 pb-1 custom-scrollbar">
-                {serviceInsumos[activeService]?.length === 0 ? (
+                {(!serviceInsumos[activeService] || serviceInsumos[activeService].length === 0) ? (
                   <div className="py-10 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin insumos asignados</p>
                   </div>
@@ -1052,7 +1071,7 @@ export function ProfitabilityReport() {
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Insumos del Servicio</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xl font-black text-orange-600 tracking-tighter">
-                        {formatCurrency(serviceInsumos[activeService].reduce((acc, item) => {
+                        {formatCurrency((serviceInsumos[activeService] || []).reduce((acc, item) => {
                           const insumo = insumos.find(i => i.id === item.insumoId);
                           return acc + ((insumo?.valor || 0) * item.cantidad);
                         }, 0))}
@@ -1175,7 +1194,7 @@ export function ProfitabilityReport() {
                 </div>
 
                 {/* Filas de Gastos Administrativos */}
-                {serviceAdminCosts[activeService]?.length === 0 ? (
+                {(!serviceAdminCosts[activeService] || serviceAdminCosts[activeService].length === 0) ? (
                   <div className="py-6 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin gastos asignados</p>
                   </div>
