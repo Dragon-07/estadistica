@@ -44,11 +44,12 @@ function NeumorphicTooltip({ text, children }: { text: string; children: React.R
   return (
     <div className="relative group/tooltip flex-1 min-w-0">
       {children}
-      <div className="absolute z-[100] bottom-full left-1/2 -translate-x-1/2 mb-3 px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] border border-white/40 invisible group-hover/tooltip:visible opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none w-max max-w-[280px]">
-        <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-bold text-slate-700 leading-relaxed break-words">{text}</p>
+      <div className="absolute z-[9999] bottom-full left-0 mb-4 px-4 py-3 bg-[#e6e7ee] rounded-[1.5rem] shadow-[10px_10px_20px_#b8b9be,-10px_-10px_20px_#ffffff] border border-white/60 invisible group-hover/tooltip:visible opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none w-max max-w-[350px]">
+        <div className="flex flex-col">
+          <p className="text-[11px] font-black text-slate-800 leading-snug break-words tracking-tight">{text}</p>
         </div>
-        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#e6e7ee] rotate-45 border-r border-b border-white/20"></div>
+        {/* Triángulo alineado a la izquierda */}
+        <div className="absolute -bottom-2 left-6 w-4 h-4 bg-[#e6e7ee] rotate-45 border-r border-b border-white/30 shadow-[4px_4px_8px_rgba(0,0,0,0.1)]"></div>
       </div>
     </div>
   );
@@ -754,7 +755,7 @@ export function ProfitabilityReport() {
                 </div>
               </div>
 
-              <div className="space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 pt-12 pb-4 custom-scrollbar">
                 {serviceInsumos[activeService]?.length === 0 ? (
                   <div className="py-10 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin insumos asignados</p>
@@ -764,7 +765,7 @@ export function ProfitabilityReport() {
                     const insumoDetails = insumos.find(i => i.id === item.insumoId);
                     return (
                       <div key={item.id} className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-4 duration-300 w-full min-w-0">
-                        <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40 min-w-0 overflow-hidden">
+                        <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40 min-w-0">
                           <div className="flex-1 min-w-0 mr-2 py-2">
                             <NeumorphicTooltip text={insumoDetails?.detalle || ''}>
                               <span className="text-[10px] font-bold text-slate-600 block truncate">{insumoDetails?.detalle}</span>
