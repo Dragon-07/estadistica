@@ -293,24 +293,26 @@ export function ProfitabilityReport() {
                   <tr className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] px-4">
                     <th className="pb-2 pl-6">Detalle del Insumo</th>
                     <th className="pb-2 w-20 text-center">Medida</th>
-                    <th className="pb-2 w-32 text-right pr-6">Valor ($)</th>
+                    <th className="pb-2 w-40 text-right pr-6">Valor ($)</th>
                     <th className="pb-2 w-14 text-center"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="w-full">
                   {filteredInsumos.map((insumo) => (
-                    <tr key={insumo.id} className="group transition-all">
-                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-l-2xl p-2.5 pl-6 group-hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-shadow min-w-0">
-                        <NeumorphicTooltip text={insumo.detalle}>
-                          <input
-                            type="text"
-                            value={insumo.detalle}
-                            onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
-                            className="w-full bg-transparent border-none focus:outline-none text-[10.5px] font-bold text-slate-700 placeholder-slate-400 truncate"
-                          />
-                        </NeumorphicTooltip>
+                    <tr key={insumo.id} className="group transition-all w-full flex items-center gap-2 mb-2">
+                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-l-2xl p-2.5 pl-6 group-hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-shadow flex-1 min-w-0">
+                        <div className="w-full min-w-0">
+                          <NeumorphicTooltip text={insumo.detalle}>
+                            <input
+                              type="text"
+                              value={insumo.detalle}
+                              onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
+                              className="w-full bg-transparent border-none focus:outline-none text-[10.5px] font-bold text-slate-700 placeholder-slate-400 truncate"
+                            />
+                          </NeumorphicTooltip>
+                        </div>
                       </td>
-                      <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow">
+                      <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 flex items-center justify-center group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow w-24 shrink-0">
                         <input
                           type="text"
                           value={insumo.medida}
@@ -318,18 +320,18 @@ export function ProfitabilityReport() {
                           className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-bold text-slate-500"
                         />
                       </td>
-                      <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 text-right pr-6 group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 flex items-center justify-end pr-6 group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow w-40 shrink-0">
+                        <div className="flex items-center justify-end gap-1.5 w-full">
                           <span className="text-[11px] text-blue-500/50 font-black">$</span>
                           <input
                             type="number"
                             value={insumo.valor}
                             onChange={(e) => handleUpdateInsumo(insumo.id, 'valor', parseFloat(e.target.value))}
-                            className="w-24 bg-transparent border-none focus:outline-none text-right text-[12px] font-black text-blue-600 tabular-nums"
+                            className="w-28 bg-transparent border-none focus:outline-none text-right text-[12px] font-black text-blue-600 tabular-nums"
                           />
                         </div>
                       </td>
-                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-r-2xl p-2.5 text-center group-hover:shadow-[inset_-2px_2px_5px_#b8b9be,inset_2px_-2px_5px_#ffffff] transition-shadow">
+                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-r-2xl p-2.5 flex items-center justify-center w-14 shrink-0 group-hover:shadow-[inset_-2px_2px_5px_#b8b9be,inset_2px_-2px_5px_#ffffff] transition-shadow">
                         <button onClick={() => handleDeleteInsumo(insumo.id)} className="text-slate-400 hover:text-red-500 transition-all hover:scale-110 active:scale-90 p-1">
                           <Trash2 size={16} />
                         </button>
@@ -384,12 +386,12 @@ export function ProfitabilityReport() {
                       <thead>
                         <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
                           <th className="pb-1 pl-6">Nombre del Personal</th>
-                          <th className="pb-1 w-28 text-right">Sueldo Base</th>
+                          <th className="pb-1 w-32 text-right">Sueldo Base</th>
                           <th className="pb-1 w-20 text-center">Mins Mes</th>
                           <th className="pb-1 w-20 text-center text-blue-500">$ Minuto</th>
                           <th className="pb-1 w-24 text-center text-emerald-600">Mins Trabaja</th>
                           <th className="pb-1 w-24 text-center text-orange-500">Mins No Trabaja</th>
-                          <th className="pb-1 w-32 text-right pr-6 text-blue-700 bg-blue-500/5 rounded-t-xl">$ A Distribuir</th>
+                          <th className="pb-1 w-36 text-right pr-6 text-blue-700 bg-blue-500/5 rounded-t-xl">$ A Distribuir</th>
                           <th className="pb-1 w-10"></th>
                         </tr>
                       </thead>
@@ -414,7 +416,7 @@ export function ProfitabilityReport() {
                                   </div>
                                 </NeumorphicTooltip>
                               </td>
-                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-32">
                                 <div className="relative group/input">
                                   <input
                                     type="number"
@@ -446,7 +448,7 @@ export function ProfitabilityReport() {
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-orange-400/30">
                                 -
                               </td>
-                              <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] p-2 text-right pr-3 text-[11px] font-black text-blue-700/20 border-x border-blue-500/10 w-24">
+                              <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] p-2 text-right pr-3 text-[11px] font-black text-blue-700/20 border-x border-blue-500/10 w-36">
                                 -
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
@@ -561,11 +563,11 @@ export function ProfitabilityReport() {
                 <thead>
                   <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                     <th className="px-6 py-4 text-left font-black">Detalle del Gasto</th>
-                    <th className="px-4 py-4 text-right font-black">Costo Total</th>
-                    <th className="px-4 py-4 text-center font-black">Unidades</th>
-                    <th className="px-4 py-4 text-center font-black">$ Unidad</th>
-                    <th className="px-4 py-4 text-center font-black">Consumo</th>
-                    <th className="px-4 py-4 text-right pr-6 font-black">$ a Distribuir</th>
+                    <th className="px-4 py-4 text-right font-black w-32">Costo Total</th>
+                    <th className="px-4 py-4 text-center font-black w-24">Unidades</th>
+                    <th className="px-4 py-4 text-center font-black w-24">$ Unidad</th>
+                    <th className="px-4 py-4 text-center font-black w-24">Consumo</th>
+                    <th className="px-4 py-4 text-right pr-6 font-black w-36">$ a Distribuir</th>
                     <th className="w-12"></th>
                   </tr>
                 </thead>
@@ -589,7 +591,7 @@ export function ProfitabilityReport() {
                             </div>
                           </NeumorphicTooltip>
                         </td>
-                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
+                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-32">
                           <div className="relative group/input">
                             <input
                               type="number"
@@ -625,8 +627,8 @@ export function ProfitabilityReport() {
                             <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 opacity-30" size={8} />
                           </div>
                         </td>
-                        <td className="p-2 text-right pr-6">
-                          <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-blue-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-blue-600 inline-block min-w-[100px]">
+                        <td className="p-2 text-right pr-6 w-36">
+                          <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-blue-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-blue-600 inline-block min-w-[100px] tabular-nums">
                             {formatCurrency(toDistribute)}
                           </div>
                         </td>
@@ -752,7 +754,7 @@ export function ProfitabilityReport() {
                 </div>
               </div>
 
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
                 {serviceInsumos[activeService]?.length === 0 ? (
                   <div className="py-10 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin insumos asignados</p>
@@ -761,15 +763,15 @@ export function ProfitabilityReport() {
                   serviceInsumos[activeService].map((item) => {
                     const insumoDetails = insumos.find(i => i.id === item.insumoId);
                     return (
-                      <div key={item.id} className="flex items-center gap-3 group animate-in fade-in slide-in-from-left-4 duration-300">
-                        <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
+                      <div key={item.id} className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-4 duration-300 w-full min-w-0">
+                        <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40 min-w-0 overflow-hidden">
                           <div className="flex-1 min-w-0 mr-2 py-2">
                             <NeumorphicTooltip text={insumoDetails?.detalle || ''}>
                               <span className="text-[10px] font-bold text-slate-600 block truncate">{insumoDetails?.detalle}</span>
                             </NeumorphicTooltip>
                           </div>
                           
-                          <div className="flex items-center">
+                          <div className="flex items-center shrink-0 ml-auto">
                             <div className="h-6 w-[2px] bg-slate-300/30 mx-2" />
                             {/* Selector de Cantidad */}
                             <div className="relative group/qty w-12 shrink-0">
@@ -778,18 +780,18 @@ export function ProfitabilityReport() {
                                 min="1"
                                 value={item.cantidad}
                                 onChange={(e) => handleUpdateServiceInsumoQuantity(activeService, item.id, parseInt(e.target.value) || 1)}
-                                className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all"
+                                className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
                               />
                             </div>
                             <div className="h-6 w-[2px] bg-slate-300/30 mx-2" />
-                            <span className="text-[11px] font-black text-orange-600 w-[95px] text-right shrink-0 tabular-nums">
+                            <span className="text-[11px] font-black text-orange-600 w-28 text-right tabular-nums shrink-0">
                               {formatCurrency((insumoDetails?.valor || 0) * item.cantidad)}
                             </span>
                           </div>
                         </div>
                         <button 
                           onClick={() => handleRemoveInsumoFromService(activeService, item.id)}
-                          className="w-10 h-10 flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] rounded-xl text-slate-400 hover:text-red-500 transition-all"
+                          className="w-10 h-10 flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] rounded-xl text-slate-400 hover:text-red-500 transition-all shrink-0"
                         >
                           <Trash2 size={14} />
                         </button>
