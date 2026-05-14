@@ -609,15 +609,10 @@ export function ProfitabilityReport() {
         </div>
       )}
 
-      {/* Estado Inicial */}
-      {!activeCategory && (
-        <div className="p-12 border-2 border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center opacity-20">
-          <p className="text-gray-500 font-medium italic">Selecciona una categoría para gestionar los costos de referencia</p>
-        </div>
-      )}
+
 
       {/* Rejilla de Servicios y Costos Consolidados (Al final para que baje al desplegar) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 pb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2 pb-4">
         {[
           { title: 'acupuntura', insumos: 1500, personal: 5000, admin: 1000 },
           { title: 'TERAPIA NEURAL', insumos: 1500, personal: 5000, admin: 1000 },
