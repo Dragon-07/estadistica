@@ -187,7 +187,7 @@ export function ProfitabilityReport() {
           {[
             { id: 'insumos', label: 'Insumos', icon: Package, color: 'text-orange-500', bg: 'bg-orange-500/10' },
             { id: 'personal', label: 'Personal', icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-            { id: 'administrativo', label: 'Administrativo', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+            { id: 'administrativo', label: 'Administrativo', icon: Briefcase, color: 'text-blue-500', bg: 'bg-blue-500/10' },
           ].map((item) => (
             <button
               key={item.id}
@@ -486,7 +486,7 @@ export function ProfitabilityReport() {
           <div className="bg-[#e6e7ee] p-8 rounded-[3rem] shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-white/50 relative overflow-hidden">
             <div className="flex justify-between items-center mb-8 px-2">
               <div className="flex items-center gap-4">
-                <div className="w-2.5 h-10 bg-purple-500 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.4)]" />
+                <div className="w-2.5 h-10 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.4)]" />
                 <div>
                   <h3 className="text-2xl font-black text-slate-800 tracking-tight">Costos Administrativos</h3>
                   <p className="text-slate-500 text-sm font-medium">Gestión de servicios y gastos generales</p>
@@ -494,7 +494,7 @@ export function ProfitabilityReport() {
               </div>
               <button 
                 onClick={handleAddAdmin}
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] rounded-2xl text-purple-600 text-xs font-black uppercase tracking-widest transition-all group"
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] rounded-2xl text-blue-600 text-xs font-black uppercase tracking-widest transition-all group"
               >
                 <Plus size={16} className="group-hover:rotate-90 transition-transform" />
                 Agregar Item
@@ -527,9 +527,9 @@ export function ProfitabilityReport() {
                               type="text"
                               value={item.detail}
                               onChange={(e) => handleUpdateAdmin(item.id, 'detail', e.target.value)}
-                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-purple-200/30 focus:outline-none focus:ring-2 focus:ring-purple-400/40 transition-all text-[11px] font-bold text-slate-700"
+                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[11px] font-bold text-slate-700"
                             />
-                            <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-purple-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                            <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
                           </div>
                         </td>
                         <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
@@ -538,9 +538,9 @@ export function ProfitabilityReport() {
                               type="number"
                               value={item.cost}
                               onChange={(e) => handleUpdateAdmin(item.id, 'cost', parseFloat(e.target.value) || 0)}
-                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-purple-200/30 focus:outline-none focus:ring-2 focus:ring-purple-400/40 transition-all text-right text-[11px] font-black text-slate-600"
+                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600"
                             />
-                            <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-purple-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                            <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
                           </div>
                         </td>
                         <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
@@ -549,12 +549,12 @@ export function ProfitabilityReport() {
                               type="number"
                               value={item.units}
                               onChange={(e) => handleUpdateAdmin(item.id, 'units', parseFloat(e.target.value) || 0)}
-                              className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-purple-200/30 focus:outline-none focus:ring-2 focus:ring-purple-400/40 transition-all text-center text-[11px] font-black text-slate-500"
+                              className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-center text-[11px] font-black text-slate-500"
                             />
-                            <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-purple-400 opacity-30" size={8} />
+                            <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 opacity-30" size={8} />
                           </div>
                         </td>
-                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-purple-500/70">
+                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
                           {pricePerUnit.toFixed(2)}
                         </td>
                         <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
@@ -563,13 +563,13 @@ export function ProfitabilityReport() {
                               type="number"
                               value={item.consumption}
                               onChange={(e) => handleUpdateAdmin(item.id, 'consumption', parseFloat(e.target.value) || 0)}
-                              className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-purple-200/30 focus:outline-none focus:ring-2 focus:ring-purple-400/40 transition-all text-center text-[11px] font-black text-orange-600"
+                              className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-center text-[11px] font-black text-orange-600"
                             />
-                            <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-purple-400 opacity-30" size={8} />
+                            <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 opacity-30" size={8} />
                           </div>
                         </td>
                         <td className="p-2 text-right pr-6">
-                          <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-purple-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-purple-600 inline-block min-w-[100px]">
+                          <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-blue-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-blue-600 inline-block min-w-[100px]">
                             {formatCurrency(toDistribute)}
                           </div>
                         </td>
@@ -585,18 +585,17 @@ export function ProfitabilityReport() {
               </table>
             </div>
 
-            {/* Total Administrativo Consolidado */}
             <div className="mt-8 p-4 px-8 rounded-3xl bg-[#e6e7ee] shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] flex items-center justify-between border border-white/50">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 shadow-inner border border-purple-200/20">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-inner border border-blue-200/20">
                   <Briefcase size={20} />
                 </div>
                 <div>
-                  <p className="text-purple-700 text-lg font-black tracking-tight leading-none">Total a Distribuir</p>
+                  <p className="text-blue-700 text-lg font-black tracking-tight leading-none">Total a Distribuir</p>
                 </div>
               </div>
-              <div className="text-right bg-purple-500/5 px-5 py-2 rounded-xl border border-purple-500/10 shadow-inner">
-                <span className="text-purple-600 text-2xl font-black tracking-tighter">
+              <div className="text-right bg-blue-500/5 px-5 py-2 rounded-xl border border-blue-500/10 shadow-inner">
+                <span className="text-blue-600 text-2xl font-black tracking-tighter">
                   {formatCurrency(adminData.reduce((acc, item) => {
                     const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
                     return acc + ((item.units - item.consumption) * pricePerUnit);
