@@ -678,9 +678,9 @@ export function ProfitabilityReport() {
       {/* Rejilla de Servicios y Costos Consolidados (Al final para que baje al desplegar) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2 pb-4">
         {[
-          { title: 'acupuntura', insumos: 1500, personal: 5000, admin: 1000 },
-          { title: 'TERAPIA NEURAL', insumos: 1500, personal: 5000, admin: 1000 },
-          { title: 'SUERO VITAMINA C', insumos: 1500, personal: 5000, admin: 1000 },
+          { title: 'acupuntura', insumos: serviceInsumos['acupuntura'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), personal: 5000, admin: 1000 },
+          { title: 'TERAPIA NEURAL', insumos: serviceInsumos['TERAPIA NEURAL'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), personal: 5000, admin: 1000 },
+          { title: 'SUERO VITAMINA C', insumos: serviceInsumos['SUERO VITAMINA C'].reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0), personal: 5000, admin: 1000 },
         ].map((service, idx) => (
           <button 
             key={idx} 
