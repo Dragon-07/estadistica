@@ -826,15 +826,61 @@ export function ProfitabilityReport() {
             </div>
 
             {/* Columna de Personal del Servicio (Placeholder para consistencia) */}
-            <div className="space-y-6 opacity-30 pointer-events-none grayscale">
+            <div className="space-y-6">
               <div className="flex items-center gap-3 px-2">
                 <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-inner border border-blue-200/20">
                   <Users size={18} />
                 </div>
-                <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Personal & Tiempos</h4>
+                <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Tiempos del Personal</h4>
               </div>
-              <div className="py-20 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Configuración próximamente</p>
+
+              <div className="space-y-2 pr-2">
+                {/* Encabezado Simple */}
+                <div className="flex px-4 mb-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <span className="flex-1">Tipo</span>
+                  <span className="w-20 text-center">Minutos</span>
+                  <span className="w-24 text-right">Valor</span>
+                </div>
+
+                {/* Filas de Personal */}
+                {[
+                  { tipo: 'Doctor', mins: 10, valor: 30000, color: 'text-blue-600' },
+                  { tipo: 'Enfermera', mins: 7, valor: 12000, color: 'text-emerald-600' },
+                  { tipo: 'Administrativos', mins: 0, valor: 14000, color: 'text-slate-600' },
+                ].map((row, idx) => (
+                  <div key={idx} className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
+                    <span className="flex-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.tipo}</span>
+                    
+                    <div className="w-20 flex justify-center">
+                      {row.tipo !== 'Administrativos' && (
+                        <div className="relative group/qty w-14">
+                          <input 
+                            type="number"
+                            value={row.mins}
+                            className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
+                            readOnly
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <span className={`w-24 text-right text-[11px] font-black ${row.color} tabular-nums`}>
+                      {formatCurrency(row.valor)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Sumatoria Total de Personal */}
+              <div className="flex items-center gap-3 mt-0 pt-0.5 border-t border-slate-300/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex-1 flex items-center h-12 bg-white/40 shadow-inner rounded-2xl px-6 border border-blue-200/30">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Personal del Servicio</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-black text-blue-600 tracking-tighter">
+                      {formatCurrency(56000)}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
