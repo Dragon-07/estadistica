@@ -51,6 +51,13 @@ export function ProfitabilityReport() {
   
   const [personalData, setPersonalData] = useState<Dependency[]>(initialPersonal);
   const [adminData, setAdminData] = useState<AdminCost[]>(initialAdminData);
+  
+  // Estado para los insumos asignados a cada servicio
+  const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string }[]>>({
+    'acupuntura': [],
+    'TERAPIA NEURAL': [],
+    'SUERO VITAMINA C': [],
+  });
 
   const filteredInsumos = useMemo(() => {
     return insumos.filter(insumo => 
@@ -123,13 +130,31 @@ export function ProfitabilityReport() {
 
   const handleAddAdmin = () => {
     const newItem: AdminCost = {
-      id: Date.now().toString(),
-      detail: 'NUEVO COSTO',
+      id: Math.random().toString(36).substr(2, 9),
+      detail: 'Nuevo Gasto',
       cost: 0,
       units: 1,
       consumption: 0
     };
-    setAdminData(prev => [...prev, newItem]);
+    setAdminData([...adminData, newItem]);
+  };
+
+  const handleAddInsumoToService = (serviceName: string, insumoId: string) => {
+    if (!insumoId) return;
+    setServiceInsumos(prev => ({
+      ...prev,
+      [serviceName]: [
+        ...prev[serviceName],
+        { id: Math.random().toString(36).substr(2, 9), insumoId }
+      ]
+    }));
+  };
+
+  const handleRemoveInsumoFromService = (serviceName: string, id: string) => {
+    setServiceInsumos(prev => ({
+      ...prev,
+      [serviceName]: prev[serviceName].filter(item => item.id !== id)
+    }));
   };
 
   const handleDeleteAdmin = (id: string) => {
@@ -671,13 +696,73 @@ export function ProfitabilityReport() {
             </button>
           </div>
 
-          <div className="p-12 border-2 border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center opacity-40 bg-white/10">
-            <Package size={48} className="text-slate-300 mb-4" />
-            <p className="text-gray-500 font-bold italic text-center">
-              Sección de detalles para <span className="text-indigo-600 not-italic uppercase">{activeService}</span> en desarrollo.
-              <br />
-              <span className="text-[10px] font-normal uppercase tracking-widest mt-2 block opacity-60">Próximamente: Desglose de insumos específicos y tiempos de personal.</span>
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Columna de Insumos del Servicio */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 shadow-inner border border-orange-200/20">
+                    <Package size={18} />
+                  </div>
+                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Insumos del Servicio</h4>
+                </div>
+                <div className="relative group">
+                  <select 
+                    onChange={(e) => {
+                      handleAddInsumoToService(activeService, e.target.value);
+                      e.target.value = '';
+                    }}
+                    className="appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
+                  >
+                    <option value="">+ Agregar Insumo</option>
+                    {insumos.map(ins => (
+                      <option key={ins.id} value={ins.id}>{ins.detalle} - {formatCurrency(ins.valor)}</option>
+                    ))}
+                  </select>
+                  <Plus size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {serviceInsumos[activeService]?.length === 0 ? (
+                  <div className="py-10 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin insumos asignados</p>
+                  </div>
+                ) : (
+                  serviceInsumos[activeService].map((item) => {
+                    const insumoDetails = insumos.find(i => i.id === item.insumoId);
+                    return (
+                      <div key={item.id} className="flex items-center gap-3 group animate-in fade-in slide-in-from-left-4 duration-300">
+                        <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
+                          <span className="text-[11px] font-bold text-slate-600 flex-1 truncate">{insumoDetails?.detalle}</span>
+                          <div className="h-6 w-[2px] bg-slate-300/30 mx-3" />
+                          <span className="text-[11px] font-black text-orange-600">{formatCurrency(insumoDetails?.valor || 0)}</span>
+                        </div>
+                        <button 
+                          onClick={() => handleRemoveInsumoFromService(activeService, item.id)}
+                          className="w-10 h-10 flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] rounded-xl text-slate-400 hover:text-red-500 transition-all"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Columna de Personal del Servicio (Placeholder para consistencia) */}
+            <div className="space-y-6 opacity-30 pointer-events-none grayscale">
+              <div className="flex items-center gap-3 px-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-inner border border-blue-200/20">
+                  <Users size={18} />
+                </div>
+                <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Personal & Tiempos</h4>
+              </div>
+              <div className="py-20 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Configuración próximamente</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
