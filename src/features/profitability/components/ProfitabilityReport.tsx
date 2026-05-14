@@ -44,6 +44,7 @@ export function ProfitabilityReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeService, setActiveService] = useState<string | null>(null);
   
   const [insumos, setInsumos] = useState<Insumo[]>(initialInsumos);
   const [searchTerm, setSearchTerm] = useState('');
@@ -618,7 +619,13 @@ export function ProfitabilityReport() {
           { title: 'TERAPIA NEURAL', insumos: 1500, personal: 5000, admin: 1000 },
           { title: 'SUERO VITAMINA C', insumos: 1500, personal: 5000, admin: 1000 },
         ].map((service, idx) => (
-          <div key={idx} className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500">
+          <button 
+            key={idx} 
+            onClick={() => setActiveService(activeService === service.title ? null : service.title)}
+            className={`bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] text-left ${
+              activeService === service.title ? 'shadow-[inset_10px_10px_20px_#b8b9be,inset_-10px_-10px_20px_#ffffff]' : ''
+            }`}
+          >
             {/* Título del Servicio */}
             <div className="bg-[#e6e7ee] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] p-4 rounded-2xl text-center">
               <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">{service.title}</h4>
@@ -641,9 +648,39 @@ export function ProfitabilityReport() {
                 </div>
               ))}
             </div>
-          </div>
+          </button>
         ))}
       </div>
+
+      {/* Desplegable Detallado del Servicio Seleccionado */}
+      {activeService && (
+        <div className="mt-4 p-8 bg-[#e6e7ee] rounded-[3rem] shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-white/50 animate-in slide-in-from-top-6 duration-500 overflow-hidden relative">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-2.5 h-10 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)]" />
+              <div>
+                <h3 className="text-2xl font-black text-slate-800 tracking-tight uppercase">{activeService}</h3>
+                <p className="text-slate-500 text-sm font-medium">Análisis detallado de rentabilidad y costos unitarios</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setActiveService(null)}
+              className="p-3 bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] rounded-2xl text-slate-400 hover:text-red-500 transition-all"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="p-12 border-2 border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center opacity-40 bg-white/10">
+            <Package size={48} className="text-slate-300 mb-4" />
+            <p className="text-gray-500 font-bold italic text-center">
+              Sección de detalles para <span className="text-indigo-600 not-italic uppercase">{activeService}</span> en desarrollo.
+              <br />
+              <span className="text-[10px] font-normal uppercase tracking-widest mt-2 block opacity-60">Próximamente: Desglose de insumos específicos y tiempos de personal.</span>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
