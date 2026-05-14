@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock, Edit3 } from 'lucide-react';
 import { createClient } from '@/shared/lib/supabase/client';
 import initialInsumos from '../data/insumos-data.json';
@@ -923,13 +923,15 @@ export function ProfitabilityReport() {
             return acc + val;
           }, 0);
           const adminCost = (serviceAdminCosts[serviceName] || []).reduce((acc, row) => acc + row.valor, 0);
+          const isActive = activeService === serviceName;
 
           return (
-            <div key={idx} className="relative group/card">
+            <Fragment key={idx}>
+            <div className="relative group/card h-full">
               <button 
-                onClick={() => setActiveService(activeService === serviceName ? null : serviceName)}
-                className={`w-full bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] text-left ${
-                  activeService === serviceName ? 'shadow-[inset_10px_10px_20px_#b8b9be,inset_-10px_-10px_20px_#ffffff]' : ''
+                onClick={() => setActiveService(isActive ? null : serviceName)}
+                className={`w-full h-full bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] text-left ${
+                  isActive ? 'shadow-[inset_10px_10px_20px_#b8b9be,inset_-10px_-10px_20px_#ffffff]' : ''
                 }`}
               >
                 {/* Título del Servicio */}
@@ -956,13 +958,10 @@ export function ProfitabilityReport() {
               </div>
             </button>
             </div>
-          );
-        })}
-      </div>
 
       {/* Desplegable Detallado del Servicio Seleccionado */}
-      {activeService && (
-        <div className="mt-4 p-8 bg-[#e6e7ee] rounded-[3rem] shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-white/50 animate-in slide-in-from-top-6 duration-500 overflow-hidden relative">
+      {isActive && (
+        <div className="col-span-1 md:col-span-3 mt-4 mb-4 p-8 bg-[#e6e7ee] rounded-[3rem] shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-white/50 animate-in slide-in-from-top-6 duration-500 overflow-hidden relative">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <div className="w-2.5 h-10 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)]" />
@@ -1243,6 +1242,10 @@ export function ProfitabilityReport() {
           </div>
         </div>
       )}
+            </Fragment>
+          );
+        })}
+      </div>
     </div>
   );
 }
