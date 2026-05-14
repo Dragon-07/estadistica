@@ -749,6 +749,25 @@ export function ProfitabilityReport() {
                   })
                 )}
               </div>
+              
+              {/* Sumatoria Total de Insumos */}
+              {serviceInsumos[activeService]?.length > 0 && (
+                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-300/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div className="flex-1 flex items-center h-12 bg-white/40 shadow-inner rounded-2xl px-6 border border-orange-200/30">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Insumos del Servicio</span>
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-[1px] bg-slate-300/50 mx-2" />
+                      <span className="text-xl font-black text-orange-600 tracking-tighter">
+                        {formatCurrency(serviceInsumos[activeService].reduce((acc, item) => {
+                          const insumo = insumos.find(i => i.id === item.insumoId);
+                          return acc + (insumo?.valor || 0);
+                        }, 0))}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-10" />
+                </div>
+              )}
             </div>
 
             {/* Columna de Personal del Servicio (Placeholder para consistencia) */}
