@@ -699,20 +699,20 @@ export function ProfitabilityReport() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Columna de Insumos del Servicio */}
             <div className="space-y-6">
-              <div className="flex items-center justify-between px-2">
+              <div className="flex flex-col gap-4 px-2">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 shadow-inner border border-orange-200/20">
                     <Package size={18} />
                   </div>
                   <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Insumos del Servicio</h4>
                 </div>
-                <div className="relative group">
+                <div className="relative group w-full">
                   <select 
                     onChange={(e) => {
                       handleAddInsumoToService(activeService, e.target.value);
                       e.target.value = '';
                     }}
-                    className="appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
+                    className="w-full appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
                   >
                     <option value="">+ Agregar Insumo</option>
                     {insumos.map(ins => (
