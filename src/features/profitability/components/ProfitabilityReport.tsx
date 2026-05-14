@@ -212,39 +212,7 @@ export function ProfitabilityReport() {
         </div>
       </div>
 
-      {/* Rejilla de Servicios y Costos Consolidados */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-4">
-        {[
-          { title: 'acupuntura', insumos: 1500, personal: 5000, admin: 1000 },
-          { title: 'TERAPIA NEURAL', insumos: 1500, personal: 5000, admin: 1000 },
-          { title: 'SUERO VITAMINA C', insumos: 1500, personal: 5000, admin: 1000 },
-        ].map((service, idx) => (
-          <div key={idx} className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: `${idx * 150}ms` }}>
-            {/* Título del Servicio */}
-            <div className="bg-[#e6e7ee] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] p-4 rounded-2xl text-center">
-              <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">{service.title}</h4>
-            </div>
 
-            {/* Detalles de Costos */}
-            <div className="space-y-3">
-              {[
-                { label: '$ Insumos', value: service.insumos, color: 'text-orange-500' },
-                { label: '$ Personal', value: service.personal, color: 'text-blue-500' },
-                { label: '$ Administrati', value: service.admin, color: 'text-emerald-500' },
-              ].map((row, rIdx) => (
-                <div key={rIdx} className="flex items-stretch">
-                  <div className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] px-4 py-2 rounded-l-xl flex-1 flex items-center">
-                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-tighter">{row.label}</span>
-                  </div>
-                  <div className="bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] px-4 py-2 rounded-r-xl w-28 flex items-center justify-end">
-                    <span className={`text-[13px] font-black ${row.color}`}>{row.value.toLocaleString()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Sección Desplegable: Lista de Insumos */}
       {activeCategory === 'insumos' && (
@@ -647,6 +615,40 @@ export function ProfitabilityReport() {
           <p className="text-gray-500 font-medium italic">Selecciona una categoría para gestionar los costos de referencia</p>
         </div>
       )}
+
+      {/* Rejilla de Servicios y Costos Consolidados (Al final para que baje al desplegar) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 pb-4">
+        {[
+          { title: 'acupuntura', insumos: 1500, personal: 5000, admin: 1000 },
+          { title: 'TERAPIA NEURAL', insumos: 1500, personal: 5000, admin: 1000 },
+          { title: 'SUERO VITAMINA C', insumos: 1500, personal: 5000, admin: 1000 },
+        ].map((service, idx) => (
+          <div key={idx} className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500">
+            {/* Título del Servicio */}
+            <div className="bg-[#e6e7ee] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] p-4 rounded-2xl text-center">
+              <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">{service.title}</h4>
+            </div>
+
+            {/* Detalles de Costos */}
+            <div className="space-y-3">
+              {[
+                { label: '$ Insumos', value: service.insumos, color: 'text-orange-500' },
+                { label: '$ Personal', value: service.personal, color: 'text-blue-500' },
+                { label: '$ Administrati', value: service.admin, color: 'text-emerald-500' },
+              ].map((row, rIdx) => (
+                <div key={rIdx} className="flex items-stretch">
+                  <div className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] px-4 py-2 rounded-l-xl flex-1 flex items-center">
+                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-tighter">{row.label}</span>
+                  </div>
+                  <div className="bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] px-4 py-2 rounded-r-xl w-28 flex items-center justify-end">
+                    <span className={`text-[13px] font-black ${row.color}`}>{row.value.toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
