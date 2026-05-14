@@ -40,6 +40,20 @@ const initialAdminData: AdminCost[] = [
   { id: '3', detail: 'AGUA', cost: 1000000, units: 1, consumption: 0 },
 ];
 
+function NeumorphicTooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <div className="relative group/tooltip flex-1 min-w-0">
+      {children}
+      <div className="absolute z-[100] bottom-full left-1/2 -translate-x-1/2 mb-3 px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] border border-white/40 invisible group-hover/tooltip:visible opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none w-max max-w-[280px]">
+        <div className="flex flex-col gap-1">
+          <p className="text-[11px] font-bold text-slate-700 leading-relaxed break-words">{text}</p>
+        </div>
+        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#e6e7ee] rotate-45 border-r border-b border-white/20"></div>
+      </div>
+    </div>
+  );
+}
+
 export function ProfitabilityReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -53,7 +67,7 @@ export function ProfitabilityReport() {
   const [adminData, setAdminData] = useState<AdminCost[]>(initialAdminData);
   
   // Estado para los insumos asignados a cada servicio
-  const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string }[]>>({
+  const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string; cantidad: number }[]>>({
     'acupuntura': [],
     'TERAPIA NEURAL': [],
     'SUERO VITAMINA C': [],
@@ -145,8 +159,17 @@ export function ProfitabilityReport() {
       ...prev,
       [serviceName]: [
         ...prev[serviceName],
-        { id: Math.random().toString(36).substr(2, 9), insumoId }
+        { id: Math.random().toString(36).substr(2, 9), insumoId, cantidad: 1 }
       ]
+    }));
+  };
+
+  const handleUpdateServiceInsumoQuantity = (serviceName: string, id: string, cantidad: number) => {
+    setServiceInsumos(prev => ({
+      ...prev,
+      [serviceName]: prev[serviceName].map(item => 
+        item.id === id ? { ...item, cantidad: Math.max(1, cantidad) } : item
+      )
     }));
   };
 
@@ -277,13 +300,15 @@ export function ProfitabilityReport() {
                 <tbody>
                   {filteredInsumos.map((insumo) => (
                     <tr key={insumo.id} className="group transition-all">
-                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-l-2xl p-2.5 pl-6 group-hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-shadow">
-                        <input
-                          type="text"
-                          value={insumo.detalle}
-                          onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
-                          className="w-full bg-transparent border-none focus:outline-none text-[12px] font-bold text-slate-700 placeholder-slate-400"
-                        />
+                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-l-2xl p-2.5 pl-6 group-hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-shadow min-w-0">
+                        <NeumorphicTooltip text={insumo.detalle}>
+                          <input
+                            type="text"
+                            value={insumo.detalle}
+                            onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
+                            className="w-full bg-transparent border-none focus:outline-none text-[10.5px] font-bold text-slate-700 placeholder-slate-400 truncate"
+                          />
+                        </NeumorphicTooltip>
                       </td>
                       <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow">
                         <input
@@ -300,7 +325,7 @@ export function ProfitabilityReport() {
                             type="number"
                             value={insumo.valor}
                             onChange={(e) => handleUpdateInsumo(insumo.id, 'valor', parseFloat(e.target.value))}
-                            className="w-24 bg-transparent border-none focus:outline-none text-right text-[12px] font-black text-blue-600"
+                            className="w-24 bg-transparent border-none focus:outline-none text-right text-[12px] font-black text-blue-600 tabular-nums"
                           />
                         </div>
                       </td>
@@ -376,16 +401,18 @@ export function ProfitabilityReport() {
 
                           return (
                             <tr key={worker.id} className="group">
-                              <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6">
-                                <div className="relative group/input">
-                                  <input
-                                    type="text"
-                                    value={worker.name}
-                                    onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'name', e.target.value)}
-                                    className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[11px] font-bold text-slate-700"
-                                  />
-                                  <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
-                                </div>
+                              <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6 min-w-0">
+                                <NeumorphicTooltip text={worker.name}>
+                                  <div className="relative group/input">
+                                    <input
+                                      type="text"
+                                      value={worker.name}
+                                      onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'name', e.target.value)}
+                                      className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[10px] font-bold text-slate-700 truncate"
+                                    />
+                                    <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                                  </div>
+                                </NeumorphicTooltip>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
                                 <div className="relative group/input">
@@ -393,7 +420,7 @@ export function ProfitabilityReport() {
                                     type="number"
                                     value={worker.salary}
                                     onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value) || 0)}
-                                    className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600"
+                                    className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600 tabular-nums"
                                   />
                                   <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
                                 </div>
@@ -549,16 +576,18 @@ export function ProfitabilityReport() {
 
                     return (
                       <tr key={item.id} className="group">
-                        <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6">
-                          <div className="relative group/input">
-                            <input
-                              type="text"
-                              value={item.detail}
-                              onChange={(e) => handleUpdateAdmin(item.id, 'detail', e.target.value)}
-                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[11px] font-bold text-slate-700"
-                            />
-                            <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
-                          </div>
+                        <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6 min-w-0">
+                          <NeumorphicTooltip text={item.detail}>
+                            <div className="relative group/input">
+                              <input
+                                type="text"
+                                value={item.detail}
+                                onChange={(e) => handleUpdateAdmin(item.id, 'detail', e.target.value)}
+                                className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[10px] font-bold text-slate-700 truncate"
+                              />
+                              <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                            </div>
+                          </NeumorphicTooltip>
                         </td>
                         <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right">
                           <div className="relative group/input">
@@ -566,7 +595,7 @@ export function ProfitabilityReport() {
                               type="number"
                               value={item.cost}
                               onChange={(e) => handleUpdateAdmin(item.id, 'cost', parseFloat(e.target.value) || 0)}
-                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600"
+                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600 tabular-nums"
                             />
                             <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
                           </div>
@@ -734,9 +763,29 @@ export function ProfitabilityReport() {
                     return (
                       <div key={item.id} className="flex items-center gap-3 group animate-in fade-in slide-in-from-left-4 duration-300">
                         <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
-                          <span className="text-[11px] font-bold text-slate-600 flex-1 truncate">{insumoDetails?.detalle}</span>
-                          <div className="h-6 w-[2px] bg-slate-300/30 mx-3" />
-                          <span className="text-[11px] font-black text-orange-600">{formatCurrency(insumoDetails?.valor || 0)}</span>
+                          <div className="flex-1 min-w-0 mr-2 py-2">
+                            <NeumorphicTooltip text={insumoDetails?.detalle || ''}>
+                              <span className="text-[10px] font-bold text-slate-600 block truncate">{insumoDetails?.detalle}</span>
+                            </NeumorphicTooltip>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <div className="h-6 w-[2px] bg-slate-300/30 mx-2" />
+                            {/* Selector de Cantidad */}
+                            <div className="relative group/qty w-12 shrink-0">
+                              <input 
+                                type="number"
+                                min="1"
+                                value={item.cantidad}
+                                onChange={(e) => handleUpdateServiceInsumoQuantity(activeService, item.id, parseInt(e.target.value) || 1)}
+                                className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all"
+                              />
+                            </div>
+                            <div className="h-6 w-[2px] bg-slate-300/30 mx-2" />
+                            <span className="text-[11px] font-black text-orange-600 w-[95px] text-right shrink-0 tabular-nums">
+                              {formatCurrency((insumoDetails?.valor || 0) * item.cantidad)}
+                            </span>
+                          </div>
                         </div>
                         <button 
                           onClick={() => handleRemoveInsumoFromService(activeService, item.id)}
@@ -760,7 +809,7 @@ export function ProfitabilityReport() {
                       <span className="text-xl font-black text-orange-600 tracking-tighter">
                         {formatCurrency(serviceInsumos[activeService].reduce((acc, item) => {
                           const insumo = insumos.find(i => i.id === item.insumoId);
-                          return acc + (insumo?.valor || 0);
+                          return acc + ((insumo?.valor || 0) * item.cantidad);
                         }, 0))}
                       </span>
                     </div>
