@@ -17,6 +17,7 @@ interface Worker {
   id: string;
   name: string;
   salary: number;
+  weeklyHours?: number;
   minutesMonth: number;
   minutesWorked: number;
 }
@@ -117,7 +118,7 @@ export function ProfitabilityReport() {
     fetchedStats.current.clear();
   };
 
-  const getPeriodMinutes = () => {
+  const getPeriodMinutes = (customHours?: number) => {
     const startStr = appliedDateRange.start || globalDateRange.start;
     const endStr = appliedDateRange.end || globalDateRange.end;
     let daysToCount = 26; // Default fallback
@@ -141,7 +142,8 @@ export function ProfitabilityReport() {
       }
     }
     
-    const hoursPerDay = weeklyHours / 6;
+    const hoursToUse = (customHours !== undefined && customHours > 0) ? customHours : weeklyHours;
+    const hoursPerDay = hoursToUse / 6;
     return Math.round(daysToCount * hoursPerDay * 60);
   };
   const [insumos, setInsumos] = useState<Insumo[]>(() => {
@@ -406,11 +408,11 @@ export function ProfitabilityReport() {
     const prices: Record<string, number> = {};
     personalData.forEach(dep => {
       const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
-      const totalMinsMes = dep.staff.reduce((acc, w) => acc + w.minutesMonth, 0);
+      const totalMinsMes = dep.staff.reduce((acc, w) => acc + getPeriodMinutes(w.weeklyHours), 0);
       prices[dep.dependency] = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
     });
     return prices;
-  }, [personalData]);
+  }, [personalData, appliedDateRange, globalDateRange, weeklyHours]);
 
   const handleUpdateInsumo = (id: string, field: keyof Insumo, value: string | number) => {
     setInsumos(prev => prev.map(item => 
@@ -455,6 +457,7 @@ export function ProfitabilityReport() {
       id: Math.random().toString(36).substr(2, 9),
       name: 'Nuevo Trabajador',
       salary: 0,
+      weeklyHours: 0,
       minutesMonth: 10080,
       minutesWorked: 0
     };
@@ -828,7 +831,7 @@ export function ProfitabilityReport() {
             {personalData.map((dep) => {
               const dynamicMins = getPeriodMinutes();
               const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
-              const totalMinsMes = dep.staff.length * dynamicMins;
+              const totalMinsMes = dep.staff.reduce((acc, w) => acc + getPeriodMinutes(w.weeklyHours), 0);
               const totalMinsTrabaja = matrixTotals[dep.dependency] || 0;
               const totalMinsNoTrabaja = totalMinsMes - totalMinsTrabaja;
               
@@ -863,6 +866,7 @@ export function ProfitabilityReport() {
                         <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
                           <th className="pb-1 pl-6 min-w-[150px]">Nombre del Personal</th>
                           <th className="pb-1 w-36 text-right">Sueldo Base</th>
+                          <th className="pb-1 w-24 text-center">Horas Sem.</th>
                           <th className="pb-1 w-24 text-center">Mins Periodo</th>
                           <th className="pb-1 w-24 text-center text-blue-500">$ Minuto</th>
                           <th className="pb-1 w-28 text-center text-emerald-600">Mins Trabaja</th>
@@ -874,7 +878,8 @@ export function ProfitabilityReport() {
                       <tbody>
                         {dep.staff.map((worker) => {
                           const salary = worker.salary || 0;
-                          const minsMes = dynamicMins > 0 ? dynamicMins : 1;
+                          const workerMins = getPeriodMinutes(worker.weeklyHours);
+                          const minsMes = workerMins > 0 ? workerMins : 1;
                           const pricePerMinute = salary / minsMes;
 
                           return (
@@ -904,8 +909,19 @@ export function ProfitabilityReport() {
                                 </div>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24">
+                                <div className="relative group/input mx-auto w-16">
+                                  <input
+                                    type="number"
+                                    value={worker.weeklyHours || 0}
+                                    onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'weeklyHours', parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[11px] font-black text-slate-700 text-center tabular-nums"
+                                  />
+                                  <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                                </div>
+                              </td>
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24">
                                 <div className="max-w-[80px] mx-auto bg-indigo-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1 border border-indigo-200/30 text-center text-[11px] font-black text-indigo-600 tabular-nums">
-                                  {dynamicMins}
+                                  {workerMins}
                                 </div>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24 text-[11px] font-black text-blue-500/70 tabular-nums">
@@ -940,6 +956,7 @@ export function ProfitabilityReport() {
                             <td className="p-2 text-right text-[11px] font-black text-slate-600">
                               {formatCurrency(totalSalary)}
                             </td>
+                            <td className="p-2 text-center text-[11px] font-black text-slate-500"></td>
                             <td className="p-2 text-center text-[11px] font-black text-slate-500">
                               {totalMinsMes}
                             </td>
