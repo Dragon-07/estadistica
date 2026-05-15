@@ -863,6 +863,79 @@ export function ProfitabilityReport() {
                 </span>
               </div>
             </div>
+
+            {/* Matriz de Tiempos Acumulados */}
+            {(() => {
+              const treatments = Object.keys(serviceStaffTimes);
+              const timeMatrix: Record<string, Record<string, number>> = {};
+              
+              personalData.forEach(dep => {
+                timeMatrix[dep.dependency] = {};
+                treatments.forEach(t => {
+                  timeMatrix[dep.dependency][t] = 0;
+                });
+              });
+
+              treatments.forEach(t => {
+                const staffTimes = serviceStaffTimes[t] || [];
+                staffTimes.forEach(st => {
+                  let depName = '';
+                  if (st.tipo === 'Doctor') depName = 'Doctores';
+                  else if (st.tipo === 'Enfermera') depName = 'Enfermeras';
+                  else depName = st.tipo;
+                  
+                  if (timeMatrix[depName] !== undefined && timeMatrix[depName][t] !== undefined) {
+                    timeMatrix[depName][t] += (st.mins || 0);
+                  }
+                });
+              });
+
+              const activeTreatmentsCols = treatments.filter(t => 
+                personalData.some(dep => timeMatrix[dep.dependency][t] > 0)
+              );
+
+              if (activeTreatmentsCols.length === 0) return null;
+
+              const validDeps = personalData.filter(dep => 
+                activeTreatmentsCols.some(t => timeMatrix[dep.dependency][t] > 0)
+              );
+
+              return (
+                <div className="mt-8 pt-8 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <div className="bg-[#e6e7ee] rounded-[2rem] p-4 shadow-[inset_8px_8px_16px_#b8b9be,inset_-8px_-8px_16px_#ffffff] overflow-x-auto border border-white/40">
+                    <table className="w-full text-left border-collapse min-w-[500px]">
+                      <thead>
+                        <tr>
+                          <th className="py-4 px-5 font-black text-blue-700 uppercase text-[11px] tracking-widest w-48 bg-blue-500/10 rounded-tl-2xl border-b-2 border-r-2 border-white/50">Tiempo acumulado</th>
+                          {activeTreatmentsCols.map((t, idx) => (
+                            <th key={t} className={`py-4 px-5 font-black text-blue-700 uppercase text-[11px] tracking-widest text-center bg-blue-500/10 border-b-2 border-white/50 ${idx === activeTreatmentsCols.length - 1 ? 'rounded-tr-2xl' : 'border-r-2 border-white/50'}`}>
+                              {t}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {validDeps.map((dep, idx) => (
+                          <tr key={dep.dependency} className="group/row transition-all hover:bg-white/40">
+                            <td className={`py-3 px-5 font-black text-slate-600 bg-blue-500/10 border-r-2 border-white/50 uppercase text-[11px] tracking-tight ${idx === validDeps.length - 1 ? 'rounded-bl-2xl border-b-0' : 'border-b-2 border-white/50'}`}>
+                              {dep.dependency}
+                            </td>
+                            {activeTreatmentsCols.map((t, tIdx) => {
+                              const time = timeMatrix[dep.dependency][t];
+                              return (
+                                <td key={t} className={`py-3 px-5 text-center font-black text-slate-700 tabular-nums ${idx !== validDeps.length - 1 ? 'border-b border-white/50' : ''} ${tIdx !== activeTreatmentsCols.length - 1 ? 'border-r border-slate-300/20' : ''}`}>
+                                  {time > 0 ? time : ''}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
