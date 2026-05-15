@@ -866,7 +866,7 @@ export function ProfitabilityReport() {
 
             {/* Matriz de Tiempos Acumulados */}
             {(() => {
-              const treatments = Object.keys(serviceStaffTimes);
+              const treatments = activeDashboardTreatments;
               const timeMatrix: Record<string, Record<string, number>> = {};
               
               personalData.forEach(dep => {
@@ -890,15 +890,11 @@ export function ProfitabilityReport() {
                 });
               });
 
-              const activeTreatmentsCols = treatments.filter(t => 
-                personalData.some(dep => timeMatrix[dep.dependency][t] > 0)
-              );
+              const activeTreatmentsCols = treatments;
 
               if (activeTreatmentsCols.length === 0) return null;
 
-              const validDeps = personalData.filter(dep => 
-                activeTreatmentsCols.some(t => timeMatrix[dep.dependency][t] > 0)
-              );
+              const validDeps = personalData;
 
               return (
                 <div className="mt-8 pt-8 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
