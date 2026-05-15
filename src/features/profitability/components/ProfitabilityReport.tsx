@@ -103,14 +103,17 @@ function NeumorphicTooltip({ text, children, position = 'top' }: { text: string;
 export function ProfitabilityReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [appliedDateRange, setAppliedDateRange] = useState({ start: '', end: '' });
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
   
   const [serviceRevenueStats, setServiceRevenueStats] = useState<Record<string, { count: number, revenue: number }>>({});
   const fetchedStats = useRef<Set<string>>(new Set());
 
-
-  
+  const handleApplyPeriod = () => {
+    setAppliedDateRange({ start: startDate, end: endDate });
+    fetchedStats.current.clear();
+  };
   const [insumos, setInsumos] = useState<Insumo[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('profitability_insumos');
@@ -153,11 +156,19 @@ export function ProfitabilityReport() {
         let hasMore = true;
 
         while (hasMore) {
-          const { data, error } = await supabaseClient
+          let query = supabaseClient
             .from('medical_records')
-            .select('extra_data')
-            .eq('treatment_name', treatment)
-            .range(from, from + step - 1);
+            .select('extra_data, treatment_date')
+            .eq('treatment_name', treatment);
+            
+          if (appliedDateRange.start) {
+            query = query.gte('treatment_date', appliedDateRange.start);
+          }
+          if (appliedDateRange.end) {
+            query = query.lte('treatment_date', appliedDateRange.end);
+          }
+
+          const { data, error } = await query.range(from, from + step - 1);
 
           if (error) { console.error(error); break; }
           if (data && data.length > 0) {
@@ -179,7 +190,7 @@ export function ProfitabilityReport() {
       }
     }
     loadServiceStats();
-  }, [activeDashboardTreatments]);
+  }, [activeDashboardTreatments, appliedDateRange]);
   
   // Estado para los insumos asignados a cada servicio
   const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string; cantidad: number }[]>>({
@@ -559,7 +570,10 @@ export function ProfitabilityReport() {
             </div>
           </div>
 
-          <button className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm rounded-xl shadow-[4px_4px_8px_rgba(16,185,129,0.3)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] transition-all active:scale-95 group">
+          <button 
+            onClick={handleApplyPeriod}
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm rounded-xl shadow-[4px_4px_8px_rgba(16,185,129,0.3)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] transition-all active:scale-95 group"
+          >
             <Check size={18} className="group-hover:scale-110 transition-transform" />
             <span>Aplicar Periodo</span>
           </button>
