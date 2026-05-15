@@ -109,43 +109,7 @@ export function ProfitabilityReport() {
   const [serviceRevenueStats, setServiceRevenueStats] = useState<Record<string, { count: number, revenue: number }>>({});
   const fetchedStats = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    async function loadServiceStats() {
-      if (!activeService || fetchedStats.current.has(activeService)) return;
-      
-      const supabaseClient = createClient();
-      let records: any[] = [];
-      let from = 0;
-      const step = 1000;
-      let hasMore = true;
 
-      while (hasMore) {
-        const { data, error } = await supabaseClient
-          .from('medical_records')
-          .select('extra_data')
-          .eq('treatment_name', activeService)
-          .range(from, from + step - 1);
-
-        if (error) { console.error(error); break; }
-        if (data && data.length > 0) {
-          records = [...records, ...data];
-          from += step;
-          if (data.length < step) hasMore = false;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      let count = records.length;
-      let revenue = records.reduce((acc, r) => {
-        return acc + smartParseNumber(r.extra_data?.['Total final']);
-      }, 0);
-
-      setServiceRevenueStats(prev => ({ ...prev, [activeService]: { count, revenue } }));
-      fetchedStats.current.add(activeService);
-    }
-    loadServiceStats();
-  }, [activeService]);
   
   const [insumos, setInsumos] = useState<Insumo[]>(() => {
     if (typeof window !== 'undefined') {
@@ -175,6 +139,47 @@ export function ProfitabilityReport() {
   // Estados dinámicos para los tratamientos
   const [availableTreatments, setAvailableTreatments] = useState<string[]>([]);
   const [activeDashboardTreatments, setActiveDashboardTreatments] = useState<string[]>(['acupuntura', 'TERAPIA NEURAL', 'SUERO VITAMINA C']);
+
+  useEffect(() => {
+    async function loadServiceStats() {
+      const supabaseClient = createClient();
+      
+      for (const treatment of activeDashboardTreatments) {
+        if (fetchedStats.current.has(treatment)) continue;
+        
+        let records: any[] = [];
+        let from = 0;
+        const step = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data, error } = await supabaseClient
+            .from('medical_records')
+            .select('extra_data')
+            .eq('treatment_name', treatment)
+            .range(from, from + step - 1);
+
+          if (error) { console.error(error); break; }
+          if (data && data.length > 0) {
+            records = [...records, ...data];
+            from += step;
+            if (data.length < step) hasMore = false;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        let count = records.length;
+        let revenue = records.reduce((acc, r) => {
+          return acc + smartParseNumber(r.extra_data?.['Total final']);
+        }, 0);
+
+        setServiceRevenueStats(prev => ({ ...prev, [treatment]: { count, revenue } }));
+        fetchedStats.current.add(treatment);
+      }
+    }
+    loadServiceStats();
+  }, [activeDashboardTreatments]);
   
   // Estado para los insumos asignados a cada servicio
   const [serviceInsumos, setServiceInsumos] = useState<Record<string, { id: string; insumoId: string; cantidad: number }[]>>({
@@ -885,7 +890,8 @@ export function ProfitabilityReport() {
                   else depName = st.tipo;
                   
                   if (timeMatrix[depName] !== undefined && timeMatrix[depName][t] !== undefined) {
-                    timeMatrix[depName][t] += (st.mins || 0);
+                    const count = serviceRevenueStats[t]?.count || 0;
+                    timeMatrix[depName][t] += (st.mins || 0) * count;
                   }
                 });
               });
