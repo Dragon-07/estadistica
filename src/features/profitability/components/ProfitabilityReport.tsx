@@ -193,17 +193,14 @@ export function ProfitabilityReport() {
     'acupuntura': [
       { id: '1', tipo: 'Doctor', mins: 0, valor: 0 },
       { id: '2', tipo: 'Enfermera', mins: 0, valor: 0 },
-      { id: '3', tipo: 'Administrativos', mins: 0, valor: 0 },
     ],
     'TERAPIA NEURAL': [
       { id: '1', tipo: 'Doctor', mins: 0, valor: 0 },
       { id: '2', tipo: 'Enfermera', mins: 0, valor: 0 },
-      { id: '3', tipo: 'Administrativos', mins: 0, valor: 0 },
     ],
     'SUERO VITAMINA C': [
       { id: '1', tipo: 'Doctor', mins: 0, valor: 0 },
       { id: '2', tipo: 'Enfermera', mins: 0, valor: 0 },
-      { id: '3', tipo: 'Administrativos', mins: 0, valor: 0 },
     ],
   });
 
@@ -229,7 +226,6 @@ export function ProfitabilityReport() {
         [name]: [
           { id: Math.random().toString(), tipo: 'Doctor', mins: 0, valor: 0 },
           { id: Math.random().toString(), tipo: 'Enfermera', mins: 0, valor: 0 },
-          { id: Math.random().toString(), tipo: 'Administrativos', mins: 0, valor: 0 },
         ]
       }));
     }
@@ -1276,43 +1272,30 @@ export function ProfitabilityReport() {
                 </div>
 
                 {/* Filas de Personal */}
-                {serviceStaffTimes[activeService]?.map((row) => {
+                {serviceStaffTimes[activeService]?.filter(row => row.tipo !== 'Administrativos').map((row) => {
                   const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
-                  const calculatedValor = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
+                  const calculatedValor = row.mins * depPrice;
                   
                   return (
                     <div key={row.id} className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
                       <span className="flex-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight">{row.tipo}</span>
                       
                       <div className="w-20 flex justify-center">
-                        {row.tipo !== 'Administrativos' ? (
-                          <div className="relative group/qty w-14">
-                            <input 
-                              type="number"
-                              value={row.mins}
-                              onChange={(e) => handleUpdateServiceStaffTime(activeService, row.id, 'mins', parseFloat(e.target.value) || 0)}
-                              className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-[10px] font-bold text-slate-300">-</span>
-                        )}
+                        <div className="relative group/qty w-14">
+                          <input 
+                            type="number"
+                            value={row.mins}
+                            onChange={(e) => handleUpdateServiceStaffTime(activeService, row.id, 'mins', parseFloat(e.target.value) || 0)}
+                            className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
+                          />
+                        </div>
                       </div>
 
                       <div className="w-24 flex justify-end items-center gap-1">
                         <span className="text-[10px] text-slate-400 font-black">$</span>
-                        {row.tipo === 'Administrativos' ? (
-                          <input 
-                            type="number"
-                            value={row.valor}
-                            onChange={(e) => handleUpdateServiceStaffTime(activeService, row.id, 'valor', parseFloat(e.target.value) || 0)}
-                            className="w-20 bg-transparent border-none focus:outline-none text-right text-[11px] font-black tabular-nums text-slate-600"
-                          />
-                        ) : (
-                          <span className={`text-[11px] font-black tabular-nums ${row.tipo === 'Doctor' ? 'text-blue-600' : 'text-emerald-600'}`}>
-                            {calculatedValor.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                          </span>
-                        )}
+                        <span className={`text-[11px] font-black tabular-nums ${row.tipo === 'Doctor' ? 'text-blue-600' : 'text-emerald-600'}`}>
+                          {calculatedValor.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </span>
                       </div>
                     </div>
                   );
