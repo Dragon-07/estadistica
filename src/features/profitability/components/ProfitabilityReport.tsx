@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, Fragment } from 'react';
+import { useState, useMemo, useEffect, Fragment, useRef } from 'react';
 import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock, Edit3 } from 'lucide-react';
 import { createClient } from '@/shared/lib/supabase/client';
 import initialInsumos from '../data/insumos-data.json';
@@ -35,6 +35,44 @@ interface AdminCost {
   consumption: number;
 }
 
+/** Parseo inteligente de números */
+function smartParseNumber(raw: unknown): number {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return 0;
+  if (typeof raw === 'number') return raw;
+
+  let cleaned = String(raw).replace(/[$\s]/g, '');
+  
+  const hasComma = cleaned.includes(',');
+  const hasDot = cleaned.includes('.');
+  
+  if (hasComma && hasDot) {
+    const lastComma = cleaned.lastIndexOf(',');
+    const lastDot = cleaned.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    } else {
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    const parts = cleaned.split(',');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      cleaned = cleaned.replace(',', '.');
+    } else {
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  } else if (hasDot) {
+    const parts = cleaned.split('.');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      // decimal
+    } else {
+      cleaned = cleaned.replace(/\./g, '');
+    }
+  }
+  
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
 const initialAdminData: AdminCost[] = [
   { id: '1', detail: 'ENERGÍA', cost: 900000, units: 1122, consumption: 500 },
   { id: '2', detail: 'ARRIENDO', cost: 5000000, units: 1, consumption: 0 },
@@ -67,6 +105,47 @@ export function ProfitabilityReport() {
   const [endDate, setEndDate] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
+  
+  const [serviceRevenueStats, setServiceRevenueStats] = useState<Record<string, { count: number, revenue: number }>>({});
+  const fetchedStats = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    async function loadServiceStats() {
+      if (!activeService || fetchedStats.current.has(activeService)) return;
+      
+      const supabaseClient = createClient();
+      let records: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabaseClient
+          .from('medical_records')
+          .select('extra_data')
+          .eq('treatment_name', activeService)
+          .range(from, from + step - 1);
+
+        if (error) { console.error(error); break; }
+        if (data && data.length > 0) {
+          records = [...records, ...data];
+          from += step;
+          if (data.length < step) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      let count = records.length;
+      let revenue = records.reduce((acc, r) => {
+        return acc + smartParseNumber(r.extra_data?.['Total final']);
+      }, 0);
+
+      setServiceRevenueStats(prev => ({ ...prev, [activeService]: { count, revenue } }));
+      fetchedStats.current.add(activeService);
+    }
+    loadServiceStats();
+  }, [activeService]);
   
   const [insumos, setInsumos] = useState<Insumo[]>(() => {
     if (typeof window !== 'undefined') {
@@ -1262,6 +1341,45 @@ export function ProfitabilityReport() {
               </div>
             </div>
           </div>
+
+          {/* Tabla Alargada Inferior */}
+          {(() => {
+            const stats = serviceRevenueStats[activeService] || { count: 0, revenue: 0 };
+            const insumosTotal = serviceInsumos[activeService]?.reduce((acc, row) => acc + (insumos.find(i => i.id === row.insumoId)?.valor || 0) * row.cantidad, 0) || 0;
+            const staffTotal = serviceStaffTimes[activeService]?.reduce((acc, row) => acc + row.valor, 0) || 0;
+            const adminTotal = serviceAdminCosts[activeService]?.reduce((acc, row) => acc + row.valor, 0) || 0;
+            const totalServiceCost = insumosTotal + staffTotal + adminTotal;
+
+            const unitRevenue = stats.count > 0 ? stats.revenue / stats.count : 0;
+            const estimatedProfit = stats.revenue - (totalServiceCost * stats.count);
+
+            return (
+              <div className="mt-8 pt-8 border-t border-white/50 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="bg-[#e6e7ee] rounded-[2rem] p-4 shadow-[inset_8px_8px_16px_#b8b9be,inset_-8px_-8px_16px_#ffffff] overflow-x-auto border border-white/40">
+                  <table className="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                      <tr>
+                        <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest pl-4">Servicio</th>
+                        <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Servicios</th>
+                        <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Acumulado</th>
+                        <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Costo unitario</th>
+                        <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Ganancia estimada</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="bg-white/40 rounded-2xl relative shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] group/row transition-all hover:bg-white/60">
+                        <td className="py-4 px-5 font-black text-slate-600 whitespace-nowrap bg-indigo-500/10 rounded-l-2xl border-l-4 border-indigo-500 uppercase text-[11px] tracking-tight">Ingreso {activeService}</td>
+                        <td className="py-4 px-5 text-right font-bold text-slate-500 tabular-nums">{stats.count.toLocaleString()}</td>
+                        <td className="py-4 px-5 text-right font-black text-emerald-600 tabular-nums">{formatCurrency(stats.revenue)}</td>
+                        <td className="py-4 px-5 text-right font-black text-slate-700 tabular-nums">{formatCurrency(unitRevenue)}</td>
+                        <td className="py-4 px-5 text-right font-black text-indigo-600 rounded-r-2xl bg-indigo-500/5 tabular-nums">{formatCurrency(estimatedProfit)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       );
     })()}
