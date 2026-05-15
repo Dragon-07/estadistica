@@ -677,14 +677,48 @@ export function ProfitabilityReport() {
       )}
 
       {/* Sección Desplegable: Sistema de Salario por Tiempo (Personal) */}
-      {activeCategory === 'personal' && (
+      {activeCategory === 'personal' && (() => {
+        const treatments = activeDashboardTreatments;
+        const timeMatrix: Record<string, Record<string, number>> = {};
+        const matrixTotals: Record<string, number> = {};
+        
+        personalData.forEach(dep => {
+          timeMatrix[dep.dependency] = {};
+          matrixTotals[dep.dependency] = 0;
+          treatments.forEach(t => {
+            timeMatrix[dep.dependency][t] = 0;
+          });
+        });
+
+        treatments.forEach(t => {
+          const staffTimes = serviceStaffTimes[t] || [];
+          staffTimes.forEach(st => {
+            let depName = '';
+            if (st.tipo === 'Doctor') depName = 'Doctores';
+            else if (st.tipo === 'Enfermera') depName = 'Enfermeras';
+            else depName = st.tipo;
+            
+            if (timeMatrix[depName] !== undefined && timeMatrix[depName][t] !== undefined) {
+              const count = serviceRevenueStats[t]?.count || 0;
+              timeMatrix[depName][t] += (st.mins || 0) * count;
+            }
+          });
+        });
+
+        Object.keys(timeMatrix).forEach(depName => {
+          matrixTotals[depName] = treatments.reduce((acc, t) => acc + timeMatrix[depName][t], 0);
+        });
+
+        const activeTreatmentsCols = treatments;
+        const validDeps = personalData.filter(dep => dep.dependency !== 'Operativo' && dep.dependency !== 'Administrativos');
+
+        return (
         <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
           <div className="flex flex-col gap-8">
             {personalData.map((dep) => {
               const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
               const totalMinsMes = dep.staff.reduce((acc, w) => acc + w.minutesMonth, 0);
-              const staffMinsTrabaja = dep.staff.reduce((acc, w) => acc + w.minutesWorked, 0);
-              const totalMinsTrabaja = dep.overrideMinsWorked !== undefined ? dep.overrideMinsWorked : staffMinsTrabaja;
+              const totalMinsTrabaja = matrixTotals[dep.dependency] || 0;
               const totalMinsNoTrabaja = totalMinsMes - totalMinsTrabaja;
               
               const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
@@ -807,16 +841,8 @@ export function ProfitabilityReport() {
                             <td className="p-2 text-center text-[11px] font-black text-blue-600">
                               {avgPriceMin.toFixed(2)}
                             </td>
-                            <td className="p-2 text-center">
-                              <div className="relative group/input max-w-[90px] mx-auto">
-                                <input
-                                  type="number"
-                                  value={totalMinsTrabaja}
-                                  onChange={(e) => handleUpdateDependency(dep.dependency, 'overrideMinsWorked', parseFloat(e.target.value) || 0)}
-                                  className={`w-full bg-white/50 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-emerald-300/20 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-all text-center text-[11px] font-black text-emerald-600 ${dep.overrideMinsWorked !== undefined ? 'underline decoration-dotted' : ''}`}
-                                />
-                                <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-emerald-500 opacity-40" size={10} />
-                              </div>
+                            <td className="p-2 text-center text-[11px] font-black text-emerald-600">
+                              {totalMinsTrabaja}
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-orange-600">
                               {safeMinsNoTrabaja}
@@ -853,9 +879,7 @@ export function ProfitabilityReport() {
                     const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + w.minutesMonth, 0);
                     const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
                     
-                    const depMinsTrabaja = dep.overrideMinsWorked !== undefined 
-                      ? dep.overrideMinsWorked 
-                      : dep.staff.reduce((sAcc, w) => sAcc + w.minutesWorked, 0);
+                    const depMinsTrabaja = matrixTotals[dep.dependency] || 0;
                     
                     const depMinsNoTrabaja = totalMinsMes - depMinsTrabaja;
                     
@@ -867,36 +891,7 @@ export function ProfitabilityReport() {
 
             {/* Matriz de Tiempos Acumulados */}
             {(() => {
-              const treatments = activeDashboardTreatments;
-              const timeMatrix: Record<string, Record<string, number>> = {};
-              
-              personalData.forEach(dep => {
-                timeMatrix[dep.dependency] = {};
-                treatments.forEach(t => {
-                  timeMatrix[dep.dependency][t] = 0;
-                });
-              });
-
-              treatments.forEach(t => {
-                const staffTimes = serviceStaffTimes[t] || [];
-                staffTimes.forEach(st => {
-                  let depName = '';
-                  if (st.tipo === 'Doctor') depName = 'Doctores';
-                  else if (st.tipo === 'Enfermera') depName = 'Enfermeras';
-                  else depName = st.tipo;
-                  
-                  if (timeMatrix[depName] !== undefined && timeMatrix[depName][t] !== undefined) {
-                    const count = serviceRevenueStats[t]?.count || 0;
-                    timeMatrix[depName][t] += (st.mins || 0) * count;
-                  }
-                });
-              });
-
-              const activeTreatmentsCols = treatments;
-
               if (activeTreatmentsCols.length === 0) return null;
-
-              const validDeps = personalData.filter(dep => dep.dependency !== 'Operativo' && dep.dependency !== 'Administrativos');
 
               return (
                 <div className="mt-4 pt-4 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -945,7 +940,8 @@ export function ProfitabilityReport() {
             })()}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Módulo Administrativo */}
       {activeCategory && activeCategory === 'administrativo' && (
