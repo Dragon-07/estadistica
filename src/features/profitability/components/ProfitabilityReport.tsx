@@ -598,11 +598,28 @@ export function ProfitabilityReport() {
 
           <button 
             onClick={handleApplyPeriod}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm rounded-xl shadow-[4px_4px_8px_rgba(16,185,129,0.3)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] transition-all active:scale-95 group"
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm rounded-xl shadow-[4px_4px_8px_rgba(16,185,129,0.3)] hover:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] transition-all active:scale-95 group shrink-0"
           >
             <Check size={18} className="group-hover:scale-110 transition-transform" />
             <span>Aplicar Periodo</span>
           </button>
+
+          {/* Periodo Visualizado Badge */}
+          <div className="flex flex-col items-center justify-center bg-[#e6e7ee] px-5 py-1.5 rounded-xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] shrink-0 min-w-[200px]">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Calendar size={12} className="text-blue-500" />
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Periodo Visualizado</span>
+            </div>
+            {appliedDateRange.start && appliedDateRange.end ? (
+              <div className="flex items-center gap-2 font-black text-slate-700 leading-none">
+                <span className="text-[15px]">{appliedDateRange.start}</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">al</span>
+                <span className="text-[15px]">{appliedDateRange.end}</span>
+              </div>
+            ) : (
+              <span className="text-[13px] font-black text-slate-700 leading-none mb-0.5">1 Mes (Predeterminado)</span>
+            )}
+          </div>
         </div>
 
         {/* Fila Inferior: Botones de Categorías */}
