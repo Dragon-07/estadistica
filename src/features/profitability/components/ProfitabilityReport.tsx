@@ -906,28 +906,37 @@ export function ProfitabilityReport() {
                         <tr>
                           <th className="py-4 px-5 font-black text-blue-700 uppercase text-[11px] tracking-widest w-48 bg-blue-500/10 rounded-tl-2xl border-b-2 border-r-2 border-white/50">Tiempo acumulado</th>
                           {activeTreatmentsCols.map((t, idx) => (
-                            <th key={t} className={`py-4 px-5 font-black text-blue-700 uppercase text-[11px] tracking-widest text-center bg-blue-500/10 border-b-2 border-white/50 ${idx === activeTreatmentsCols.length - 1 ? 'rounded-tr-2xl' : 'border-r-2 border-white/50'}`}>
+                            <th key={t} className={`py-4 px-5 font-black text-blue-700 uppercase text-[11px] tracking-widest text-center bg-blue-500/10 border-b-2 border-white/50 border-r-2 border-white/50`}>
                               {t}
                             </th>
                           ))}
+                          <th className="py-4 px-5 font-black text-blue-800 uppercase text-[11px] tracking-widest text-center bg-blue-500/20 rounded-tr-2xl border-b-2 border-white/50">
+                            Tiempo total
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {validDeps.map((dep, idx) => (
-                          <tr key={dep.dependency} className="group/row transition-all hover:bg-white/40">
-                            <td className={`py-3 px-5 font-black text-slate-600 bg-blue-500/10 border-r-2 border-white/50 uppercase text-[11px] tracking-tight ${idx === validDeps.length - 1 ? 'rounded-bl-2xl border-b-0' : 'border-b-2 border-white/50'}`}>
-                              {dep.dependency}
-                            </td>
-                            {activeTreatmentsCols.map((t, tIdx) => {
-                              const time = timeMatrix[dep.dependency][t];
-                              return (
-                                <td key={t} className={`py-3 px-5 text-center font-black text-slate-700 tabular-nums ${idx !== validDeps.length - 1 ? 'border-b border-white/50' : ''} ${tIdx !== activeTreatmentsCols.length - 1 ? 'border-r border-slate-300/20' : ''}`}>
-                                  {time > 0 ? time : ''}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
+                        {validDeps.map((dep, idx) => {
+                          const rowTotal = activeTreatmentsCols.reduce((acc, t) => acc + (timeMatrix[dep.dependency]?.[t] || 0), 0);
+                          return (
+                            <tr key={dep.dependency} className="group/row transition-all hover:bg-white/40">
+                              <td className={`py-3 px-5 font-black text-slate-600 bg-blue-500/10 border-r-2 border-white/50 uppercase text-[11px] tracking-tight ${idx === validDeps.length - 1 ? 'rounded-bl-2xl border-b-0' : 'border-b-2 border-white/50'}`}>
+                                {dep.dependency}
+                              </td>
+                              {activeTreatmentsCols.map((t, tIdx) => {
+                                const time = timeMatrix[dep.dependency][t];
+                                return (
+                                  <td key={t} className={`py-3 px-5 text-center font-black text-slate-700 tabular-nums ${idx !== validDeps.length - 1 ? 'border-b border-white/50' : ''} border-r border-slate-300/20`}>
+                                    {time > 0 ? time : ''}
+                                  </td>
+                                );
+                              })}
+                              <td className={`py-3 px-5 text-center font-black text-blue-800 bg-blue-500/10 tabular-nums ${idx !== validDeps.length - 1 ? 'border-b border-white/50' : 'rounded-br-2xl'}`}>
+                                {rowTotal > 0 ? rowTotal : ''}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
