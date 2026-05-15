@@ -837,17 +837,17 @@ export function ProfitabilityReport() {
             })}
 
             {/* Gran Total Final Refinado */}
-            <div className="mt-6 p-4 px-8 rounded-3xl bg-[#e6e7ee] shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] flex items-center justify-between border border-white/50">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-inner border border-blue-200/20">
-                  <DollarSign size={20} />
+            <div className="mt-4 p-3 px-6 rounded-2xl bg-[#e6e7ee] shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] flex items-center justify-between border border-white/50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-inner border border-blue-200/20">
+                  <DollarSign size={16} />
                 </div>
                 <div>
-                  <p className="text-blue-700 text-lg font-black tracking-tight leading-none">Total a Distribuir</p>
+                  <p className="text-blue-700 text-sm font-black tracking-tight leading-none">Total a Distribuir</p>
                 </div>
               </div>
-              <div className="text-right bg-blue-500/5 px-5 py-2 rounded-xl border border-blue-500/10 shadow-inner">
-                <span className="text-blue-600 text-2xl font-black tracking-tighter">
+              <div className="text-right bg-blue-500/5 px-4 py-1.5 rounded-xl border border-blue-500/10 shadow-inner">
+                <span className="text-blue-600 text-lg font-black tracking-tighter">
                   {formatCurrency(personalData.reduce((acc, dep) => {
                     const totalSalary = dep.staff.reduce((sAcc, w) => sAcc + w.salary, 0);
                     const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + w.minutesMonth, 0);
@@ -899,7 +899,7 @@ export function ProfitabilityReport() {
               const validDeps = personalData.filter(dep => dep.dependency !== 'Operativo' && dep.dependency !== 'Administrativos');
 
               return (
-                <div className="mt-8 pt-8 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="mt-4 pt-4 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
                   <div className="bg-[#e6e7ee] rounded-[2rem] p-4 shadow-[inset_8px_8px_16px_#b8b9be,inset_-8px_-8px_16px_#ffffff] overflow-x-auto border border-white/40">
                     <table className="w-full text-left border-collapse min-w-[500px]">
                       <thead>
@@ -950,7 +950,7 @@ export function ProfitabilityReport() {
       {/* Módulo Administrativo */}
       {activeCategory && activeCategory === 'administrativo' && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="bg-[#e6e7ee] p-8 rounded-[3rem] shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-white/50 relative overflow-hidden">
+          <div className="bg-[#e6e7ee] p-6 rounded-[3rem] shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-white/50 relative overflow-hidden">
             <div className="flex justify-between items-center mb-8 px-2">
               <div className="flex items-center gap-4">
                 <div className="w-2.5 h-10 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.4)]" />
@@ -1054,17 +1054,17 @@ export function ProfitabilityReport() {
               </table>
             </div>
 
-            <div className="mt-8 p-4 px-8 rounded-3xl bg-[#e6e7ee] shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] flex items-center justify-between border border-white/50">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-inner border border-blue-200/20">
-                  <Briefcase size={20} />
+            <div className="mt-4 p-3 px-6 rounded-2xl bg-[#e6e7ee] shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] flex items-center justify-between border border-white/50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-inner border border-blue-200/20">
+                  <Briefcase size={16} />
                 </div>
                 <div>
-                  <p className="text-blue-700 text-lg font-black tracking-tight leading-none">Total a Distribuir</p>
+                  <p className="text-blue-700 text-sm font-black tracking-tight leading-none">Total a Distribuir</p>
                 </div>
               </div>
-              <div className="text-right bg-blue-500/5 px-5 py-2 rounded-xl border border-blue-500/10 shadow-inner">
-                <span className="text-blue-600 text-2xl font-black tracking-tighter">
+              <div className="text-right bg-blue-500/5 px-4 py-1.5 rounded-xl border border-blue-500/10 shadow-inner">
+                <span className="text-blue-600 text-lg font-black tracking-tighter">
                   {formatCurrency(adminData.reduce((acc, item) => {
                     const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
                     return acc + ((item.units - item.consumption) * pricePerUnit);
