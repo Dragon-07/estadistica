@@ -106,6 +106,7 @@ export function ProfitabilityReport() {
   const [appliedDateRange, setAppliedDateRange] = useState({ start: '', end: '' });
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
+  const [weeklyHours, setWeeklyHours] = useState<number>(44);
   
   const [serviceRevenueStats, setServiceRevenueStats] = useState<Record<string, { count: number, revenue: number }>>({});
   const fetchedStats = useRef<Set<string>>(new Set());
@@ -113,6 +114,31 @@ export function ProfitabilityReport() {
   const handleApplyPeriod = () => {
     setAppliedDateRange({ start: startDate, end: endDate });
     fetchedStats.current.clear();
+  };
+
+  const getPeriodMinutes = () => {
+    let daysToCount = 26; // Default a 26 días laborables (~1 mes) si no hay fecha
+    if (appliedDateRange.start && appliedDateRange.end) {
+      const start = new Date(appliedDateRange.start + 'T12:00:00');
+      const end = new Date(appliedDateRange.end + 'T12:00:00');
+      
+      if (end >= start) {
+        let workDays = 0;
+        let current = new Date(start);
+        
+        while (current <= end) {
+          const day = current.getDay();
+          if (day !== 0) { // Lunes a Sábado
+            workDays++;
+          }
+          current.setDate(current.getDate() + 1);
+        }
+        daysToCount = workDays;
+      }
+    }
+    
+    const hoursPerDay = weeklyHours / 6;
+    return Math.round(daysToCount * hoursPerDay * 60);
   };
   const [insumos, setInsumos] = useState<Insumo[]>(() => {
     if (typeof window !== 'undefined') {
@@ -731,10 +757,22 @@ export function ProfitabilityReport() {
 
         return (
         <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
-          <div className="flex flex-col gap-8">
+          <div className="flex justify-end px-4">
+            <div className="flex items-center gap-3 bg-[#e6e7ee] px-5 py-2.5 rounded-2xl shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] border border-white/50">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hrs Semanales por Empleado:</span>
+              <input 
+                type="number"
+                value={weeklyHours}
+                onChange={(e) => setWeeklyHours(Number(e.target.value) || 0)}
+                className="w-16 bg-transparent text-right font-black text-blue-600 text-sm outline-none"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-8 mt-4">
             {personalData.map((dep) => {
+              const dynamicMins = getPeriodMinutes();
               const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
-              const totalMinsMes = dep.staff.reduce((acc, w) => acc + w.minutesMonth, 0);
+              const totalMinsMes = dep.staff.length * dynamicMins;
               const totalMinsTrabaja = matrixTotals[dep.dependency] || 0;
               const totalMinsNoTrabaja = totalMinsMes - totalMinsTrabaja;
               
@@ -769,7 +807,7 @@ export function ProfitabilityReport() {
                         <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
                           <th className="pb-1 pl-6 min-w-[150px]">Nombre del Personal</th>
                           <th className="pb-1 w-36 text-right">Sueldo Base</th>
-                          <th className="pb-1 w-24 text-center">Mins Mes</th>
+                          <th className="pb-1 w-24 text-center">Mins Periodo</th>
                           <th className="pb-1 w-24 text-center text-blue-500">$ Minuto</th>
                           <th className="pb-1 w-28 text-center text-emerald-600">Mins Trabaja</th>
                           <th className="pb-1 w-28 text-center text-orange-500">Mins No Trabaja</th>
@@ -780,7 +818,7 @@ export function ProfitabilityReport() {
                       <tbody>
                         {dep.staff.map((worker) => {
                           const salary = worker.salary || 0;
-                          const minsMes = worker.minutesMonth || 1;
+                          const minsMes = dynamicMins > 0 ? dynamicMins : 1;
                           const pricePerMinute = salary / minsMes;
 
                           return (
@@ -810,14 +848,8 @@ export function ProfitabilityReport() {
                                 </div>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24">
-                                <div className="relative group/input max-w-[80px] mx-auto">
-                                  <input
-                                    type="number"
-                                    value={worker.minutesMonth}
-                                    onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'minutesMonth', parseFloat(e.target.value) || 0)}
-                                    className="w-full bg-indigo-50/10 shadow-inner rounded-lg px-2 py-1 border border-indigo-200/30 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all text-center text-[11px] font-black text-indigo-600"
-                                  />
-                                  <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-indigo-400 opacity-30" size={8} />
+                                <div className="max-w-[80px] mx-auto bg-indigo-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1 border border-indigo-200/30 text-center text-[11px] font-black text-indigo-600 tabular-nums">
+                                  {dynamicMins}
                                 </div>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24 text-[11px] font-black text-blue-500/70 tabular-nums">
