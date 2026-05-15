@@ -1368,7 +1368,7 @@ export function ProfitabilityReport() {
                     </thead>
                     <tbody>
                       <tr className="bg-white/40 rounded-2xl relative shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] group/row transition-all hover:bg-white/60">
-                        <td className="py-4 px-5 font-black text-slate-600 whitespace-nowrap bg-indigo-500/10 rounded-l-2xl border-l-4 border-indigo-500 uppercase text-[11px] tracking-tight">Ingreso {activeService}</td>
+                        <td className="py-4 px-5 font-black text-slate-600 whitespace-nowrap bg-indigo-500/10 rounded-l-2xl uppercase text-[11px] tracking-tight">Ingreso {activeService}</td>
                         <td className="py-4 px-5 text-right font-bold text-slate-500 tabular-nums">{stats.count.toLocaleString()}</td>
                         <td className="py-4 px-5 text-right font-black text-emerald-600 tabular-nums">{formatCurrency(stats.revenue)}</td>
                         <td className="py-4 px-5 text-right font-black text-slate-700 tabular-nums">{formatCurrency(unitRevenue)}</td>
