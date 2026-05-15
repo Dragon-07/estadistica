@@ -211,11 +211,36 @@ export function ProfitabilityReport() {
     'SUERO VITAMINA C': [],
   });
 
+  const [isSyncing, setIsSyncing] = useState(false);
+  const supabase = createClient();
+
+  // Función para guardar en Supabase (compartido)
+  const saveToSupabase = async (serviceName: string, staffTimes: any, insumos: any, adminCosts?: any) => {
+    setIsSyncing(true);
+    const { error } = await supabase
+      .from('service_settings')
+      .upsert({
+        service_name: serviceName,
+        staff_times: staffTimes,
+        insumos: insumos,
+        admin_costs: adminCosts || serviceAdminCosts[serviceName] || [],
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'service_name' });
+    
+    if (error) console.error('Error syncing with Supabase:', error);
+    setIsSyncing(false);
+  };
+
   const handleAddTreatment = (name: string) => {
     if (!name || activeDashboardTreatments.includes(name)) return;
     
     setActiveDashboardTreatments(prev => [...prev, name]);
     
+    const defaultStaff = [
+      { id: Math.random().toString(), tipo: 'Doctor', mins: 0, valor: 0 },
+      { id: Math.random().toString(), tipo: 'Enfermera', mins: 0, valor: 0 },
+    ];
+
     // Inicializar los estados del nuevo tratamiento si no existen
     if (!serviceInsumos[name]) {
       setServiceInsumos(prev => ({ ...prev, [name]: [] }));
@@ -223,24 +248,36 @@ export function ProfitabilityReport() {
     if (!serviceStaffTimes[name]) {
       setServiceStaffTimes(prev => ({
         ...prev,
-        [name]: [
-          { id: Math.random().toString(), tipo: 'Doctor', mins: 0, valor: 0 },
-          { id: Math.random().toString(), tipo: 'Enfermera', mins: 0, valor: 0 },
-        ]
+        [name]: defaultStaff
       }));
     }
     if (!serviceAdminCosts[name]) {
       setServiceAdminCosts(prev => ({ ...prev, [name]: [] }));
     }
+
+    // Persistir el nuevo tratamiento en la base de datos
+    saveToSupabase(
+      name, 
+      serviceStaffTimes[name] || defaultStaff, 
+      serviceInsumos[name] || [], 
+      serviceAdminCosts[name] || []
+    );
   };
 
-  const handleRemoveTreatment = (name: string) => {
+  const handleRemoveTreatment = async (name: string) => {
     setActiveDashboardTreatments(prev => prev.filter(t => t !== name));
     if (activeService === name) setActiveService(null);
-  };
 
-  const [isSyncing, setIsSyncing] = useState(false);
-  const supabase = createClient();
+    // Eliminar de Supabase para que no vuelva a cargar al refrescar
+    setIsSyncing(true);
+    const { error } = await supabase
+      .from('service_settings')
+      .delete()
+      .eq('service_name', name);
+    
+    if (error) console.error('Error deleting from Supabase:', error);
+    setIsSyncing(false);
+  };
 
   // Cargar datos desde Supabase al montar
   useEffect(() => {
@@ -279,23 +316,6 @@ export function ProfitabilityReport() {
     }
     loadData();
   }, []);
-
-  // Función para guardar en Supabase (compartido)
-  const saveToSupabase = async (serviceName: string, staffTimes: any, insumos: any, adminCosts?: any) => {
-    setIsSyncing(true);
-    const { error } = await supabase
-      .from('service_settings')
-      .upsert({
-        service_name: serviceName,
-        staff_times: staffTimes,
-        insumos: insumos,
-        admin_costs: adminCosts || serviceAdminCosts[serviceName] || [],
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'service_name' });
-    
-    if (error) console.error('Error syncing with Supabase:', error);
-    setIsSyncing(false);
-  };
 
   // Efectos para persistencia
   useEffect(() => {
