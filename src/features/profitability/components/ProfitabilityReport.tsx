@@ -758,14 +758,25 @@ export function ProfitabilityReport() {
         return (
         <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
           <div className="flex justify-end px-4">
-            <div className="flex items-center gap-3 bg-[#e6e7ee] px-5 py-2.5 rounded-2xl shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] border border-white/50">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hrs Semanales por Empleado:</span>
-              <input 
-                type="number"
-                value={weeklyHours}
-                onChange={(e) => setWeeklyHours(Number(e.target.value) || 0)}
-                className="w-16 bg-transparent text-right font-black text-blue-600 text-sm outline-none"
-              />
+            <div className="flex items-center gap-4 bg-[#e6e7ee] px-5 py-2.5 rounded-2xl shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] border border-white/50">
+              <div className="flex flex-col items-end border-r border-slate-300/50 pr-4 mr-1">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Período Seleccionado</span>
+                <span className="text-[11px] font-black text-slate-600">
+                  {appliedDateRange.start && appliedDateRange.end 
+                    ? `${appliedDateRange.start} al ${appliedDateRange.end}`
+                    : '1 Mes (Predeterminado)'}
+                </span>
+                <span className="text-[10px] font-bold text-emerald-600 mt-0.5">Equivale a {getPeriodMinutes()} mins por empleado</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hrs Semanales por Empleado:</span>
+                <input 
+                  type="number"
+                  value={weeklyHours}
+                  onChange={(e) => setWeeklyHours(Number(e.target.value) || 0)}
+                  className="w-16 bg-transparent text-right font-black text-blue-600 text-sm outline-none"
+                />
+              </div>
             </div>
           </div>
           <div className="flex flex-col gap-8 mt-4">
