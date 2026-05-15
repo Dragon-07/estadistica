@@ -896,7 +896,7 @@ export function ProfitabilityReport() {
 
               if (activeTreatmentsCols.length === 0) return null;
 
-              const validDeps = personalData;
+              const validDeps = personalData.filter(dep => dep.dependency !== 'Operativo' && dep.dependency !== 'Administrativos');
 
               return (
                 <div className="mt-8 pt-8 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
