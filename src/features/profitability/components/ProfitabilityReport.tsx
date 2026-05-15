@@ -575,24 +575,7 @@ export function ProfitabilityReport() {
         </div>
       </div>
 
-      {/* Nuevo Desplegable: Agregar Tratamientos Dinámicos */}
-      <div className="flex justify-start px-2 mt-2 z-10">
-        <div className="relative group w-auto min-w-[250px]">
-          <select 
-            onChange={(e) => {
-              handleAddTreatment(e.target.value);
-              e.target.value = '';
-            }}
-            className="w-full appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
-          >
-            <option value="">+ AGREGAR TRATAMIENTOS</option>
-            {availableTreatments.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          <Plus size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none" />
-        </div>
-      </div>
+
 
       {/* Sección Desplegable: Lista de Insumos */}
       {activeCategory === 'insumos' && (
@@ -1072,7 +1055,24 @@ export function ProfitabilityReport() {
         </div>
       )}
 
-
+      {/* Nuevo Desplegable: Agregar Tratamientos Dinámicos */}
+      <div className="flex justify-start px-2 mt-2 z-10">
+        <div className="relative group w-auto min-w-[250px]">
+          <select 
+            onChange={(e) => {
+              handleAddTreatment(e.target.value);
+              e.target.value = '';
+            }}
+            className="w-full appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
+          >
+            <option value="">+ AGREGAR TRATAMIENTOS</option>
+            {availableTreatments.map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <Plus size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none" />
+        </div>
+      </div>
 
       {/* Rejilla de Servicios y Costos Consolidados (Al final para que baje al desplegar) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2 pb-4">
