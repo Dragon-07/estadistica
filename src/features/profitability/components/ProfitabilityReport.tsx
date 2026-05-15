@@ -410,6 +410,12 @@ export function ProfitabilityReport() {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in max-w-6xl mx-auto py-2">
+      <style>{`
+        .dynamic-order { order: var(--mobile-order); }
+        @media (min-width: 768px) {
+          .dynamic-order { order: var(--desktop-order); }
+        }
+      `}</style>
       <div className="bg-[#e6e7ee] p-5 rounded-[2.5rem] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] flex flex-col gap-5">
         
         {/* Fila Superior: Selector de Período */}
@@ -926,8 +932,14 @@ export function ProfitabilityReport() {
           const isActive = activeService === serviceName;
 
           return (
-            <Fragment key={idx}>
-            <div className="relative group/card h-full">
+            <div 
+              key={idx} 
+              className="relative group/card h-full dynamic-order"
+              style={{
+                '--mobile-order': idx,
+                '--desktop-order': Math.floor(idx / 3)
+              } as React.CSSProperties}
+            >
               <button 
                 onClick={() => setActiveService(isActive ? null : serviceName)}
                 className={`w-full h-full bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[15px_15px_30px_#b8b9be,-15px_-15px_30px_#ffffff] border border-white/40 flex flex-col gap-4 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98] text-left ${
@@ -958,10 +970,20 @@ export function ProfitabilityReport() {
               </div>
             </button>
             </div>
+          );
+        })}
 
-      {/* Desplegable Detallado del Servicio Seleccionado */}
-      {isActive && (
-        <div className="col-span-1 md:col-span-3 mt-4 mb-4 p-8 bg-[#e6e7ee] rounded-[3rem] shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-white/50 animate-in slide-in-from-top-6 duration-500 overflow-hidden relative">
+        {/* Desplegable Detallado del Servicio Seleccionado */}
+        {activeService && (() => {
+          const activeIdx = activeDashboardTreatments.findIndex(t => t === activeService);
+          return (
+            <div 
+              className="col-span-1 md:col-span-3 mt-4 mb-4 p-8 bg-[#e6e7ee] rounded-[3rem] shadow-[20px_20px_60px_#bebebe,-20px_-20px_60px_#ffffff] border border-white/50 animate-in slide-in-from-top-6 duration-500 overflow-hidden relative dynamic-order"
+              style={{
+                '--mobile-order': activeIdx,
+                '--desktop-order': Math.floor(activeIdx / 3)
+              } as React.CSSProperties}
+            >
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <div className="w-2.5 h-10 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)]" />
@@ -1241,10 +1263,8 @@ export function ProfitabilityReport() {
             </div>
           </div>
         </div>
-      )}
-            </Fragment>
-          );
-        })}
+      );
+    })()}
       </div>
     </div>
   );
