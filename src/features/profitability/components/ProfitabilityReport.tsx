@@ -904,13 +904,13 @@ export function ProfitabilityReport() {
                     <table className="w-full text-left border-collapse min-w-[500px]">
                       <thead>
                         <tr>
-                          <th className="py-4 px-5 font-black text-blue-700 uppercase text-[11px] tracking-widest w-48 bg-blue-500/10 rounded-tl-2xl border-b-2 border-r-2 border-white/50">Tiempo acumulado</th>
+                          <th className="py-2.5 px-3 font-black text-blue-700 uppercase text-[10px] tracking-widest w-40 bg-blue-500/10 rounded-tl-2xl border-b-2 border-r-2 border-white/50">Tiempo acumulado</th>
                           {activeTreatmentsCols.map((t, idx) => (
-                            <th key={t} className={`py-4 px-5 font-black text-blue-700 uppercase text-[11px] tracking-widest text-center bg-blue-500/10 border-b-2 border-white/50 border-r-2 border-white/50`}>
+                            <th key={t} className={`py-2.5 px-3 font-black text-blue-700 uppercase text-[10px] tracking-widest text-center bg-blue-500/10 border-b-2 border-white/50 border-r-2 border-white/50`}>
                               {t}
                             </th>
                           ))}
-                          <th className="py-4 px-5 font-black text-blue-800 uppercase text-[11px] tracking-widest text-center bg-blue-500/20 rounded-tr-2xl border-b-2 border-white/50">
+                          <th className="py-2.5 px-3 font-black text-blue-800 uppercase text-[10px] tracking-widest text-center bg-blue-500/20 rounded-tr-2xl border-b-2 border-white/50">
                             Tiempo total
                           </th>
                         </tr>
@@ -920,18 +920,18 @@ export function ProfitabilityReport() {
                           const rowTotal = activeTreatmentsCols.reduce((acc, t) => acc + (timeMatrix[dep.dependency]?.[t] || 0), 0);
                           return (
                             <tr key={dep.dependency} className="group/row transition-all hover:bg-white/40">
-                              <td className={`py-3 px-5 font-black text-slate-600 bg-blue-500/10 border-r-2 border-white/50 uppercase text-[11px] tracking-tight ${idx === validDeps.length - 1 ? 'rounded-bl-2xl border-b-0' : 'border-b-2 border-white/50'}`}>
+                              <td className={`py-2 px-3 font-black text-slate-600 bg-blue-500/10 border-r-2 border-white/50 uppercase text-[10px] tracking-tight ${idx === validDeps.length - 1 ? 'rounded-bl-2xl border-b-0' : 'border-b-2 border-white/50'}`}>
                                 {dep.dependency}
                               </td>
                               {activeTreatmentsCols.map((t, tIdx) => {
                                 const time = timeMatrix[dep.dependency][t];
                                 return (
-                                  <td key={t} className={`py-3 px-5 text-center font-black text-slate-700 tabular-nums ${idx !== validDeps.length - 1 ? 'border-b border-white/50' : ''} border-r border-slate-300/20`}>
+                                  <td key={t} className={`py-2 px-3 text-center font-black text-slate-700 tabular-nums text-[12px] ${idx !== validDeps.length - 1 ? 'border-b border-white/50' : ''} border-r border-slate-300/20`}>
                                     {time > 0 ? time : ''}
                                   </td>
                                 );
                               })}
-                              <td className={`py-3 px-5 text-center font-black text-blue-800 bg-blue-500/10 tabular-nums ${idx !== validDeps.length - 1 ? 'border-b border-white/50' : 'rounded-br-2xl'}`}>
+                              <td className={`py-2 px-3 text-center font-black text-blue-800 bg-blue-500/10 tabular-nums text-[12px] ${idx !== validDeps.length - 1 ? 'border-b border-white/50' : 'rounded-br-2xl'}`}>
                                 {rowTotal > 0 ? rowTotal : ''}
                               </td>
                             </tr>
