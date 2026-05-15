@@ -876,6 +876,12 @@ export function ProfitabilityReport() {
             {(() => {
               if (activeTreatmentsCols.length === 0) return null;
 
+              const filteredTreatmentsCols = activeTreatmentsCols.filter(t => 
+                validDeps.some(dep => (timeMatrix[dep.dependency]?.[t] || 0) > 0)
+              );
+
+              if (filteredTreatmentsCols.length === 0) return null;
+
               return (
                 <div className="mt-4 pt-4 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
                   <div className="bg-[#e6e7ee] rounded-[2rem] p-4 shadow-[inset_8px_8px_16px_#b8b9be,inset_-8px_-8px_16px_#ffffff] overflow-x-auto border border-white/40">
@@ -883,7 +889,7 @@ export function ProfitabilityReport() {
                       <thead>
                         <tr>
                           <th className="py-2.5 px-3 font-black text-blue-700 uppercase text-[10px] tracking-widest w-40 bg-blue-500/10 rounded-tl-2xl border-b-2 border-r-2 border-white/50">Tiempo acumulado</th>
-                          {activeTreatmentsCols.map((t, idx) => (
+                          {filteredTreatmentsCols.map((t, idx) => (
                             <th key={t} className={`py-2.5 px-3 font-black text-blue-700 uppercase text-[10px] tracking-widest text-center bg-blue-500/10 border-b-2 border-white/50 border-r-2 border-white/50`}>
                               {t}
                             </th>
@@ -895,13 +901,13 @@ export function ProfitabilityReport() {
                       </thead>
                       <tbody>
                         {validDeps.map((dep, idx) => {
-                          const rowTotal = activeTreatmentsCols.reduce((acc, t) => acc + (timeMatrix[dep.dependency]?.[t] || 0), 0);
+                          const rowTotal = filteredTreatmentsCols.reduce((acc, t) => acc + (timeMatrix[dep.dependency]?.[t] || 0), 0);
                           return (
                             <tr key={dep.dependency} className="group/row transition-all hover:bg-white/40">
                               <td className={`py-2 px-3 font-black text-slate-600 bg-blue-500/10 border-r-2 border-white/50 uppercase text-[10px] tracking-tight ${idx === validDeps.length - 1 ? 'rounded-bl-2xl border-b-0' : 'border-b-2 border-white/50'}`}>
                                 {dep.dependency}
                               </td>
-                              {activeTreatmentsCols.map((t, tIdx) => {
+                              {filteredTreatmentsCols.map((t, tIdx) => {
                                 const time = timeMatrix[dep.dependency][t];
                                 return (
                                   <td key={t} className={`py-2 px-3 text-center font-black text-slate-700 tabular-nums text-[12px] ${idx !== validDeps.length - 1 ? 'border-b border-white/50' : ''} border-r border-slate-300/20`}>
