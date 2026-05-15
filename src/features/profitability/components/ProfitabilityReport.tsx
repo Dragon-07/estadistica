@@ -104,6 +104,7 @@ export function ProfitabilityReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [appliedDateRange, setAppliedDateRange] = useState({ start: '', end: '' });
+  const [globalDateRange, setGlobalDateRange] = useState({ start: '', end: '' });
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
   const [weeklyHours, setWeeklyHours] = useState<number>(44);
@@ -117,10 +118,13 @@ export function ProfitabilityReport() {
   };
 
   const getPeriodMinutes = () => {
-    let daysToCount = 26; // Default a 26 días laborables (~1 mes) si no hay fecha
-    if (appliedDateRange.start && appliedDateRange.end) {
-      const start = new Date(appliedDateRange.start + 'T12:00:00');
-      const end = new Date(appliedDateRange.end + 'T12:00:00');
+    const startStr = appliedDateRange.start || globalDateRange.start;
+    const endStr = appliedDateRange.end || globalDateRange.end;
+    let daysToCount = 26; // Default fallback
+    
+    if (startStr && endStr) {
+      const start = new Date(startStr + 'T12:00:00');
+      const end = new Date(endStr + 'T12:00:00');
       
       if (end >= start) {
         let workDays = 0;
@@ -323,6 +327,28 @@ export function ProfitabilityReport() {
       const { data: treatmentsData } = await supabase.rpc('get_unique_treatments');
       if (treatmentsData) {
         setAvailableTreatments(treatmentsData.map((d: any) => d.treatment_name));
+      }
+
+      // Cargar fechas globales (min y max)
+      const { data: minData } = await supabase
+        .from('medical_records')
+        .select('treatment_date')
+        .not('treatment_date', 'is', null)
+        .order('treatment_date', { ascending: true })
+        .limit(1);
+
+      const { data: maxData } = await supabase
+        .from('medical_records')
+        .select('treatment_date')
+        .not('treatment_date', 'is', null)
+        .order('treatment_date', { ascending: false })
+        .limit(1);
+
+      if (minData?.[0] && maxData?.[0]) {
+        setGlobalDateRange({
+          start: minData[0].treatment_date,
+          end: maxData[0].treatment_date
+        });
       }
 
       // Cargar configuraciones de servicio
@@ -608,16 +634,18 @@ export function ProfitabilityReport() {
           <div className="flex flex-col items-center justify-center bg-[#e6e7ee] px-5 py-1.5 rounded-xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] shrink-0 min-w-[200px]">
             <div className="flex items-center gap-1.5 mb-1">
               <Calendar size={12} className="text-blue-500" />
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Periodo Visualizado</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                {appliedDateRange.start && appliedDateRange.end ? 'Periodo Visualizado' : 'Histórico Completo'}
+              </span>
             </div>
-            {appliedDateRange.start && appliedDateRange.end ? (
+            {(appliedDateRange.start && appliedDateRange.end) || (globalDateRange.start && globalDateRange.end) ? (
               <div className="flex items-center gap-2 font-black text-slate-700 leading-none">
-                <span className="text-[15px]">{appliedDateRange.start}</span>
+                <span className="text-[15px]">{appliedDateRange.start || globalDateRange.start}</span>
                 <span className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">al</span>
-                <span className="text-[15px]">{appliedDateRange.end}</span>
+                <span className="text-[15px]">{appliedDateRange.end || globalDateRange.end}</span>
               </div>
             ) : (
-              <span className="text-[13px] font-black text-slate-700 leading-none mb-0.5">1 Mes (Predeterminado)</span>
+              <span className="text-[13px] font-black text-slate-700 leading-none mb-0.5">Calculando fechas...</span>
             )}
           </div>
         </div>
@@ -781,7 +809,7 @@ export function ProfitabilityReport() {
                 <span className="text-[11px] font-black text-slate-600">
                   {appliedDateRange.start && appliedDateRange.end 
                     ? `${appliedDateRange.start} al ${appliedDateRange.end}`
-                    : '1 Mes (Predeterminado)'}
+                    : (globalDateRange.start && globalDateRange.end ? `${globalDateRange.start} al ${globalDateRange.end} (Histórico)` : 'Calculando fechas...')}
                 </span>
                 <span className="text-[10px] font-bold text-emerald-600 mt-0.5">Equivale a {getPeriodMinutes()} mins por empleado</span>
               </div>
