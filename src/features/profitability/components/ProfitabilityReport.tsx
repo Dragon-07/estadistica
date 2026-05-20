@@ -101,6 +101,34 @@ function NeumorphicTooltip({ text, children, position = 'top' }: { text: string;
   );
 }
 
+function NeumorphicExplanationTooltip({ title, formula, text, children, position = 'top' }: { title: string; formula?: string; text: string; children: React.ReactNode, position?: 'top' | 'bottom' }) {
+  return (
+    <div className="relative group/tooltip inline-block w-full">
+      {children}
+      <div className={`absolute z-[9999] left-1/2 -translate-x-1/2 px-4 py-3 bg-[#e6e7ee] rounded-2xl shadow-[10px_10px_25px_#b8b9be,-10px_-10px_25px_#ffffff] border border-white/70 invisible group-hover/tooltip:visible opacity-0 group-hover/tooltip:opacity-100 transition-all duration-300 pointer-events-none w-80 text-left ${
+        position === 'top' ? 'bottom-full mb-4' : 'top-full mt-4'
+      }`}>
+        <div className="flex flex-col gap-1.5 whitespace-normal">
+          <p className="text-[11px] font-black text-slate-850 uppercase tracking-wider">{title}</p>
+          {formula && (
+            <div className="bg-[#dcdde4] px-2.5 py-1.5 rounded-lg border border-white/40 shadow-inner font-mono text-[10px] font-bold text-blue-700 leading-tight">
+              {formula}
+            </div>
+          )}
+          <p className="text-[10px] font-semibold text-slate-600 leading-relaxed">{text}</p>
+        </div>
+        {/* Triángulo centrado */}
+        <div className={`absolute left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-[#e6e7ee] rotate-45 border-white/30 shadow-[3px_3px_6px_rgba(0,0,0,0.08)] ${
+          position === 'top' 
+            ? '-bottom-1.5 border-r border-b' 
+            : '-top-1.5 border-l border-t'
+        }`}></div>
+      </div>
+    </div>
+  );
+}
+
+
 export function ProfitabilityReport() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -863,15 +891,76 @@ export function ProfitabilityReport() {
                   <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-separate border-spacing-y-2">
                       <thead>
-                        <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                        <tr className="text-[9px] font-extrabold text-slate-450 uppercase tracking-widest">
                           <th className="pb-1 pl-6 min-w-[150px]">Nombre del Personal</th>
-                          <th className="pb-1 w-36 text-right">Sueldo Base</th>
-                          <th className="pb-1 w-24 text-center">Horas Sem.</th>
-                          <th className="pb-1 w-24 text-center">Mins Periodo</th>
-                          <th className="pb-1 w-24 text-center text-blue-500">$ Minuto</th>
-                          <th className="pb-1 w-28 text-center text-emerald-600">Mins Trabaja</th>
-                          <th className="pb-1 w-28 text-center text-orange-500">Mins No Trabaja</th>
-                          <th className="pb-1 w-32 text-right pr-6 text-blue-700 bg-blue-500/5 rounded-t-xl">$ A Distribuir</th>
+                          <th className="pb-1 w-36 text-right pr-2">
+                            <NeumorphicExplanationTooltip
+                              title="Sueldo Base"
+                              text="El sueldo mensual bruto pactado para cada profesional. Es un valor editable de entrada."
+                              position="bottom"
+                            >
+                              <span className="cursor-help border-b border-dashed border-slate-350 pb-0.5">Sueldo Base</span>
+                            </NeumorphicExplanationTooltip>
+                          </th>
+                          <th className="pb-1 w-24 text-center">
+                            <NeumorphicExplanationTooltip
+                              title="Horas Semanales"
+                              text="Horas de trabajo contratadas a la semana por este profesional. Es un valor editable."
+                              position="bottom"
+                            >
+                              <span className="cursor-help border-b border-dashed border-slate-350 pb-0.5">Horas Sem.</span>
+                            </NeumorphicExplanationTooltip>
+                          </th>
+                          <th className="pb-1 w-24 text-center">
+                            <NeumorphicExplanationTooltip
+                              title="Minutos del Periodo"
+                              formula="Días Hábiles × (Horas Semanales / 6) × 60"
+                              text="Tiempo total de minutos hábiles que el empleado debe cumplir en el rango de fechas (excluye domingos)."
+                              position="bottom"
+                            >
+                              <span className="cursor-help border-b border-dashed border-slate-350 pb-0.5 text-indigo-650">Mins Periodo</span>
+                            </NeumorphicExplanationTooltip>
+                          </th>
+                          <th className="pb-1 w-24 text-center text-blue-500">
+                            <NeumorphicExplanationTooltip
+                              title="Costo por Minuto"
+                              formula="Sueldo Base / Minutos del Periodo"
+                              text="El costo exacto de cada minuto del tiempo del profesional disponible para la unidad médica."
+                              position="bottom"
+                            >
+                              <span className="cursor-help border-b border-dashed border-blue-400 pb-0.5">$ Minuto</span>
+                            </NeumorphicExplanationTooltip>
+                          </th>
+                          <th className="pb-1 w-28 text-center text-emerald-600">
+                            <NeumorphicExplanationTooltip
+                              title="Minutos Trabajados"
+                              formula="Suma de (Consultas × Minutos por Sesión)"
+                              text="Tiempo acumulado que la especialidad estuvo ocupada realizando tratamientos. Los minutos de sesión de cada tratamiento se configuran abajo en el panel detallado de cada servicio."
+                              position="bottom"
+                            >
+                              <span className="cursor-help border-b border-dashed border-emerald-400 pb-0.5">Mins Trabaja</span>
+                            </NeumorphicExplanationTooltip>
+                          </th>
+                          <th className="pb-1 w-28 text-center text-orange-500">
+                            <NeumorphicExplanationTooltip
+                              title="Minutos No Trabajados"
+                              formula="Minutos del Periodo - Minutos Trabajados"
+                              text="Tiempo laborable del personal que estuvo disponible pero no fue asignado a ningún tratamiento (tiempo libre, ocioso o administrativo)."
+                              position="bottom"
+                            >
+                              <span className="cursor-help border-b border-dashed border-orange-400 pb-0.5">Mins No Trabaja</span>
+                            </NeumorphicExplanationTooltip>
+                          </th>
+                          <th className="pb-1 w-32 text-right pr-6 text-blue-700 bg-blue-500/5 rounded-t-xl">
+                            <NeumorphicExplanationTooltip
+                              title="Valor a Distribuir"
+                              formula="Minutos No Trabajados × Costo por Minuto Promedio"
+                              text="El costo equivalente del tiempo no trabajado que debe ser distribuido como costo indirecto proporcional entre las consultas para un cálculo real de rentabilidad."
+                              position="bottom"
+                            >
+                              <span className="cursor-help border-b border-dashed border-blue-600 pb-0.5">$ A Distribuir</span>
+                            </NeumorphicExplanationTooltip>
+                          </th>
                           <th className="pb-1 w-10"></th>
                         </tr>
                       </thead>
@@ -898,44 +987,81 @@ export function ProfitabilityReport() {
                                 </NeumorphicTooltip>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-36">
-                                <div className="relative group/input">
-                                  <input
-                                    type="number"
-                                    value={worker.salary}
-                                    onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value) || 0)}
-                                    className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600 tabular-nums"
-                                  />
-                                  <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
-                                </div>
+                                <NeumorphicExplanationTooltip
+                                  title="Sueldo Base"
+                                  text="Haz clic en el recuadro para modificar el sueldo mensual bruto de este profesional."
+                                >
+                                  <div className="relative group/input">
+                                    <input
+                                      type="number"
+                                      value={worker.salary}
+                                      onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'salary', parseFloat(e.target.value) || 0)}
+                                      className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600 tabular-nums"
+                                    />
+                                    <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                                  </div>
+                                </NeumorphicExplanationTooltip>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24">
-                                <div className="relative group/input mx-auto w-16">
-                                  <input
-                                    type="number"
-                                    value={worker.weeklyHours || 0}
-                                    onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'weeklyHours', parseFloat(e.target.value) || 0)}
-                                    className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[11px] font-black text-slate-700 text-center tabular-nums"
-                                  />
-                                  <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
-                                </div>
+                                <NeumorphicExplanationTooltip
+                                  title="Horas Semanales"
+                                  text="Haz clic en el recuadro para modificar las horas contratadas por semana de este profesional."
+                                >
+                                  <div className="relative group/input mx-auto w-16">
+                                    <input
+                                      type="number"
+                                      value={worker.weeklyHours || 0}
+                                      onChange={(e) => handleUpdateWorker(dep.dependency, worker.id, 'weeklyHours', parseFloat(e.target.value) || 0)}
+                                      className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[11px] font-black text-slate-700 text-center tabular-nums"
+                                    />
+                                    <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                                  </div>
+                                </NeumorphicExplanationTooltip>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24">
-                                <div className="max-w-[80px] mx-auto bg-indigo-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1 border border-indigo-200/30 text-center text-[11px] font-black text-indigo-600 tabular-nums">
-                                  {workerMins}
-                                </div>
+                                <NeumorphicExplanationTooltip
+                                  title="Minutos del Periodo"
+                                  formula={`${workerMins} minutos`}
+                                  text="Minutos laborables en base a los días hábiles del periodo actual y las horas semanales del profesional."
+                                >
+                                  <div className="max-w-[80px] mx-auto bg-indigo-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1 border border-indigo-200/30 text-center text-[11px] font-black text-indigo-600 tabular-nums">
+                                    {workerMins}
+                                  </div>
+                                </NeumorphicExplanationTooltip>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-24 text-[11px] font-black text-blue-500/70 tabular-nums">
-                                {pricePerMinute.toFixed(2)}
+                                <NeumorphicExplanationTooltip
+                                  title="Costo por Minuto"
+                                  formula={`$${pricePerMinute.toFixed(2)} por minuto`}
+                                  text="Equivalente monetario de cada minuto de trabajo disponible de este empleado."
+                                >
+                                  <span>{pricePerMinute.toFixed(2)}</span>
+                                </NeumorphicExplanationTooltip>
                               </td>
                               {/* Celdas ahora vacías por solicitud del usuario */}
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-28 text-[11px] font-black text-emerald-600/30">
-                                -
+                                <NeumorphicExplanationTooltip
+                                  title="Minutos Trabajados"
+                                  text="El tiempo de tratamiento se calcula de forma consolidada por dependencia (Doctores, Enfermeras) en los Totales de abajo."
+                                >
+                                  <span>-</span>
+                                </NeumorphicExplanationTooltip>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center w-28 text-[11px] font-black text-orange-400/30">
-                                -
+                                <NeumorphicExplanationTooltip
+                                  title="Minutos No Trabajados"
+                                  text="El tiempo disponible no trabajado se consolida por dependencia en los Totales de abajo."
+                                >
+                                  <span>-</span>
+                                </NeumorphicExplanationTooltip>
                               </td>
                               <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] p-2 text-right pr-6 text-[11px] font-black text-blue-700/20 border-x border-blue-500/10 w-32">
-                                -
+                                <NeumorphicExplanationTooltip
+                                  title="Valor a Distribuir"
+                                  text="El costo ocioso o administrativo a distribuir se consolida en los Totales de abajo."
+                                >
+                                  <span>-</span>
+                                </NeumorphicExplanationTooltip>
                               </td>
                               <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
                                 <button onClick={() => handleDeleteWorker(dep.dependency, worker.id)} className="text-slate-300 hover:text-red-500 transition-colors">
@@ -953,26 +1079,53 @@ export function ProfitabilityReport() {
                             <td className="p-2 pl-6 rounded-l-xl text-[10px] font-black text-slate-500 uppercase tracking-wider">
                               Totales {dep.dependency}
                             </td>
-                            <td className="p-2 text-right text-[11px] font-black text-slate-600">
+                            <td className="p-2 text-right text-[11px] font-black text-slate-600 pr-2">
                               {formatCurrency(totalSalary)}
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-slate-500"></td>
                             <td className="p-2 text-center text-[11px] font-black text-slate-500">
-                              {totalMinsMes}
+                              <NeumorphicExplanationTooltip
+                                title="Total Minutos Disponibles"
+                                text="La suma de todos los minutos de trabajo contratados para esta especialidad durante el rango de fechas."
+                              >
+                                <span>{totalMinsMes}</span>
+                              </NeumorphicExplanationTooltip>
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-blue-600">
-                              {avgPriceMin.toFixed(2)}
+                              <NeumorphicExplanationTooltip
+                                title="Costo Promedio por Minuto"
+                                formula={`$${avgPriceMin.toFixed(2)} / min`}
+                                text="Sueldo Base Total dividido entre Minutos Disponibles Totales. Se usa como costo de referencia."
+                              >
+                                <span>{avgPriceMin.toFixed(2)}</span>
+                              </NeumorphicExplanationTooltip>
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-emerald-600">
-                              {totalMinsTrabaja}
+                              <NeumorphicExplanationTooltip
+                                title="Total Minutos Trabajados"
+                                text="Suma total de los minutos de tratamientos/consultas reales que se realizaron durante el período para esta especialidad."
+                              >
+                                <span>{totalMinsTrabaja}</span>
+                              </NeumorphicExplanationTooltip>
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-orange-600">
-                              {safeMinsNoTrabaja}
+                              <NeumorphicExplanationTooltip
+                                title="Total Minutos No Trabajados"
+                                text="El tiempo total ocioso, administrativo o de libre disposición acumulado por toda la especialidad."
+                              >
+                                <span>{safeMinsNoTrabaja}</span>
+                              </NeumorphicExplanationTooltip>
                             </td>
                             <td className="p-2 text-right pr-4 rounded-r-xl">
-                              <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-blue-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-blue-600 inline-block min-w-[100px]">
-                                {formatCurrency(depTotalToDistribute)}
-                              </div>
+                              <NeumorphicExplanationTooltip
+                                title="Subtotal a Distribuir"
+                                formula={formatCurrency(depTotalToDistribute)}
+                                text="El costo del tiempo no asignado a tratamientos. Este monto se prorratea y distribuye como costo indirecto para obtener los costos consolidados."
+                              >
+                                <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-blue-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-blue-600 inline-block min-w-[100px] tabular-nums">
+                                  {formatCurrency(depTotalToDistribute)}
+                                </div>
+                              </NeumorphicExplanationTooltip>
                             </td>
                             <td></td>
                           </tr>
