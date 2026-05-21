@@ -1151,7 +1151,7 @@ export function ProfitabilityReport() {
                 <span className="text-blue-600 text-lg font-black tracking-tighter">
                   {formatCurrency(personalData.reduce((acc, dep) => {
                     const totalSalary = dep.staff.reduce((sAcc, w) => sAcc + w.salary, 0);
-                    const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + w.minutesMonth, 0);
+                    const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + getPeriodMinutes(w.weeklyHours), 0);
                     const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
                     
                     const depMinsTrabaja = matrixTotals[dep.dependency] || 0;
