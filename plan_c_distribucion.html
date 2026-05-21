@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan C: Distribución Mixta de Costos Indirectos (50% Volumen / 50% Ingreso)</title>
+  
+  <!-- Tailwind CSS 3.4.0 -->
+  <script src="https://cdn.tailwindcss.com/"></script>
+  
+  <!-- Google Fonts: Outfit (para títulos y KPIs) e Inter (para legibilidad del texto) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    h1, h2, h3, h4, h5, .font-outfit {
+      font-family: 'Outfit', sans-serif;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .dark-glass-card {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .neon-border-indigo {
+      box-shadow: 0 0 15px -3px rgba(99, 102, 241, 0.3);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 0.5);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.6);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-slate-100 to-indigo-50/40 min-h-screen text-slate-800 pb-20 selection:bg-indigo-500 selection:text-white">
+
+  <!-- ENCABEZADO DE LA APLICACIÓN -->
+  <header class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+    <div class="glass-card rounded-[2.5rem] p-8 shadow-xl shadow-indigo-100/40 flex flex-col md:flex-row justify-between items-center gap-6 border border-white relative overflow-hidden">
+      <!-- Decoración sutil de fondo -->
+      <div class="absolute -top-12 -left-12 w-48 h-48 bg-indigo-300/10 rounded-full blur-3xl"></div>
+      
+      <div class="flex items-center gap-5 relative z-10">
+        <div class="w-16 h-16 bg-gradient-to-tr from-indigo-500 via-indigo-600 to-purple-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-lg shadow-indigo-250/30">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.003 9.003 0 1020.945 13H11V3.055z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-indigo-200">
+              MÉTODO MIXTO APROBADO
+            </span>
+          </div>
+          <h1 class="text-3xl font-black text-slate-900 tracking-tight mt-1 leading-none">Simulador de Costos: Plan C</h1>
+          <p class="text-slate-500 font-semibold text-xs mt-2">Distribución equitativa y ponderada al 50% Volumen (Sesiones) y 50% Ingreso Financiero</p>
+        </div>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10 shrink-0">
+        <div class="bg-white/80 border border-slate-200 px-5 py-3 rounded-2xl shadow-sm flex items-center gap-3">
+          <div class="w-3 h-3 rounded-full bg-emerald-500 shadow shadow-emerald-400"></div>
+          <div class="text-left">
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">Tratamientos Prorrateados</p>
+            <p class="text-sm font-black text-slate-800 tracking-tight mt-1">46 Tratamientos (100%)</p>
+          </div>
+        </div>
+        <a href="distribucion_analisis.html" class="bg-slate-900 hover:bg-slate-850 text-white font-extrabold text-xs px-5 py-3 rounded-2xl shadow-lg shadow-slate-950/20 transition-all flex items-center justify-center gap-2 border border-slate-800">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          </svg>
+          Comparar Opciones
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- SECCIÓN PRINCIPAL DE MÉTRICAS & BENTO GRID -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+    
+    <!-- GRID DE MÉTRICAS GLOBALES (KPIs) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <!-- KPI 1: Costo total a distribuir -->
+      <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 text-white p-6 rounded-[2.25rem] shadow-xl shadow-indigo-200/40 border border-indigo-500/25 flex flex-col justify-between min-h-[160px] relative overflow-hidden group">
+        <!-- Decoración flotante -->
+        <div class="absolute -right-8 -bottom-8 text-white/5 opacity-10 transform group-hover:scale-110 transition-transform duration-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-40 w-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </div>
+        
+        <div>
+          <span class="text-[9px] font-extrabold uppercase tracking-widest text-indigo-200 bg-white/10 px-3 py-1 rounded-full border border-white/15">
+            Monto Fijo Directo + Indirecto a Repartir
+          </span>
+          <h3 class="text-xs font-bold text-indigo-150 uppercase tracking-wider mt-4">Costo Total de Personal ocioso</h3>
+        </div>
+        <div>
+          <p class="text-4.5xl font-black tracking-tight font-outfit" id="cost-kpi">$42.711.163</p>
+          <span class="text-[10px] text-indigo-200/80 font-medium">Asignado al 100.0000% sin residuo</span>
+        </div>
+      </div>
+
+      <!-- KPI 2: Cantidad total de sesiones -->
+      <div class="glass-card p-6 rounded-[2.25rem] shadow-lg shadow-slate-200/40 flex flex-col justify-between min-h-[160px] relative overflow-hidden group">
+        <div class="absolute -right-8 -bottom-8 text-slate-100 opacity-20 transform group-hover:scale-110 transition-transform duration-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-40 w-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+        </div>
+        <div>
+          <span class="text-[9px] font-extrabold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+            VOLUMEN OPERATIVO TOTAL
+          </span>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-4">Sesiones de Tratamiento</h3>
+        </div>
+        <div>
+          <p class="text-4xl font-black text-slate-800 tracking-tight font-outfit" id="sessions-kpi">5.188</p>
+          <span class="text-[10px] text-slate-450 font-medium">Cuota promedio por volumen: <strong>$8.232,68 / sesión</strong></span>
+        </div>
+      </div>
+
+      <!-- KPI 3: Ingresos totales acumulados -->
+      <div class="glass-card p-6 rounded-[2.25rem] shadow-lg shadow-slate-200/40 flex flex-col justify-between min-h-[160px] relative overflow-hidden group">
+        <div class="absolute -right-8 -bottom-8 text-slate-100 opacity-20 transform group-hover:scale-110 transition-transform duration-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-40 w-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+        </div>
+        <div>
+          <span class="text-[9px] font-extrabold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+            RECAUDO ACUMULADO BRUTO
+          </span>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-4">Ingresos Totales</h3>
+        </div>
+        <div>
+          <p class="text-4xl font-black text-slate-800 tracking-tight font-outfit" id="revenue-kpi">$302.560.870</p>
+          <span class="text-[10px] text-slate-450 font-medium">Tasa de absorción financiera media: <strong>14,11% del ingreso</strong></span>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- CÓMO FUNCIONA EL PLAN C (EXPLICACIÓN CON FÓRMULA) -->
+    <div class="glass-card mt-8 p-6 rounded-[2.25rem] border border-white shadow-xl shadow-indigo-50/20 relative overflow-hidden">
+      <div class="absolute -right-16 -top-16 w-60 h-60 bg-purple-200/10 rounded-full blur-3xl"></div>
+      
+      <div class="flex flex-col lg:flex-row items-center gap-6">
+        <div class="bg-gradient-to-tr from-purple-100 to-indigo-100 p-4 rounded-3xl text-indigo-700 flex items-center justify-center shrink-0 border border-indigo-200/30">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+        </div>
+        <div class="grow text-center lg:text-left">
+          <h3 class="text-base font-black text-slate-800 uppercase tracking-tight">Estrategia del Plan C (Método Ponderado Mixto)</h3>
+          <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+            Este método combina lo mejor de ambos mundos: <strong>50% volumen de sesiones</strong> (que mide el esfuerzo del personal y saturación de la clínica) y <strong>50% peso de ingresos</strong> (que mide el flujo de dinero que entra y el margen disponible). Evita que un tratamiento muy popular pero sumamente barato sea sobrecargado artificialmente con costos que su precio de venta no podría absorber.
+          </p>
+        </div>
+        
+        <!-- FÓRMULA MATEMÁTICA CON DISEÑO PREMIUM -->
+        <div class="bg-slate-900 text-slate-100 px-6 py-4 rounded-2xl shrink-0 font-mono text-[11px] border border-slate-800 shadow-inner flex flex-col items-center gap-1.5 w-full lg:w-auto">
+          <span class="text-indigo-400 font-extrabold text-[9px] uppercase tracking-widest">Fórmula de Prorrateo Plan C</span>
+          <div class="flex items-center gap-2 font-bold text-center">
+            <span>Costo Asignado = </span>
+            <div class="flex flex-col items-center">
+              <span class="border-b border-slate-700 pb-0.5 px-2">Costo por Volumen (50%) + Costo por Ingresos (50%)</span>
+              <span class="pt-0.5">2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANÁLISIS DE GRÁFICOS INTERACTIVOS (BENTO ROW) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+      
+      <!-- Columna Izquierda: Gráfico de Barra Top 10 Absorción -->
+      <div class="lg:col-span-2 glass-card p-6 rounded-[2.25rem] shadow-xl shadow-slate-100 border border-white flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-base font-black text-slate-800 uppercase tracking-tight">Top 10 Tratamientos que Absorberán Más Costo</h3>
+              <p class="text-slate-450 text-[11px]">Los 10 servicios con mayor asignación de costos indirectos según Plan C</p>
+            </div>
+            <span class="bg-indigo-50 text-indigo-750 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-indigo-100">
+              TOP 10 ASIGNACIÓN
+            </span>
+          </div>
+          <div class="h-[280px] w-full relative">
+            <canvas id="barChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna Derecha: Gráfico de Torta de Estructura de Concentración -->
+      <div class="lg:col-span-1 glass-card p-6 rounded-[2.25rem] shadow-xl shadow-slate-100 border border-white flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-base font-black text-slate-800 uppercase tracking-tight">Concentración del Costo</h3>
+              <p class="text-slate-450 text-[11px]">Distribución porcentual de los costos fijos</p>
+            </div>
+          </div>
+          <div class="h-[230px] w-full relative flex items-center justify-center">
+            <canvas id="doughnutChart"></canvas>
+          </div>
+          <div class="mt-4 flex flex-col gap-1.5 text-[10px] text-slate-500 font-semibold bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <div class="flex justify-between">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block"></span>Acupuntura</span>
+              <span class="text-slate-800 font-bold">34,19%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>Otros Proced. Med.</span>
+              <span class="text-slate-800 font-bold">11,56%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block"></span>Medicamento Homeopático</span>
+              <span class="text-slate-800 font-bold">11,19%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block"></span>Otros 43 Tratamientos</span>
+              <span class="text-slate-800 font-bold">43,06%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- SECCIÓN DE LA GRAN TABLA DE LOS 46 TRATAMIENTOS -->
+    <div class="glass-card p-8 rounded-[2.5rem] shadow-xl shadow-slate-100 border border-white mt-8">
+      
+      <!-- Cabecera de la Tabla: Título, Buscador, Paginador, Exportador -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h3 class="text-lg font-black text-slate-850 uppercase tracking-tight">Tabla de Prorrateo Definitiva (Plan C)</h3>
+          <p class="text-slate-450 text-xs mt-0.5">Listado completo y exhaustivo de los 46 tratamientos de la clínica sin omitir ninguno</p>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <!-- Buscador -->
+          <div class="relative grow md:grow-0 md:w-60">
+            <input
+              type="text"
+              id="search"
+              placeholder="Buscar por tratamiento..."
+              oninput="onSearchChange()"
+              class="w-full pl-9 pr-4 py-2 text-xs font-bold text-slate-700 bg-slate-100/80 placeholder-slate-400 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
+            />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          
+          <!-- Filtro de ordenamiento -->
+          <select id="orderBy" onchange="onSortChange()" class="px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+            <option value="allocMixedDesc">Asignación: Mayor a Menor</option>
+            <option value="allocMixedAsc">Asignación: Menor a Mayor</option>
+            <option value="countDesc">Sesiones: Mayor a Menor</option>
+            <option value="revenueDesc">Ingresos: Mayor a Menor</option>
+            <option value="nameAsc">Nombre: A-Z</option>
+          </select>
+          
+          <!-- Botón de Exportar a CSV -->
+          <button onclick="exportToCSV()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs px-4 py-2 rounded-xl border border-indigo-200 transition-all flex items-center justify-center gap-1.5 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- TABLA DE DATOS -->
+      <div class="overflow-x-auto rounded-[1.5rem] border border-slate-100 custom-scrollbar shadow-inner bg-slate-50/20 max-h-[500px]">
+        <table class="w-full border-separate border-spacing-y-1.5 text-left text-xs min-w-[800px] px-3 pb-3">
+          <thead>
+            <tr class="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">
+              <th class="py-3 pl-4 rounded-l-xl w-6 text-center">N°</th>
+              <th class="py-3 pl-2">Tratamiento Clínico</th>
+              <th class="py-3 text-center">Sesiones (Volumen)</th>
+              <th class="py-3 text-right pr-6">Ingresos Brutos ($)</th>
+              <th class="py-3 text-right pr-6">Monto Volumen (50%)</th>
+              <th class="py-3 text-right pr-6">Monto Ingresos (50%)</th>
+              <th class="py-3 text-right pr-6 bg-indigo-50 rounded-t-xl text-indigo-700 border-x border-indigo-100/50">Plan C: Monto Final ($)</th>
+              <th class="py-3 text-center rounded-r-xl w-24">% Total</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Rellenado dinámicamente con JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- FOOTER DE LA TABLA (CONTADOR Y PAGINADOR) -->
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-5 px-2">
+        <span class="text-xs text-slate-400 font-semibold" id="table-info">
+          Mostrando 1 a 10 de 46 tratamientos
+        </span>
+        
+        <!-- Paginador interactivo -->
+        <div class="flex items-center gap-1.5" id="pagination">
+          <!-- Inyectado por JS -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECCIÓN DE ANÁLISIS DE NEGOCIO Y NOTAS DE IMPLANTACIÓN -->
+    <section class="mt-8">
+      <div class="bg-slate-900 text-slate-100 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden border border-slate-800 shadow-indigo-950/20">
+        <!-- Decoraciones de fondo -->
+        <div class="absolute right-0 bottom-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute left-1/3 top-10 w-60 h-60 bg-purple-500/5 rounded-full blur-3xl"></div>
+        
+        <div class="flex flex-col lg:flex-row gap-8 items-stretch relative z-10">
+          <div class="lg:w-2/3 flex flex-col justify-between gap-6">
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping"></span>
+                <span class="text-purple-300 text-[10px] font-black uppercase tracking-widest">DIAGNÓSTICO DEL CONSULTOR DE NEGOCIOS</span>
+              </div>
+              <h3 class="text-2xl font-black tracking-tight leading-tight text-white">¿Por qué el Plan C es el más balanceado e ideal para la Unidad Médica?</h3>
+              <p class="text-xs text-slate-350 mt-4 leading-relaxed font-medium">
+                La implementación del <strong>Plan C (Prorrateo Mixto)</strong> soluciona los problemas de distorsión que ocasionan los otros dos métodos cuando se analizan de manera aislada:
+              </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
+              <div class="bg-white/5 border border-white/10 p-5 rounded-2.5xl">
+                <span class="text-[9px] font-black text-indigo-350 uppercase tracking-widest block mb-2">Neutraliza el Castigo al Volumen Extremo</span>
+                <p class="text-[11px] text-slate-300 leading-relaxed">
+                  Bajo el Plan B (solo Volumen), tratamientos muy repetitivos pero muy económicos son castigados. Por ejemplo, <strong>"OTROS PROCED.MDES."</strong> (1,141 sesiones que generan solo $3.42M de ingresos) se le cargaría un costo insostenible de <strong>$9,393,492</strong> (¡más de lo que recauda!). El Plan C amortigua esto, reduciendo su costo a <strong>$4,938,351</strong>.
+                </p>
+              </div>
+              
+              <div class="bg-white/5 border border-white/10 p-5 rounded-2.5xl">
+                <span class="text-[9px] font-black text-purple-300 uppercase tracking-widest block mb-2">Alivia la Carga Financiera de Alta Gama</span>
+                <p class="text-[11px] text-slate-300 leading-relaxed">
+                  Bajo el Plan A (solo Ingresos), los tratamientos premium absorben todo el costo fijos. Por ejemplo, <strong>"ACUPUNTURA"</strong>, con el 28.5% del recaudo, absorbe $12.18M. Pero al tener un volumen tremendo (39.8%), la clínica consume mucha energía operativa real en él. El Plan C combina ambas realidades y le asigna un costo justo de <strong>$14,603,014</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="lg:w-1/3 bg-white/5 border border-white/10 p-6 rounded-[2rem] flex flex-col justify-between gap-5 relative overflow-hidden backdrop-blur">
+            <div>
+              <span class="text-[9px] font-black text-amber-400 uppercase tracking-widest block mb-1">DETALLE FINANCIERO FINAL</span>
+              <h4 class="text-base font-bold text-white tracking-tight">Conciliación de Sumas</h4>
+              <div class="mt-4 flex flex-col gap-3 text-xs border-t border-white/10 pt-4">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Total Suma Plan C:</span>
+                  <span class="font-bold text-white">$42.711.163,00</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Suma Total %:</span>
+                  <span class="font-bold text-white">100,0000%</span>
+                </div>
+                <div class="flex justify-between border-t border-white/5 pt-3">
+                  <span class="text-slate-400">Tratamientos a Saldo $0:</span>
+                  <span class="font-bold text-emerald-400">Conciliado ✓</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-[10px] text-slate-400 leading-relaxed">
+              <strong>💡 Consejo:</strong> Puede utilizar la barra de búsqueda y filtros arriba para ver el impacto exacto en cualquier tratamiento minoritario o específico.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 text-center text-xs text-slate-400 font-medium">
+    <p>Simulador de Costos y Rentabilidad Clínica © 2026. Todos los derechos reservados.</p>
+  </footer>
+
+  <!-- SCRIPT CON DATOS EXHAUSTIVOS DE LOS 46 TRATAMIENTOS -->
+  <script>
+    // Datos maestros extraídos del análisis y JSON verificado
+    const rawData = [
+      { "name": "ACUPUNTURA", "count": 2068, "pctCount": 39.86121819583654, "revenue": 86287629, "pctRevenue": 28.51909730245114, "allocCount": 17025189.877409406, "allocRevenue": 12180838.13497851, "allocMixed": 14603014.006193958, "pctOfTotalAlloc": 34.19015774914384 },
+      { "name": "OTROS PROCED.MDES.", "count": 1141, "pctCount": 21.99306090979183, "revenue": 3423000, "pctRevenue": 1.131342594502049, "allocCount": 9393492.09387047, "allocRevenue": 483209.5796261992, "allocMixed": 4938350.836748335, "pctOfTotalAlloc": 11.562201752146937 },
+      { "name": "MEDICAMENTO HOMEOPATICO UNISISTA", "count": 515, "pctCount": 9.926754047802621, "revenue": 37684000, "pctRevenue": 12.455014411690101, "allocCount": 4239832.101966076, "allocRevenue": 5319681.507050451, "allocMixed": 4779756.804508263, "pctOfTotalAlloc": 11.190884229746361 },
+      { "name": "TERAPIA NEURAL SUPERFICIAL", "count": 395, "pctCount": 7.61372397841172, "revenue": 22402239, "pctRevenue": 7.4042089374569064, "allocCount": 3251910.0587895145, "allocRevenue": 3162423.7481377875, "allocMixed": 3207166.903463651, "pctOfTotalAlloc": 7.508966457934313 },
+      { "name": "CONSULTA", "count": 272, "pctCount": 5.242868157286044, "revenue": 23656502, "pctRevenue": 7.8187579168924675, "allocCount": 2239289.964533539, "allocRevenue": 3339482.438459346, "allocMixed": 2789386.201496443, "pctOfTotalAlloc": 6.530813037089256 },
+      { "name": "ACUPUNTURA PAQUETE X 5 SESIONES", "count": 81, "pctCount": 1.561295296838859, "revenue": 29340000, "pctRevenue": 9.697222238588992, "allocCount": 666847.3791441789, "allocRevenue": 4141796.3967959937, "allocMixed": 2404321.887970086, "pctOfTotalAlloc": 5.629258767713926 },
+      { "name": "OXIGENACION HIPERBARICA", "count": 101, "pctCount": 1.946800308404009, "revenue": 14052200, "pctRevenue": 4.644420802355155, "allocCount": 831501.053006939, "allocRevenue": 1983686.139299818, "allocMixed": 1407593.5961533785, "pctOfTotalAlloc": 3.2956105553795823 },
+      { "name": "ARTHREXAN KIT DOLOR FCO X 60 CAPS + GEL", "count": 93, "pctCount": 1.7925983037779492, "revenue": 8362200, "pctRevenue": 2.7638074915994846, "allocCount": 765639.583461835, "allocRevenue": 1180454.322743267, "allocMixed": 973046.953102551, "pctOfTotalAlloc": 2.278202897688717 },
+      { "name": "SUERO DE OZONO ENDOVENOSO", "count": 69, "pctCount": 1.3299922898997687, "revenue": 8202000, "pctRevenue": 2.710859468333569, "allocCount": 568055.1748265228, "allocRevenue": 1157839.606220884, "allocMixed": 862947.3905237034, "pctOfTotalAlloc": 2.020425879116669 },
+      { "name": "CONTROL", "count": 70, "pctCount": 1.3492675404780263, "revenue": 6829500, "pctRevenue": 2.257231740914912, "allocCount": 576287.8585196608, "allocRevenue": 964089.9281499059, "allocMixed": 770188.8933347834, "pctOfTotalAlloc": 1.8032496406964693 },
+      { "name": "SUERO DE VITAMINA C", "count": 45, "pctCount": 0.8673862760215882, "revenue": 7088000, "pctRevenue": 2.34266909431216, "allocCount": 370470.7661912105, "allocRevenue": 1000581.2154222905, "allocMixed": 685525.9908067505, "pctOfTotalAlloc": 1.605027685166874 },
+      { "name": "SUERO DE OLIGOELEMENTOS", "count": 33, "pctCount": 0.6360832690824981, "revenue": 6464000, "pctRevenue": 2.136429602939306, "allocCount": 271678.56187355437, "allocRevenue": 912493.9300916599, "allocMixed": 592086.2459826071, "pctOfTotalAlloc": 1.3862564360109022 },
+      { "name": "CONSULTA DE PRIMERA VEZ POR ESPECIALISTA EN MEDICINA ALTERNATIVA (MEDICINA TRADICIONAL CHINA)", "count": 72, "pctCount": 1.3878180416345411, "revenue": 4118400, "pctRevenue": 1.3611806430608353, "allocCount": 592753.2259059368, "allocRevenue": 581376.0831821616, "allocMixed": 587064.6545440492, "pctOfTotalAlloc": 1.3744993423476883 },
+      { "name": "SUERO DTX PAQUETE X 3 SESIONES", "count": 14, "pctCount": 0.2698535080956052, "revenue": 6623000, "pctRevenue": 2.1889810117987354, "allocCount": 115257.57170393215, "allocRevenue": 934939.2479884072, "allocMixed": 525098.4098461696, "pctOfTotalAlloc": 1.2294172599471704 },
+      { "name": "SUERO DTX", "count": 23, "pctCount": 0.4433307632999229, "revenue": 4129000, "pctRevenue": 1.3646840703181304, "allocCount": 189351.72494217425, "allocRevenue": 582872.4377086114, "allocMixed": 386112.0813253928, "pctOfTotalAlloc": 0.9040074168090267 },
+      { "name": "SUERO VITAMINA C PAQUETE X 3 SESIONES", "count": 7, "pctCount": 0.1349267540478026, "revenue": 4378800, "pctRevenue": 1.4472459692683532, "allocCount": 57628.78585196607, "allocRevenue": 618135.5849451362, "allocMixed": 337882.18539855117, "pctOfTotalAlloc": 0.791086361658078 },
+      { "name": "SUERO OZONO PAQUETE X 5 SESIONES", "count": 5, "pctCount": 0.0963762528912876, "revenue": 4250000, "pctRevenue": 1.4046760229721615, "allocCount": 41163.418465690054, "allocRevenue": 599953.4657935573, "allocMixed": 320558.4421296237, "pctOfTotalAlloc": 0.7505261379317246 },
+      { "name": "RECESS X 60 CAPS", "count": 23, "pctCount": 0.4433307632999229, "revenue": 2628005.52, "pctRevenue": 0.8685873746311735, "allocCount": 189351.72494217425, "allocRevenue": 370983.76937614114, "allocMixed": 280167.7471591577, "pctOfTotalAlloc": 0.6559590689655481 },
+      { "name": "OXIGENACION HIPERBARICA PAQUETE X 3 SESIONES", "count": 6, "pctCount": 0.1156515034695451, "revenue": 2622000, "pctRevenue": 0.8666024781724723, "allocCount": 49396.102158828064, "allocRevenue": 370135.9970142841, "allocMixed": 209766.04958655607, "pctOfTotalAlloc": 0.49112699082100875 },
+      { "name": "SUERO DE OLIGOELEMENTOS PAQUETE X 3 SESIONES", "count": 5, "pctCount": 0.0963762528912876, "revenue": 2638500, "pctRevenue": 0.8720559262616584, "allocCount": 41163.418465690054, "allocRevenue": 372465.22811677674, "allocMixed": 206814.3232912334, "pctOfTotalAlloc": 0.48421608957647294 },
+      { "name": "BALON FIBER POLVO", "count": 14, "pctCount": 0.2698535080956052, "revenue": 1853500, "pctRevenue": 0.612604002018565, "allocCount": 115257.57170393215, "allocRevenue": 261650.2938466726, "allocMixed": 188453.93277530238, "pctOfTotalAlloc": 0.4412287550570852 },
+      { "name": "NEBULIZACION", "count": 24, "pctCount": 0.4626060138781804, "revenue": 1254240, "pctRevenue": 0.4145413776594362, "allocCount": 197584.40863531225, "allocRevenue": 177055.4435145674, "allocMixed": 187319.92607493984, "pctOfTotalAlloc": 0.4385736957688084 },
+      { "name": "LENTIBIOT - LENTINULA EDODES POLVO X 100 G", "count": 21, "pctCount": 0.40478026214340784, "revenue": 952799.68, "pctRevenue": 0.31491173298624664, "allocCount": 172886.35755589823, "allocRevenue": 134502.46358188055, "allocMixed": 153694.4105688894, "pctOfTotalAlloc": 0.35984599756482727 },
+      { "name": "PLASMA RODILLA", "count": 5, "pctCount": 0.0963762528912876, "revenue": 1778100, "pctRevenue": 0.5876833968110119, "allocCount": 41163.418465690054, "allocRevenue": 251006.41353588807, "allocMixed": 146084.91600078906, "pctOfTotalAlloc": 0.3420298248511497 },
+      { "name": "OZONOTERAPIA INTRAMUSCULAR", "count": 10, "pctCount": 0.1927525057825752, "revenue": 1195260, "pctRevenue": 0.3950477795806367, "allocCount": 82326.83693138011, "allocRevenue": 168729.50106456646, "allocMixed": 125528.16899797329, "pctOfTotalAlloc": 0.29390014268160597 },
+      { "name": "SALES DE SHUSSLER\tGOTAS X 30 ML", "count": 12, "pctCount": 0.2313030069390902, "revenue": 616000, "pctRevenue": 0.20359539532961213, "allocCount": 98792.20431765613, "allocRevenue": 86957.96115972503, "allocMixed": 92875.08273869057, "pctOfTotalAlloc": 0.21744920113435118 },
+      { "name": "PLASMA FACIAL", "count": 3, "pctCount": 0.05782575173477255, "revenue": 1131000, "pctRevenue": 0.3738090781132976, "allocCount": 24698.051079414032, "allocRevenue": 159658.20466176787, "allocMixed": 92178.12787059095, "pctOfTotalAlloc": 0.21581741492403506 },
+      { "name": "SUERO OZONO PAQUETE X 3 SESIONES", "count": 2, "pctCount": 0.03855050115651503, "revenue": 1173000, "pctRevenue": 0.3876905823403166, "allocCount": 16465.367386276022, "allocRevenue": 165587.15655902182, "allocMixed": 91026.26197264892, "pctOfTotalAlloc": 0.2131205417484158 },
+      { "name": "BIOMAGNET X 30 CAPS", "count": 8, "pctCount": 0.15420200462606012, "revenue": 598398.64, "pctRevenue": 0.197777934538153, "allocCount": 65861.46954510409, "allocRevenue": 84473.25599862383, "allocMixed": 75167.36277186396, "pctOfTotalAlloc": 0.17598996958210658 },
+      { "name": "VITA BIOSA NARANJA FCO X 1000 ML", "count": 6, "pctCount": 0.1156515034695451, "revenue": 629997.9, "pctRevenue": 0.20822186933007378, "allocCount": 49396.102158828064, "allocRevenue": 88933.98201121482, "allocMixed": 69165.04208502144, "pctOfTotalAlloc": 0.16193668639980946 },
+      { "name": "PLASMA HOMBRO", "count": 2, "pctCount": 0.03855050115651503, "revenue": 800000, "pctRevenue": 0.26440960432417154, "allocCount": 16465.367386276022, "allocRevenue": 112932.41709055197, "allocMixed": 64698.892238413995, "pctOfTotalAlloc": 0.1514800527403433 },
+      { "name": "SUERO REVITALIZADOR", "count": 4, "pctCount": 0.07710100231303006, "revenue": 640000, "pctRevenue": 0.21152768345933728, "allocCount": 32930.734772552045, "allocRevenue": 90345.93367244159, "allocMixed": 61638.33422249682, "pctOfTotalAlloc": 0.1443143428861837 },
+      { "name": "AMEBACOL CAPSULAS X 24", "count": 9, "pctCount": 0.17347725520431764, "revenue": 343700, "pctRevenue": 0.11359697625777222, "allocCount": 74094.1532382421, "allocRevenue": 48518.589692528396, "allocMixed": 61306.37146538525, "pctOfTotalAlloc": 0.14353711573104497 },
+      { "name": "ACEITE OZONIZADO FCO X 30 ML", "count": 8, "pctCount": 0.15420200462606012, "revenue": 384000, "pctRevenue": 0.12691661007560234, "allocCount": 65861.46954510409, "allocRevenue": 54207.56020346494, "allocMixed": 60034.51487428452, "pctOfTotalAlloc": 0.14055930735083128 },
+      { "name": "VITA BIOSA FRESA FCO X 1000 ML", "count": 5, "pctCount": 0.0963762528912876, "revenue": 524998.25, "pctRevenue": 0.17351822444172812, "allocCount": 41163.418465690054, "allocRevenue": 74111.65167601235, "allocMixed": 57637.5350708512, "pctOfTotalAlloc": 0.13494723866650787 },
+      { "name": "PROMOCION DIA DE LA MUJER", "count": 2, "pctCount": 0.03855050115651503, "revenue": 687400, "pctRevenue": 0.22719395251554445, "allocCount": 16465.367386276022, "allocRevenue": 97037.17938505679, "allocMixed": 56751.273385666405, "pctOfTotalAlloc": 0.13287222683602973 },
+      { "name": "GANOPLUS - GANODERMA\tFCO X 120 CAPS", "count": 4, "pctCount": 0.07710100231303006, "revenue": 363997.2, "pctRevenue": 0.12030544453388295, "allocCount": 32930.734772552045, "allocRevenue": 51383.85451274134, "allocMixed": 42157.294642646695, "pctOfTotalAlloc": 0.09870322342345653 },
+      { "name": "OXIVENACION", "count": 1, "pctCount": 0.019275250578257516, "revenue": 528335, "pctRevenue": 0.17462106037576397, "allocCount": 8232.683693138011, "allocRevenue": 74582.68572942096, "allocMixed": 41407.684711279486, "pctOfTotalAlloc": 0.09694815547701074 },
+      { "name": "WE HE4L INSOMNIO GOTAS X 30 ML\tGOTAS X 30 ML", "count": 2, "pctCount": 0.03855050115651503, "revenue": 332778.74, "pctRevenue": 0.10998736871362046, "allocCount": 16465.367386276022, "allocRevenue": 46976.88433068544, "allocMixed": 31721.12585848073, "pctOfTotalAlloc": 0.07426893493506774 },
+      { "name": "PLASMA", "count": 1, "pctCount": 0.019275250578257516, "revenue": 390000, "pctRevenue": 0.12889968210803365, "allocCount": 8232.683693138011, "allocRevenue": 55054.553331644085, "allocMixed": 31643.618512391047, "pctOfTotalAlloc": 0.07408746634314559 },
+      { "name": "OZONOTERAPIA BOTA", "count": 2, "pctCount": 0.03855050115651503, "revenue": 278000, "pctRevenue": 0.09188233750264962, "allocCount": 16465.367386276022, "allocRevenue": 39244.01493896681, "allocMixed": 27854.691162621413, "pctOfTotalAlloc": 0.06521641932958233 },
+      { "name": "TERAPIA NEURAL SUPERFICIAL PAQUETE X 3 SESIONES", "count": 1, "pctCount": 0.019275250578257516, "revenue": 255000, "pctRevenue": 0.08428056137832969, "allocCount": 8232.683693138011, "allocRevenue": 35997.207947613446, "allocMixed": 22114.945820375728, "pctOfTotalAlloc": 0.05177790597829361 },
+      { "name": "SUERO DE DOLOR", "count": 1, "pctCount": 0.019275250578257516, "revenue": 230000, "pctRevenue": 0.07601776124319932, "allocCount": 8232.683693138011, "allocRevenue": 32468.06991353369, "allocMixed": 20350.37680333585, "pctOfTotalAlloc": 0.04764650591072842 },
+      { "name": "MESOTERAPIA FACIAL", "count": 1, "pctCount": 0.019275250578257516, "revenue": 210000, "pctRevenue": 0.06940752113509503, "allocCount": 8232.683693138011, "allocRevenue": 29644.75948626989, "allocMixed": 18938.72158970395, "pctOfTotalAlloc": 0.044341385856676276 },
+      { "name": "WE HE4L DOLOR GOTAS X 30 ML GOTAS X 30 ML", "count": 1, "pctCount": 0.019275250578257516, "revenue": 166389.37, "pctRevenue": 0.05499368435681023, "allocCount": 8232.683693138011, "allocRevenue": 23488.44216534272, "allocMixed": 15860.562929240365, "pctOfTotalAlloc": 0.03713446746753387 },
+      { "name": "CAMPOS MAGNETICOS", "count": 1, "pctCount": 0.019275250578257516, "revenue": 65000, "pctRevenue": 0.02148328035133894, "allocCount": 8232.683693138011, "allocRevenue": 9175.758888607348, "allocMixed": 8704.22129087268, "pctOfTotalAlloc": 0.02037926546479823 }
+    ];
+
+    // Variables de paginación e interacción
+    let data = [...rawData];
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    
+    // Instancias de Gráficos
+    let barChartInstance = null;
+    let doughnutChartInstance = null;
+
+    // Formateadores
+    function formatCurrency(val) {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2
+      }).format(val);
+    }
+
+    function formatNumber(val) {
+      return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(val);
+    }
+
+    // Lógica de Paginación y Render de Tabla
+    function renderTable() {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+      
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = Math.min(startIndex + itemsPerPage, data.length);
+      const pageData = data.slice(startIndex, endIndex);
+
+      if (pageData.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-8 text-slate-400 font-bold bg-white rounded-xl shadow-sm">
+              Ningún tratamiento coincide con la búsqueda
+            </td>
+          </tr>
+        `;
+        document.getElementById('table-info').innerText = 'Mostrando 0 de 0 tratamientos';
+        renderPagination(0);
+        return;
+      }
+
+      pageData.forEach((item, index) => {
+        const globalIndex = startIndex + index + 1;
+        const tr = document.createElement('tr');
+        tr.className = "group transition-all hover:bg-indigo-50/20";
+        tr.innerHTML = `
+          <td class="bg-white group-hover:bg-indigo-50/10 shadow-[1px_1px_2px_rgba(0,0,0,0.015)] rounded-l-xl p-3 text-center font-bold text-slate-400 tabular-nums">${globalIndex}</td>
+          <td class="bg-white group-hover:bg-indigo-50/10 shadow-[1px_1px_2px_rgba(0,0,0,0.015)] p-3 font-bold text-slate-700 leading-snug">${item.name}</td>
+          <td class="bg-white group-hover:bg-indigo-50/10 shadow-[1px_1px_2px_rgba(0,0,0,0.015)] p-3 text-center font-semibold text-slate-500 tabular-nums">${formatNumber(item.count)} <span class="text-[9.5px] text-slate-400 font-medium">(${(item.pctCount).toFixed(3)}%)</span></td>
+          <td class="bg-white group-hover:bg-indigo-50/10 shadow-[1px_1px_2px_rgba(0,0,0,0.015)] p-3 text-right pr-6 font-semibold text-slate-600 tabular-nums">${formatCurrency(item.revenue)} <span class="text-[9.5px] text-slate-400 font-medium">(${(item.pctRevenue).toFixed(3)}%)</span></td>
+          <td class="bg-white group-hover:bg-indigo-50/10 shadow-[1px_1px_2px_rgba(0,0,0,0.015)] p-3 text-right pr-6 font-medium text-slate-500 tabular-nums">${formatCurrency(item.allocCount)}</td>
+          <td class="bg-white group-hover:bg-indigo-50/10 shadow-[1px_1px_2px_rgba(0,0,0,0.015)] p-3 text-right pr-6 font-medium text-slate-500 tabular-nums">${formatCurrency(item.allocRevenue)}</td>
+          <td class="p-3 text-right pr-6 font-black text-indigo-700 tabular-nums bg-indigo-500/5 group-hover:bg-indigo-500/10 border-x border-indigo-100/30">${formatCurrency(item.allocMixed)}</td>
+          <td class="bg-white group-hover:bg-indigo-50/10 shadow-[1px_1px_2px_rgba(0,0,0,0.015)] rounded-r-xl p-3 text-center font-black text-slate-700 tabular-nums">${item.pctOfTotalAlloc.toFixed(4)}%</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Actualizar información
+      document.getElementById('table-info').innerHTML = `
+        Mostrando <strong class="text-slate-700">${startIndex + 1}</strong> a <strong class="text-slate-700">${endIndex}</strong> de <strong class="text-slate-700">${data.length}</strong> tratamientos
+      `;
+
+      renderPagination(data.length);
+    }
+
+    function renderPagination(totalItems) {
+      const paginationDiv = document.getElementById('pagination');
+      paginationDiv.innerHTML = '';
+
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      if (totalPages <= 1) return;
+
+      // Botón Anterior
+      const prevBtn = document.createElement('button');
+      prevBtn.className = `p-1.5 rounded-lg border border-slate-200 transition-all ${currentPage === 1 ? 'opacity-40 cursor-not-allowed bg-slate-50' : 'bg-white hover:bg-slate-50 text-slate-600'}`;
+      prevBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+        </svg>
+      `;
+      prevBtn.onclick = () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderTable();
+        }
+      };
+      paginationDiv.appendChild(prevBtn);
+
+      // Números de páginas (simplificado para móviles si es necesario, pero mostramos todas ya que son solo 5)
+      for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = `w-7 h-7 text-xs font-black rounded-lg transition-all border ${i === currentPage ? 'bg-indigo-650 border-indigo-650 text-white shadow shadow-indigo-200' : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'}`;
+        pageBtn.innerText = i;
+        pageBtn.onclick = () => {
+          currentPage = i;
+          renderTable();
+        };
+        paginationDiv.appendChild(pageBtn);
+      }
+
+      // Botón Siguiente
+      const nextBtn = document.createElement('button');
+      nextBtn.className = `p-1.5 rounded-lg border border-slate-200 transition-all ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed bg-slate-50' : 'bg-white hover:bg-slate-50 text-slate-600'}`;
+      nextBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      `;
+      nextBtn.onclick = () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderTable();
+        }
+      };
+      paginationDiv.appendChild(nextBtn);
+    }
+
+    // Buscador y filtros
+    function onSearchChange() {
+      const query = document.getElementById('search').value.toLowerCase();
+      data = rawData.filter(item => item.name.toLowerCase().includes(query));
+      currentPage = 1;
+      sortData();
+      renderTable();
+    }
+
+    function onSortChange() {
+      currentPage = 1;
+      sortData();
+      renderTable();
+    }
+
+    function sortData() {
+      const order = document.getElementById('orderBy').value;
+      if (order === 'allocMixedDesc') {
+        data.sort((a, b) => b.allocMixed - a.allocMixed);
+      } else if (order === 'allocMixedAsc') {
+        data.sort((a, b) => a.allocMixed - b.allocMixed);
+      } else if (order === 'countDesc') {
+        data.sort((a, b) => b.count - a.count);
+      } else if (order === 'revenueDesc') {
+        data.sort((a, b) => b.revenue - a.revenue);
+      } else if (order === 'nameAsc') {
+        data.sort((a, b) => a.name.localeCompare(b.name));
+      }
+    }
+
+    // Gráficos interactivos
+    function initCharts() {
+      // 1. Gráfico de barras horizontales (Top 10)
+      const top10 = [...rawData].sort((a, b) => b.allocMixed - a.allocMixed).slice(0, 10);
+      
+      const barLabels = top10.map(item => item.name.length > 25 ? item.name.substring(0, 25) + '...' : item.name);
+      const barValues = top10.map(item => Math.round(item.allocMixed));
+
+      const ctxBar = document.getElementById('barChart').getContext('2d');
+      barChartInstance = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: barLabels,
+          datasets: [{
+            label: 'Costo Asignado (Plan C)',
+            data: barValues,
+            backgroundColor: 'rgba(99, 102, 241, 0.85)',
+            hoverBackgroundColor: 'rgba(79, 70, 229, 1)',
+            borderRadius: 8,
+            borderSkipped: false,
+            maxBarThickness: 20
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ' Costo asignado: ' + formatCurrency(context.raw);
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                callback: function(value) {
+                  return '$' + (value / 1e6).toFixed(1) + 'M';
+                },
+                font: { size: 9, weight: 'bold' }
+              }
+            },
+            y: {
+              grid: { display: false },
+              ticks: {
+                font: { size: 9, weight: 'bold' }
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Gráfico de dona (Estructura de Concentración)
+      const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+      doughnutChartInstance = new Chart(ctxDoughnut, {
+        type: 'doughnut',
+        data: {
+          labels: ['Acupuntura', 'Otros Proced. Med.', 'Medicamento Homeopático', 'Otros 43 Tratamientos'],
+          datasets: [{
+            data: [34.19, 11.56, 11.19, 43.06],
+            backgroundColor: [
+              'rgba(79, 70, 229, 0.9)',
+              'rgba(147, 51, 234, 0.8)',
+              'rgba(167, 139, 250, 0.7)',
+              'rgba(226, 232, 240, 0.9)'
+            ],
+            borderColor: '#ffffff',
+            borderWidth: 2,
+            hoverOffset: 12
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ' ' + context.label + ': ' + context.raw + '% del total';
+                }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    // Exportación a CSV de forma local
+    function exportToCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+      csvContent += "N,Tratamiento,Sesiones (Volumen),Sesiones (%),Ingresos Brutos (COP),Ingresos (%),Asignacion Volumen (COP),Asignacion Ingresos (COP),Asignacion Mixta Plan C (COP),Porcentaje Asignacion Final\n";
+      
+      rawData.forEach((item, index) => {
+        const row = [
+          index + 1,
+          `"${item.name}"`,
+          item.count,
+          `${item.pctCount.toFixed(4)}%`,
+          item.revenue.toFixed(2),
+          `${item.pctRevenue.toFixed(4)}%`,
+          item.allocCount.toFixed(2),
+          item.allocRevenue.toFixed(2),
+          item.allocMixed.toFixed(2),
+          `${item.pctOfTotalAlloc.toFixed(4)}%`
+        ].join(",");
+        csvContent += row + "\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "Prorrateo_Plan_C_Total.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Arranque
+    window.onload = function() {
+      sortData();
+      renderTable();
+      initCharts();
+    };
+  </script>
+</body>
+</html>
