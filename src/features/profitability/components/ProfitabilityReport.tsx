@@ -199,6 +199,14 @@ export function ProfitabilityReport() {
     return initialAdminData;
   });
 
+  // Estados para el Listado de Distribución (Plan C)
+  const [distributionData, setDistributionData] = useState<any[]>([]);
+  const [isListOpen, setIsListOpen] = useState(false);
+  const [isListLoading, setIsListLoading] = useState(false);
+  const [distSearchQuery, setDistSearchQuery] = useState('');
+  const [distCurrentPage, setDistCurrentPage] = useState(1);
+  const [distSortOrder, setDistSortOrder] = useState('allocMixedDesc');
+
   // Estados dinámicos para los tratamientos
   const [availableTreatments, setAvailableTreatments] = useState<string[]>([]);
   const [activeDashboardTreatments, setActiveDashboardTreatments] = useState<string[]>(['acupuntura', 'TERAPIA NEURAL', 'SUERO VITAMINA C']);
@@ -409,6 +417,40 @@ export function ProfitabilityReport() {
     }
     loadData();
   }, []);
+
+  // Carga de datos para el listado de distribución Plan C
+  useEffect(() => {
+    async function fetchDistributionData() {
+      setIsListLoading(true);
+      try {
+        const supabaseClient = createClient();
+        const { data, error } = await supabaseClient.rpc('get_treatment_stats_by_period', {
+          start_date: appliedDateRange.start || null,
+          end_date: appliedDateRange.end || null
+        });
+
+        if (error) {
+          console.error('Error fetching distribution stats:', error);
+          return;
+        }
+
+        if (data) {
+          const mapped = data.map((item: any) => ({
+            name: item.treatment_name || 'Desconocido',
+            count: smartParseNumber(item.sessions_count),
+            revenue: smartParseNumber(item.total_revenue)
+          }));
+          setDistributionData(mapped);
+        }
+      } catch (err) {
+        console.error('Exception fetching distribution stats:', err);
+      } finally {
+        setIsListLoading(false);
+      }
+    }
+
+    fetchDistributionData();
+  }, [appliedDateRange]);
 
   // Efectos para persistencia
   useEffect(() => {
@@ -831,6 +873,107 @@ export function ProfitabilityReport() {
         const activeTreatmentsCols = treatments;
         const validDeps = personalData.filter(dep => dep.dependency !== 'Operativo' && dep.dependency !== 'Administrativos');
 
+        const totalToDistribute = personalData.reduce((acc, dep) => {
+          const totalSalary = dep.staff.reduce((sAcc, w) => sAcc + w.salary, 0);
+          const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + getPeriodMinutes(w.weeklyHours), 0);
+          const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+          
+          const depMinsTrabaja = matrixTotals[dep.dependency] || 0;
+          const depMinsNoTrabaja = totalMinsMes - depMinsTrabaja;
+          
+          return acc + (depMinsNoTrabaja * avgPriceMin);
+        }, 0);
+
+        // Cálculos del Plan C
+        const totalSessions = distributionData.reduce((acc, item) => acc + item.count, 0);
+        const totalRevenue = distributionData.reduce((acc, item) => acc + item.revenue, 0);
+
+        const calculatedDistribution = distributionData.map(item => {
+          const pctCount = totalSessions > 0 ? (item.count / totalSessions) : 0;
+          const pctRevenue = totalRevenue > 0 ? (item.revenue / totalRevenue) : 0;
+
+          const allocCount = totalToDistribute * pctCount;
+          const allocRevenue = totalToDistribute * pctRevenue;
+          const allocMixed = 0.5 * allocCount + 0.5 * allocRevenue;
+          const pctOfTotalAlloc = totalToDistribute > 0 ? (allocMixed / totalToDistribute) * 100 : 0;
+
+          return {
+            name: item.name,
+            count: item.count,
+            pctCount: pctCount * 100,
+            revenue: item.revenue,
+            pctRevenue: pctRevenue * 100,
+            allocCount,
+            allocRevenue,
+            allocMixed,
+            pctOfTotalAlloc
+          };
+        });
+
+        // Filtrar por búsqueda
+        const filteredDistribution = calculatedDistribution.filter(item => 
+          item.name.toLowerCase().includes(distSearchQuery.toLowerCase())
+        );
+
+        // Ordenar
+        filteredDistribution.sort((a, b) => {
+          if (distSortOrder === 'allocMixedDesc') return b.allocMixed - a.allocMixed;
+          if (distSortOrder === 'allocMixedAsc') return a.allocMixed - b.allocMixed;
+          if (distSortOrder === 'countDesc') return b.count - a.count;
+          if (distSortOrder === 'revenueDesc') return b.revenue - a.revenue;
+          if (distSortOrder === 'nameAsc') return a.name.localeCompare(b.name);
+          return 0;
+        });
+
+        // Paginación
+        const itemsPerPage = 10;
+        const totalPages = Math.ceil(filteredDistribution.length / itemsPerPage);
+        const paginatedData = filteredDistribution.slice(
+          (distCurrentPage - 1) * itemsPerPage,
+          distCurrentPage * itemsPerPage
+        );
+
+        const exportToCSV = () => {
+          if (filteredDistribution.length === 0) return;
+
+          const headers = [
+            'N°',
+            'Tratamiento Clinico',
+            'Sesiones (Volumen)',
+            '% Volumen',
+            'Ingresos Brutos ($)',
+            '% Ingresos',
+            'Monto Volumen (50%)',
+            'Monto Ingresos (50%)',
+            'Plan C: Monto Final ($)',
+            '% Total'
+          ];
+
+          const rows = filteredDistribution.map((item, idx) => [
+            idx + 1,
+            item.name,
+            item.count,
+            item.pctCount.toFixed(4) + '%',
+            item.revenue.toFixed(2),
+            item.pctRevenue.toFixed(4) + '%',
+            item.allocCount.toFixed(2),
+            item.allocRevenue.toFixed(2),
+            item.allocMixed.toFixed(2),
+            item.pctOfTotalAlloc.toFixed(4) + '%'
+          ]);
+
+          const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+            + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+          
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement("a");
+          link.setAttribute("href", encodedUri);
+          link.setAttribute("download", `plan_c_distribucion_${appliedDateRange.start || 'historico'}_a_${appliedDateRange.end || 'historico'}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        };
+
         return (
         <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
           <div className="flex justify-end px-4">
@@ -1149,19 +1292,232 @@ export function ProfitabilityReport() {
               </div>
               <div className="text-right bg-blue-500/5 px-4 py-1.5 rounded-xl border border-blue-500/10 shadow-inner">
                 <span className="text-blue-600 text-lg font-black tracking-tighter">
-                  {formatCurrency(personalData.reduce((acc, dep) => {
-                    const totalSalary = dep.staff.reduce((sAcc, w) => sAcc + w.salary, 0);
-                    const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + getPeriodMinutes(w.weeklyHours), 0);
-                    const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
-                    
-                    const depMinsTrabaja = matrixTotals[dep.dependency] || 0;
-                    
-                    const depMinsNoTrabaja = totalMinsMes - depMinsTrabaja;
-                    
-                    return acc + (depMinsNoTrabaja * avgPriceMin);
-                  }, 0))}
+                  {formatCurrency(totalToDistribute)}
                 </span>
               </div>
+            </div>
+
+            {/* Desplegable Listado de distribución */}
+            <div className="mt-6 flex flex-col gap-4">
+              <button
+                onClick={() => setIsListOpen(!isListOpen)}
+                className={`w-full py-4 px-6 rounded-2xl transition-all duration-300 flex items-center justify-between font-black text-sm active:scale-[0.99] bg-[#e6e7ee] ${
+                  isListOpen 
+                    ? 'shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] text-blue-700' 
+                    : 'shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] hover:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] text-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] transition-transform ${isListOpen ? 'rotate-90 scale-90' : ''}`}>
+                    <Users size={16} />
+                  </div>
+                  <span className="uppercase tracking-wider">Listado de distribución</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">
+                    {isListOpen ? 'Ocultar listado' : 'Mostrar listado'}
+                  </span>
+                  <div className={`w-6 h-6 rounded-lg bg-blue-500/5 border border-blue-500/10 flex items-center justify-center text-blue-600 transition-transform duration-300 ${isListOpen ? 'rotate-180' : ''}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </div>
+                </div>
+              </button>
+
+              {isListOpen && (
+                <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff] border border-white/40 animate-in slide-in-from-top-4 duration-300 flex flex-col gap-6">
+                  {/* Cabecera del Panel */}
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <h4 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
+                        <div className="w-2 h-5 bg-blue-500 rounded-full"></div>
+                        TABLA DE PRORRATEO DEFINITIVA (PLAN C)
+                      </h4>
+                      <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                        Listado completo y exhaustivo de todos los tratamientos de la clínica bajo distribución equitativa (50/50).
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                      {/* Buscador */}
+                      <div className="relative flex-1 md:flex-none md:w-60">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          type="text"
+                          placeholder="Buscar por tratamiento..."
+                          value={distSearchQuery}
+                          onChange={(e) => {
+                            setDistSearchQuery(e.target.value);
+                            setDistCurrentPage(1);
+                          }}
+                          className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#e6e7ee] text-slate-700 text-xs shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Ordenación */}
+                      <select
+                        value={distSortOrder}
+                        onChange={(e) => {
+                          setDistSortOrder(e.target.value);
+                          setDistCurrentPage(1);
+                        }}
+                        className="px-3 py-2 rounded-xl bg-[#e6e7ee] text-slate-700 text-xs font-black shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border-none outline-none cursor-pointer focus:ring-1 focus:ring-blue-500/20"
+                      >
+                        <option value="allocMixedDesc">Asignación: Mayor a Menor</option>
+                        <option value="allocMixedAsc">Asignación: Menor a Mayor</option>
+                        <option value="countDesc">Sesiones: Mayor a Menor</option>
+                        <option value="revenueDesc">Ingresos: Mayor a Menor</option>
+                        <option value="nameAsc">Tratamiento: A - Z</option>
+                      </select>
+
+                      {/* Exportar */}
+                      <button
+                        onClick={exportToCSV}
+                        disabled={filteredDistribution.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs rounded-xl shadow-[3px_3px_6px_rgba(79,70,229,0.3)] hover:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span>Exportar CSV</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tabla de Resultados */}
+                  <div className="overflow-x-auto rounded-3xl">
+                    {isListLoading ? (
+                      <div className="flex flex-col items-center justify-center py-12 gap-3 bg-[#e6e7ee] rounded-2xl shadow-inner">
+                        <div className="w-8 h-8 rounded-full border-4 border-blue-500/30 border-t-blue-600 animate-spin"></div>
+                        <span className="text-xs font-bold text-slate-500">Cargando estadísticas de tratamientos...</span>
+                      </div>
+                    ) : paginatedData.length === 0 ? (
+                      <div className="text-center py-12 text-slate-400 font-bold bg-[#e6e7ee] rounded-2xl shadow-inner border border-white/20">
+                        Ningún tratamiento coincide con la búsqueda
+                      </div>
+                    ) : (
+                      <table className="w-full border-separate border-spacing-y-2 text-left">
+                        <thead>
+                          <tr className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                            <th className="pb-1 pl-4 text-center w-12">N°</th>
+                            <th className="pb-1">Tratamiento Clínico</th>
+                            <th className="pb-1 text-center w-36">Sesiones (Volumen)</th>
+                            <th className="pb-1 text-right pr-4 w-36">Ingresos Brutos ($)</th>
+                            <th className="pb-1 text-right pr-4 w-36">Monto Volumen (50%)</th>
+                            <th className="pb-1 text-right pr-4 w-36">Monto Ingresos (50%)</th>
+                            <th className="pb-1 text-right pr-4 w-44 bg-blue-500/10 rounded-t-xl border-x border-t border-blue-200/50">Plan C: Monto Final ($)</th>
+                            <th className="pb-1 text-center w-24">% Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginatedData.map((item, index) => {
+                            const globalIndex = (distCurrentPage - 1) * itemsPerPage + index + 1;
+                            return (
+                              <tr key={item.name} className="group transition-all hover:bg-white/30">
+                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] rounded-l-2xl p-2.5 text-center font-bold text-slate-400 tabular-nums">
+                                  {globalIndex}
+                                </td>
+                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 font-bold text-slate-700 leading-snug">
+                                  {item.name}
+                                </td>
+                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-center font-semibold text-slate-500 tabular-nums text-xs">
+                                  {new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(item.count)}{' '}
+                                  <span className="text-[9px] text-slate-400 font-medium">({item.pctCount.toFixed(3)}%)</span>
+                                </td>
+                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-right pr-4 font-semibold text-slate-600 tabular-nums text-xs">
+                                  {formatCurrency(item.revenue)}{' '}
+                                  <span className="text-[9px] text-slate-400 font-medium">({item.pctRevenue.toFixed(3)}%)</span>
+                                </td>
+                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-right pr-4 font-medium text-slate-500 tabular-nums text-xs">
+                                  {formatCurrency(item.allocCount)}
+                                </td>
+                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-right pr-4 font-medium text-slate-500 tabular-nums text-xs">
+                                  {formatCurrency(item.allocRevenue)}
+                                </td>
+                                <td className="p-2.5 text-right pr-4 font-black text-blue-700 tabular-nums text-xs bg-blue-500/5 group-hover:bg-blue-500/10 border-x border-blue-200/50 shadow-inner">
+                                  {formatCurrency(item.allocMixed)}
+                                </td>
+                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] rounded-r-2xl p-2.5 text-center font-black text-slate-700 tabular-nums text-xs">
+                                  {item.pctOfTotalAlloc.toFixed(4)}%
+                                </td>
+                              </tr>
+                            );
+                          })}
+
+                          {/* Fila de Totales */}
+                          {(() => {
+                            const totalSess = filteredDistribution.reduce((acc, item) => acc + item.count, 0);
+                            const totalRev = filteredDistribution.reduce((acc, item) => acc + item.revenue, 0);
+                            const totalVolAlloc = filteredDistribution.reduce((acc, item) => acc + item.allocCount, 0);
+                            const totalRevAlloc = filteredDistribution.reduce((acc, item) => acc + item.allocRevenue, 0);
+                            const totalMixedAlloc = filteredDistribution.reduce((acc, item) => acc + item.allocMixed, 0);
+                            const totalPct = filteredDistribution.reduce((acc, item) => acc + item.pctOfTotalAlloc, 0);
+                            
+                            return (
+                              <tr className="bg-slate-900/5 rounded-2xl border border-white/50 font-black">
+                                <td className="p-3 pl-4 rounded-l-2xl text-center text-slate-500 font-bold">∑</td>
+                                <td className="p-3 text-slate-800 uppercase tracking-tight text-xs font-black">Totales consolidados</td>
+                                <td className="p-3 text-center text-slate-700 tabular-nums text-xs">{new Intl.NumberFormat('es-CO').format(totalSess)} <span className="text-[9px] text-slate-400 font-bold">(100%)</span></td>
+                                <td className="p-3 text-right pr-4 text-slate-700 tabular-nums text-xs">{formatCurrency(totalRev)} <span className="text-[9px] text-slate-400 font-bold">(100%)</span></td>
+                                <td className="p-3 text-right pr-4 text-slate-600 tabular-nums text-xs">{formatCurrency(totalVolAlloc)}</td>
+                                <td className="p-3 text-right pr-4 text-slate-600 tabular-nums text-xs">{formatCurrency(totalRevAlloc)}</td>
+                                <td className="p-3 text-right pr-4 text-blue-700 bg-blue-500/10 border-x border-b border-blue-200/50 shadow-inner tabular-nums text-xs font-black">{formatCurrency(totalMixedAlloc)}</td>
+                                <td className="p-3 rounded-r-2xl text-center text-slate-800 tabular-nums text-xs font-black">{totalPct.toFixed(4)}%</td>
+                              </tr>
+                            );
+                          })()}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+
+                  {/* Paginación */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 mt-2">
+                      <span className="text-[10px] font-black text-slate-450 uppercase tracking-wider">
+                        Mostrando <strong className="text-slate-700">{((distCurrentPage - 1) * itemsPerPage) + 1}</strong> a <strong className="text-slate-700">{Math.min(distCurrentPage * itemsPerPage, filteredDistribution.length)}</strong> de <strong className="text-slate-700">{filteredDistribution.length}</strong> tratamientos
+                      </span>
+                      
+                      <div className="flex items-center gap-1.5 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] bg-[#e6e7ee] p-1.5 rounded-xl border border-white/40">
+                        <button
+                          onClick={() => setDistCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={distCurrentPage === 1}
+                          className={`p-1.5 rounded-lg border border-white/50 transition-all ${
+                            distCurrentPage === 1 
+                              ? 'opacity-40 cursor-not-allowed bg-slate-50 shadow-inner' 
+                              : 'bg-[#e6e7ee] hover:bg-white shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] active:scale-95 text-slate-600'
+                          }`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        </button>
+
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <button
+                            key={page}
+                            onClick={() => setDistCurrentPage(page)}
+                            className={`w-7 h-7 text-xs font-black rounded-lg transition-all border flex items-center justify-center ${
+                              page === distCurrentPage 
+                                ? 'bg-blue-650 text-white shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)] border-blue-600' 
+                                : 'bg-[#e6e7ee] hover:bg-white text-slate-600 border-white/40 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] active:scale-95'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+
+                        <button
+                          onClick={() => setDistCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={distCurrentPage === totalPages}
+                          className={`p-1.5 rounded-lg border border-white/50 transition-all ${
+                            distCurrentPage === totalPages 
+                              ? 'opacity-40 cursor-not-allowed bg-slate-50 shadow-inner' 
+                              : 'bg-[#e6e7ee] hover:bg-white shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] active:scale-95 text-slate-600'
+                          }`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Matriz de Tiempos Acumulados */}
