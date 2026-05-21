@@ -946,7 +946,8 @@ export function ProfitabilityReport() {
             'Monto Volumen (50%)',
             'Monto Ingresos (50%)',
             'Plan C: Monto Final ($)',
-            '% Total'
+            '% Total',
+            'Costo por Sesión'
           ];
 
           const rows = filteredDistribution.map((item, idx) => [
@@ -959,7 +960,8 @@ export function ProfitabilityReport() {
             item.allocCount.toFixed(2),
             item.allocRevenue.toFixed(2),
             item.allocMixed.toFixed(2),
-            item.pctOfTotalAlloc.toFixed(4) + '%'
+            item.pctOfTotalAlloc.toFixed(4) + '%',
+            (item.count > 0 ? (item.allocMixed / item.count) : 0).toFixed(2)
           ]);
 
           const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
@@ -1404,6 +1406,7 @@ export function ProfitabilityReport() {
                             <th className="pb-1 text-right pr-4 w-36">Monto Ingresos (50%)</th>
                             <th className="pb-1 text-right pr-4 w-44 bg-blue-500/10 rounded-t-xl border-x border-t border-blue-200/50">Plan C: Monto Final ($)</th>
                             <th className="pb-1 text-center w-24">% Total</th>
+                            <th className="pb-1 text-right pr-4 w-36">Costo por Sesión</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1434,8 +1437,11 @@ export function ProfitabilityReport() {
                                 <td className="p-2.5 text-right pr-4 font-black text-blue-700 tabular-nums text-xs bg-blue-500/5 group-hover:bg-blue-500/10 border-x border-blue-200/50 shadow-inner">
                                   {formatCurrency(item.allocMixed)}
                                 </td>
-                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] rounded-r-2xl p-2.5 text-center font-black text-slate-700 tabular-nums text-xs">
+                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-center font-black text-slate-700 tabular-nums text-xs">
                                   {item.pctOfTotalAlloc.toFixed(4)}%
+                                </td>
+                                <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] rounded-r-2xl p-2.5 text-right pr-4 font-black text-slate-700 tabular-nums text-xs">
+                                  {formatCurrency(item.count > 0 ? (item.allocMixed / item.count) : 0)}
                                 </td>
                               </tr>
                             );
@@ -1459,7 +1465,8 @@ export function ProfitabilityReport() {
                                 <td className="p-3 text-right pr-4 text-slate-600 tabular-nums text-xs">{formatCurrency(totalVolAlloc)}</td>
                                 <td className="p-3 text-right pr-4 text-slate-600 tabular-nums text-xs">{formatCurrency(totalRevAlloc)}</td>
                                 <td className="p-3 text-right pr-4 text-blue-700 bg-blue-500/10 border-x border-b border-blue-200/50 shadow-inner tabular-nums text-xs font-black">{formatCurrency(totalMixedAlloc)}</td>
-                                <td className="p-3 rounded-r-2xl text-center text-slate-800 tabular-nums text-xs font-black">{totalPct.toFixed(4)}%</td>
+                                <td className="p-3 text-center text-slate-800 tabular-nums text-xs font-black">{totalPct.toFixed(4)}%</td>
+                                <td className="p-3 rounded-r-2xl text-right pr-4 text-slate-800 tabular-nums text-xs font-black">{formatCurrency(totalSess > 0 ? (totalMixedAlloc / totalSess) : 0)}</td>
                               </tr>
                             );
                           })()}
