@@ -210,6 +210,9 @@ export function ProfitabilityReport() {
     return initialInsumos;
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [showInsumoDropdown, setShowInsumoDropdown] = useState(false);
+  const [insumoSearchQuery, setInsumoSearchQuery] = useState('');
+  const insumoDropdownRef = useRef<HTMLDivElement>(null);
   
   const [personalData, setPersonalData] = useState<Dependency[]>(() => {
     if (typeof window !== 'undefined') {
@@ -518,6 +521,47 @@ export function ProfitabilityReport() {
       insumo.detalle.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [insumos, searchTerm]);
+
+  // Click outside para el dropdown de insumos del servicio
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (insumoDropdownRef.current && !insumoDropdownRef.current.contains(event.target as Node)) {
+        setShowInsumoDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Filtrado y ordenación inteligente de insumos para el buscador del servicio
+  const filteredAndSortedInsumosForSearch = useMemo(() => {
+    if (!insumoSearchQuery.trim()) {
+      return insumos;
+    }
+    
+    const query = insumoSearchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    return insumos
+      .map(ins => {
+        const detailNormalized = ins.detalle.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        let score = 0;
+        if (detailNormalized.startsWith(query)) {
+          score = 100;
+        } else if (new RegExp(`\\b${query}\\b`).test(detailNormalized)) {
+          score = 50;
+        } else if (detailNormalized.includes(query)) {
+          score = 10;
+        }
+        
+        return { ins, score };
+      })
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score || a.ins.detalle.localeCompare(b.ins.detalle))
+      .map(item => item.ins);
+  }, [insumos, insumoSearchQuery]);
 
   // Cálculo de precios promedio por minuto por dependencia
   const dependencyPrices = useMemo(() => {
@@ -2453,31 +2497,66 @@ export function ProfitabilityReport() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Columna de Insumos del Servicio */}
             <div className="space-y-6">
-              <div className="flex flex-col gap-4 px-2 relative z-0">
+              <div className="flex flex-col gap-4 px-2 relative z-30">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 shadow-inner border border-orange-200/20">
                     <Package size={18} />
                   </div>
                   <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Insumos del Servicio</h4>
                 </div>
-                <div className="relative group w-full">
-                  <select 
-                    onChange={(e) => {
-                      handleAddInsumoToService(activeService, e.target.value);
-                      e.target.value = '';
-                    }}
-                    className="w-full appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
+                <div className="relative w-full z-40" ref={insumoDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowInsumoDropdown(!showInsumoDropdown)}
+                    className="w-full bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all text-left flex items-center justify-between outline-none"
                   >
-                    <option value="">+ Agregar Insumo</option>
-                    {insumos.map(ins => (
-                      <option key={ins.id} value={ins.id}>{ins.detalle} - {formatCurrency(ins.valor)}</option>
-                    ))}
-                  </select>
-                  <Plus size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none" />
+                    <span>+ Agregar Insumo</span>
+                    <Plus size={12} className="text-blue-600 shrink-0" />
+                  </button>
+
+                  {showInsumoDropdown && (
+                    <div className="absolute left-0 mt-2 w-full bg-[#e6e7ee] rounded-2xl shadow-[10px_10px_30px_#b8b9be,-10px_-10px_30px_#ffffff] border border-white/60 p-4 z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
+                      {/* Campo de búsqueda interna */}
+                      <div className="relative mb-3">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                          type="text"
+                          autoFocus
+                          placeholder="Escribe para buscar..."
+                          value={insumoSearchQuery}
+                          onChange={(e) => setInsumoSearchQuery(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#e6e7ee] text-slate-700 text-xs shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Lista de resultados filtrados */}
+                      <div className="max-h-60 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
+                        {filteredAndSortedInsumosForSearch.length === 0 ? (
+                          <span className="text-[10px] text-center text-slate-455 py-3 font-bold uppercase tracking-wider">No se encontraron insumos</span>
+                        ) : (
+                          filteredAndSortedInsumosForSearch.map((ins) => (
+                            <button
+                              key={ins.id}
+                              type="button"
+                              onClick={() => {
+                                handleAddInsumoToService(activeService, ins.id);
+                                setInsumoSearchQuery('');
+                                setShowInsumoDropdown(false);
+                              }}
+                              className="w-full text-left px-3 py-2 rounded-xl text-[10px] font-bold text-slate-650 hover:bg-white/50 hover:text-blue-600 transition-colors flex justify-between items-center"
+                            >
+                              <span className="truncate mr-2">{ins.detalle}</span>
+                              <span className="shrink-0 font-black text-blue-500">{formatCurrency(ins.valor)}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="relative z-10 space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 pt-1 pb-1 custom-scrollbar">
+              <div className="relative z-0 space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 pt-1 pb-1 custom-scrollbar">
                 {(!serviceInsumos[activeService] || serviceInsumos[activeService].length === 0) ? (
                   <div className="py-10 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin insumos asignados</p>
