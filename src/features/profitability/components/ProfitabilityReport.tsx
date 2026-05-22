@@ -2258,12 +2258,9 @@ export function ProfitabilityReport() {
             ? (serviceAdminDistribution.count > 0 ? (serviceAdminDistribution.allocMixed / serviceAdminDistribution.count) : 0)
             : 0;
 
-          const adminCost = ((serviceAdminCosts[serviceName] || []).reduce((acc, row) => {
-            if (row.id === 'energia' || row.adminId === '1') {
-              return acc + ((row.kw || 0) * precioPorKw);
-            }
-            return acc + row.valor;
-          }, 0)) + serviceAdminCostPerSession;
+          const energiaRowForCard = (serviceAdminCosts[serviceName] || []).find(r => r.id === 'energia' || r.adminId === '1');
+          const directEnergiaCostForCard = energiaRowForCard ? ((energiaRowForCard.kw || 0) * precioPorKw) : 0;
+          const adminCost = directEnergiaCostForCard + serviceAdminCostPerSession;
           const isActive = activeService === serviceName;
 
           return (
@@ -2640,19 +2637,15 @@ export function ProfitabilityReport() {
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-black text-emerald-600 tracking-tighter">
                       {(() => {
-                        const directAdminCost = (serviceAdminCosts[activeService] || []).reduce((acc, row) => {
-                          if (row.id === 'energia' || row.adminId === '1') {
-                            return acc + ((row.kw || 0) * precioPorKw);
-                          }
-                          return acc + row.valor;
-                        }, 0);
+                        const energiaRow = (serviceAdminCosts[activeService] || []).find(r => r.id === 'energia' || r.adminId === '1');
+                        const directEnergiaCost = energiaRow ? ((energiaRow.kw || 0) * precioPorKw) : 0;
 
                         const activeServiceAdminDistribution = calculatedAdminDistribution.find(item => item.name.toLowerCase() === activeService.toLowerCase());
                         const activeServiceAdminCostPerSession = activeServiceAdminDistribution 
                           ? (activeServiceAdminDistribution.count > 0 ? (activeServiceAdminDistribution.allocMixed / activeServiceAdminDistribution.count) : 0)
                           : 0;
 
-                        return formatCurrency(directAdminCost + activeServiceAdminCostPerSession);
+                        return formatCurrency(directEnergiaCost + activeServiceAdminCostPerSession);
                       })()}
                     </span>
                   </div>
@@ -2681,12 +2674,9 @@ export function ProfitabilityReport() {
               ? (activeServiceAdminDistribution.count > 0 ? (activeServiceAdminDistribution.allocMixed / activeServiceAdminDistribution.count) : 0)
               : 0;
 
-            const adminTotal = ((serviceAdminCosts[activeService] || []).reduce((acc, row) => {
-              if (row.id === 'energia' || row.adminId === '1') {
-                return acc + ((row.kw || 0) * precioPorKw);
-              }
-              return acc + row.valor;
-            }, 0)) + activeServiceAdminCostPerSession;
+            const energiaRowForTotal = (serviceAdminCosts[activeService] || []).find(r => r.id === 'energia' || r.adminId === '1');
+            const directEnergiaCostForTotal = energiaRowForTotal ? ((energiaRowForTotal.kw || 0) * precioPorKw) : 0;
+            const adminTotal = directEnergiaCostForTotal + activeServiceAdminCostPerSession;
             const totalServiceCost = insumosTotal + staffTotal + adminTotal;
 
             const unitRevenue = stats.count > 0 ? stats.revenue / stats.count : 0;
