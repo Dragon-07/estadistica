@@ -2295,7 +2295,7 @@ export function ProfitabilityReport() {
                       <span className="text-[11px] font-black text-slate-500 uppercase tracking-tighter">{row.label}</span>
                     </div>
                     <div className="bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] px-4 py-2 rounded-r-xl w-28 flex items-center justify-end">
-                      <span className={`text-[13px] font-black ${row.color}`}>{row.value.toLocaleString()}</span>
+                      <span className={`text-[13px] font-black ${row.color}`}>{row.value.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</span>
                     </div>
                   </div>
                 ))}
