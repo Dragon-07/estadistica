@@ -2692,7 +2692,7 @@ export function ProfitabilityReport() {
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest pl-4">Servicio</th>
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Servicios</th>
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Acumulado</th>
-                        <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Costo unitario</th>
+                        <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Valor cobrado</th>
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Costo por sesión</th>
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Ganancia por sesión</th>
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Ganancia estimada</th>
