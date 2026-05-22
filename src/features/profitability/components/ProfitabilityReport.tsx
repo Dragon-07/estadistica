@@ -2681,6 +2681,7 @@ export function ProfitabilityReport() {
 
             const unitRevenue = stats.count > 0 ? stats.revenue / stats.count : 0;
             const estimatedProfit = stats.revenue - (totalServiceCost * stats.count);
+            const sessionProfit = unitRevenue - totalServiceCost;
 
             return (
               <div className="mt-8 pt-8 border-t border-white/50 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -2692,6 +2693,8 @@ export function ProfitabilityReport() {
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Servicios</th>
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Acumulado</th>
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Costo unitario</th>
+                        <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Costo por sesión</th>
+                        <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Ganancia por sesión</th>
                         <th className="pb-3 font-black text-slate-400 uppercase text-[10px] tracking-widest px-4 text-right">Ganancia estimada</th>
                       </tr>
                     </thead>
@@ -2701,6 +2704,8 @@ export function ProfitabilityReport() {
                         <td className="py-4 px-5 text-right font-bold text-slate-500 tabular-nums">{stats.count.toLocaleString()}</td>
                         <td className="py-4 px-5 text-right font-black text-emerald-600 tabular-nums">{formatCurrency(stats.revenue)}</td>
                         <td className="py-4 px-5 text-right font-black text-slate-700 tabular-nums">{formatCurrency(unitRevenue)}</td>
+                        <td className="py-4 px-5 text-right font-black text-red-650 tabular-nums">{formatCurrency(totalServiceCost)}</td>
+                        <td className={`py-4 px-5 text-right font-black tabular-nums ${sessionProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{formatCurrency(sessionProfit)}</td>
                         <td className="py-4 px-5 text-right font-black text-indigo-600 rounded-r-2xl bg-indigo-500/5 tabular-nums">{formatCurrency(estimatedProfit)}</td>
                       </tr>
                     </tbody>
