@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guía de Cuotas de IA - Tu Panel Explicativo</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-dark: #121214;
+      --card-dark: #1a1a1e;
+      --text-light: #f7fafc;
+      --text-gray: #a0aec0;
+      --blue-electric: #3b82f6;
+      --blue-cyan: #06b6d4;
+      --green-emerald: #10b981;
+      --orange-amber: #f59e0b;
+      --purple-royal: #8b5cf6;
+      --border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      padding: 2rem 1.5rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+    }
+
+    .container {
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    /* Cabecera Principal */
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #ffffff 40%, var(--blue-electric));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+    }
+
+    .header p {
+      color: var(--text-gray);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Grid Principal de Explicación */
+    .main-grid {
+      display: grid;
+      grid-template-cols: 1fr;
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    @media (min-width: 768px) {
+      .main-grid {
+        grid-template-cols: 1.2fr 1.8fr;
+      }
+    }
+
+    /* Columna Izquierda: Réplica Interactiva */
+    .replica-card {
+      background: var(--card-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 1.8rem;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .replica-title {
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      color: #e2e8f0;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .replica-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .model-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.8rem;
+      border-radius: 1rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .model-item:hover, .model-item.active {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .model-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .model-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #f7fafc;
+    }
+
+    .model-refresh {
+      font-size: 0.75rem;
+      color: var(--text-gray);
+    }
+
+    /* Barras de cuotas simuladas */
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      display: flex;
+      gap: 4px;
+    }
+
+    .progress-segment {
+      flex: 1;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+
+    .model-item.active .progress-segment {
+      background: var(--blue-electric);
+    }
+
+    /* Columna Derecha: Explicaciones Dinámicas */
+    .detail-card {
+      background: var(--card-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 1.8rem;
+      padding: 2.5rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 450px;
+    }
+
+    .detail-header {
+      margin-bottom: 2rem;
+    }
+
+    .detail-badge {
+      display: inline-block;
+      padding: 0.4rem 1rem;
+      border-radius: 0.8rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--blue-electric);
+    }
+
+    .detail-title {
+      font-size: 1.8rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .detail-desc {
+      color: var(--text-gray);
+      line-height: 1.6;
+      font-size: 0.98rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-cols: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 576px) {
+      .specs-grid {
+        grid-template-cols: 1fr 1fr;
+      }
+    }
+
+    .spec-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      padding: 1.2rem;
+      border-radius: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .spec-icon {
+      color: var(--blue-electric);
+      margin-bottom: 0.3rem;
+    }
+
+    .spec-title {
+      font-size: 0.75rem;
+      color: var(--text-gray);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .spec-value {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    /* Sección de FAQs y Conceptos */
+    .faq-section {
+      margin-top: 3rem;
+    }
+
+    .faq-title {
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-cols: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .faq-grid {
+        grid-template-cols: 1fr 1fr 1fr;
+      }
+    }
+
+    .faq-card {
+      background: var(--card-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 1.5rem;
+      padding: 1.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .faq-card h3 {
+      font-size: 1.1rem;
+      color: #f7fafc;
+    }
+
+    .faq-card p {
+      font-size: 0.9rem;
+      color: var(--text-gray);
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 5rem;
+      color: var(--text-gray);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border-color);
+      padding-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Cabecera Principal -->
+    <header class="header">
+      <h1>Entendiendo Tus Cuotas de IA</h1>
+      <p>Tu entorno cuenta con diversos modelos de IA clasificados por su velocidad, inteligencia y tiempo de renovación. Explora cómo administrarlos para programar sin interrupciones.</p>
+    </header>
+
+    <!-- Grid Principal Interactiva -->
+    <div class="main-grid">
+      
+      <!-- Columna Izquierda: Réplica Interactiva -->
+      <div class="replica-card">
+        <h3 class="replica-title">
+          <i data-lucide="cpu" style="width: 20px; height: 20px; color: var(--blue-electric);"></i>
+          Panel de Cuotas (Model Quota)
+        </h3>
+        
+        <div class="replica-list">
+          
+          <!-- Gemini 3.5 Flash High -->
+          <div class="model-item active" onclick="showModel('flash-high')">
+            <div class="model-meta">
+              <span class="model-name">Gemini 3.5 Flash (High)</span>
+              <span class="model-refresh">Renueva en 12 min</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+            </div>
+          </div>
+
+          <!-- Gemini 3.5 Flash Medium -->
+          <div class="model-item" onclick="showModel('flash-med')">
+            <div class="model-meta">
+              <span class="model-name">Gemini 3.5 Flash (Medium)</span>
+              <span class="model-refresh">Renueva en 12 min</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+            </div>
+          </div>
+
+          <!-- Gemini 3.1 Pro High -->
+          <div class="model-item" onclick="showModel('pro-high')">
+            <div class="model-meta">
+              <span class="model-name">Gemini 3.1 Pro (High)</span>
+              <span class="model-refresh">Renueva en 12 min</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+            </div>
+          </div>
+
+          <!-- Gemini 3.1 Pro Low -->
+          <div class="model-item" onclick="showModel('pro-low')">
+            <div class="model-meta">
+              <span class="model-name">Gemini 3.1 Pro (Low)</span>
+              <span class="model-refresh">Renueva en 12 min</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+            </div>
+          </div>
+
+          <!-- Claude Sonnet -->
+          <div class="model-item" onclick="showModel('sonnet')">
+            <div class="model-meta">
+              <span class="model-name">Claude Sonnet 4.6 (Thinking)</span>
+              <span class="model-refresh">Renueva en 4h 59m</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+            </div>
+          </div>
+
+          <!-- Claude Opus -->
+          <div class="model-item" onclick="showModel('opus')">
+            <div class="model-meta">
+              <span class="model-name">Claude Opus 4.6 (Thinking)</span>
+              <span class="model-refresh">Renueva en 4h 59m</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+            </div>
+          </div>
+
+          <!-- GPT-OSS -->
+          <div class="model-item" onclick="showModel('gpt-oss')">
+            <div class="model-meta">
+              <span class="model-name">GPT-OSS 120B (Medium)</span>
+              <span class="model-refresh">Renueva en 4h 59m</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+              <div class="progress-segment" style="opacity: 0.2;"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Columna Derecha: Explicaciones Dinámicas -->
+      <div class="detail-card">
+        
+        <div class="detail-header">
+          <span class="detail-badge" id="det-badge" style="background: rgba(16, 185, 129, 0.1); color: var(--green-emerald);">MODELO DE ALTA VELOCIDAD</span>
+          <h2 class="detail-title" id="det-title">Gemini 3.5 Flash (High)</h2>
+          <p class="detail-desc" id="det-desc">Este modelo es tu caballo de batalla diario. Destaca por su extrema velocidad y eficiencia. Es idóneo para realizar ediciones rápidas, refactorizaciones sencillas, resolver dudas puntuales de código o formatear variables sin consumir cuotas de modelos más pesados.</p>
+        </div>
+
+        <div class="specs-grid">
+          
+          <div class="spec-item">
+            <i class="spec-icon" data-lucide="refresh-cw" id="ico-refresh" style="color: var(--green-emerald);"></i>
+            <span class="spec-title">Frecuencia de Renovación</span>
+            <span class="spec-value" id="val-refresh">Cada 15 - 30 Minutos</span>
+          </div>
+
+          <div class="spec-item">
+            <i class="spec-icon" data-lucide="sparkles" id="ico-speed" style="color: var(--green-emerald);"></i>
+            <span class="spec-title">Fuerza / Capacidad</span>
+            <span class="spec-value" id="val-speed">Ultra Veloz (Ideal micro-tareas)</span>
+          </div>
+
+          <div class="spec-item">
+            <i class="spec-icon" data-lucide="database" id="ico-context" style="color: var(--green-emerald);"></i>
+            <span class="spec-title">Ventana de Contexto</span>
+            <span class="spec-value" id="val-context">Masivo (Hasta 2M de tokens)</span>
+          </div>
+
+          <div class="spec-item">
+            <i class="spec-icon" data-lucide="zap" id="ico-priority" style="color: var(--green-emerald);"></i>
+            <span class="spec-title">Prioridad del Canal</span>
+            <span class="spec-value" id="val-priority">Alta (Respuestas inmediatas)</span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Sección de Conceptos Clave -->
+    <section class="faq-section">
+      <h2 class="faq-title">Preguntas Frecuentes sobre el Consumo</h2>
+      
+      <div class="faq-grid">
+        
+        <div class="faq-card">
+          <div style="color: var(--blue-electric);"><i data-lucide="clock" style="width: 28px; height: 28px;"></i></div>
+          <h3>¿Cada cuánto se renuevan?</h3>
+          <p>
+            Depende de la familia del modelo:
+            <br><br>
+            • <b>Modelos Gemini:</b> Tienen ciclos muy rápidos de <b>15 a 30 minutos</b>. Su cuota es de alta frecuencia.
+            <br><br>
+            • <b>Modelos Claude / GPT-OSS:</b> Tienen ciclos de <b>5 horas</b>. Se reservan para tareas complejas que requieren razonamiento profundo.
+          </p>
+        </div>
+
+        <div class="faq-card">
+          <div style="color: var(--orange-amber);"><i data-lucide="alert-triangle" style="width: 28px; height: 28px;"></i></div>
+          <h3>¿Qué pasa si llego al límite?</h3>
+          <p>
+            Cuando consumes todos los mensajes o tokens asignados a un modelo en su ciclo actual, ese modelo se <b>bloqueará temporalmente</b>. 
+            <br><br>
+            Verás un temporizador en cuenta regresiva (ej. "Refreshes in 12 minutes"). Una vez que llegue a cero, la barra se vacía y se restaura al 100%.
+          </p>
+        </div>
+
+        <div class="faq-card">
+          <div style="color: var(--green-emerald);"><i data-lucide="shield-check" style="width: 28px; height: 28px;"></i></div>
+          <h3>¿Cómo evito quedarme sin IA?</h3>
+          <p>
+            • <b>Alternar Modelos:</b> Si se agota la cuota del modelo <i>High</i>, puedes cambiar a la versión <i>Medium</i> o usar la suite Pro de Gemini.
+            <br><br>
+            • <b>AI Credit Overages:</b> Puedes activar esta bolsa de créditos extra para seguir usando los modelos avanzados sin interrupciones una vez agotadas las cuotas periódicas.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>Desarrollado como Guía Educativa e Interactiva del Entorno de Desarrollo</p>
+    <p>© 2026 - Guía del Programador</p>
+  </footer>
+
+  <script>
+    // Inicializar Lucide Icons
+    lucide.createIcons();
+
+    // Base de datos de los modelos explicados
+    const modelsData = {
+      'flash-high': {
+        badge: 'MODELO DE ALTA VELOCIDAD',
+        badgeColor: 'rgba(16, 185, 129, 0.1)',
+        badgeText: 'var(--green-emerald)',
+        title: 'Gemini 3.5 Flash (High)',
+        desc: 'Este modelo es tu caballo de batalla diario. Destaca por su extrema velocidad y eficiencia. Es idóneo para realizar ediciones rápidas, refactorizaciones sencillas, resolver dudas puntuales de código o formatear variables sin consumir cuotas de modelos más pesados.',
+        refresh: 'Cada 15 - 30 Minutos',
+        speed: 'Ultra Veloz (Ideal micro-tareas)',
+        context: 'Masivo (Hasta 2M de tokens)',
+        priority: 'Prioridad Máxima del Canal',
+        color: 'var(--green-emerald)'
+      },
+      'flash-med': {
+        badge: 'MODELO DE RESPALDO RÁPIDO',
+        badgeColor: 'rgba(16, 185, 129, 0.1)',
+        badgeText: 'var(--green-emerald)',
+        title: 'Gemini 3.5 Flash (Medium)',
+        desc: 'Un gemelo del modelo Flash High que sirve como un excelente respaldo en caso de que agotes la cuota prioritaria. Cuenta con la misma velocidad de procesamiento pero con una asignación de canal de procesamiento estándar.',
+        refresh: 'Cada 15 - 30 Minutos',
+        speed: 'Velocidad Estándar',
+        context: 'Masivo (Hasta 2M de tokens)',
+        priority: 'Prioridad Estándar del Canal',
+        color: 'var(--green-emerald)'
+      },
+      'pro-high': {
+        badge: 'RAZONAMIENTO AVANZADO',
+        badgeColor: 'rgba(6, 182, 212, 0.1)',
+        badgeText: 'var(--blue-cyan)',
+        title: 'Gemini 3.1 Pro (High)',
+        desc: 'Este modelo combina la velocidad con un nivel de inteligencia significativamente mayor. Es perfecto para planificar arquitecturas de software, programar lógica de negocio compleja (como el prorrateo contable de tu app) y depurar errores complejos.',
+        refresh: 'Cada 15 - 30 Minutos',
+        speed: 'Balance Rápido / Inteligente',
+        context: 'Muy Amplio (Hasta 1M de tokens)',
+        priority: 'Prioridad de Procesamiento Alta',
+        color: 'var(--blue-cyan)'
+      },
+      'pro-low': {
+        badge: 'PRO AVANZADO ESTÁNDAR',
+        badgeColor: 'rgba(6, 182, 212, 0.1)',
+        badgeText: 'var(--blue-cyan)',
+        title: 'Gemini 3.1 Pro (Low)',
+        desc: 'Una versión de respaldo del modelo Pro High. Mantiene la misma increíble capacidad lógica de procesamiento para análisis complejos de código, operando en una cola de procesamiento compartida de prioridad estándar.',
+        refresh: 'Cada 15 - 30 Minutos',
+        speed: 'Velocidad de Procesamiento Moderada',
+        context: 'Hasta 1M de tokens',
+        priority: 'Prioridad Compartida',
+        color: 'var(--blue-cyan)'
+      },
+      'sonnet': {
+        badge: 'INTELIGENCIA DE PENSAMIENTO PROFUNDO',
+        badgeColor: 'rgba(139, 92, 246, 0.1)',
+        badgeText: 'var(--purple-royal)',
+        title: 'Claude Sonnet 4.6 (Thinking)',
+        desc: 'Es uno de los modelos más inteligentes del mundo. Cuenta con la capacidad de "pensar" antes de responder, analizando múltiples caminos alternativos. Es idóneo para diseñar sistemas completos desde cero, resolver bugs de arquitectura sumamente profundos y dar análisis premium.',
+        refresh: 'Cada 5 Horas (Límite Ajustado)',
+        speed: 'Razonamiento Profundo (Segundos de espera)',
+        context: '200K Tokens (Altamente concentrados)',
+        priority: 'Alta Carga Computacional',
+        color: 'var(--purple-royal)'
+      },
+      'opus': {
+        badge: 'CEREBRO DE CÓMPUTO CIENTÍFICO',
+        badgeColor: 'rgba(139, 92, 246, 0.1)',
+        badgeText: 'var(--purple-royal)',
+        title: 'Claude Opus 4.6 (Thinking)',
+        desc: 'El modelo insignia de razonamiento y conceptualización lógica pesada. Se utiliza de forma estratégica para refactorizaciones globales, análisis de rendimiento de bases de datos críticas y resolver retos lógicos abstractos de máxima dificultad.',
+        refresh: 'Cada 5 Horas (Límite Ajustado)',
+        speed: 'Cómputo Pesado y Reflexión Extensa',
+        context: '200K Tokens de Alta Precisión',
+        priority: 'Máxima Carga Computacional',
+        color: 'var(--purple-royal)'
+      },
+      'gpt-oss': {
+        badge: 'MODELO DE LENGUAJE MASIVO ABIERTO',
+        badgeColor: 'rgba(245, 158, 11, 0.1)',
+        badgeText: 'var(--orange-amber)',
+        title: 'GPT-OSS 120B (Medium)',
+        desc: 'Un modelo de código abierto de escala masiva con 120 mil millones de parámetros. Destaca por su adaptabilidad conceptual para comprender reglas de negocio sumamente detalladas y responder con estructuras de datos limpias y documentación técnica.',
+        refresh: 'Cada 5 Horas (Límite Ajustado)',
+        speed: 'Moderada / Constante',
+        context: '32K Tokens',
+        priority: 'Procesamiento Dedicado',
+        color: 'var(--orange-amber)'
+      }
+    };
+
+    function showModel(key) {
+      const data = modelsData[key];
+      
+      // Actualizar clases activas en la lista
+      document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      // Actualizar Detalle
+      const badge = document.getElementById('det-badge');
+      badge.textContent = data.badge;
+      badge.style.background = data.badgeColor;
+      badge.style.color = data.badgeText;
+
+      document.getElementById('det-title').textContent = data.title;
+      document.getElementById('det-desc').textContent = data.desc;
+      
+      // Actualizar especificaciones
+      document.getElementById('val-refresh').textContent = data.refresh;
+      document.getElementById('val-speed').textContent = data.speed;
+      document.getElementById('val-context').textContent = data.context;
+      document.getElementById('val-priority').textContent = data.priority;
+
+      // Actualizar colores de iconos
+      const icons = ['ico-refresh', 'ico-speed', 'ico-context', 'ico-priority'];
+      icons.forEach(id => {
+        document.getElementById(id).style.color = data.color;
+      });
+    }
+  </script>
+</body>
+</html>

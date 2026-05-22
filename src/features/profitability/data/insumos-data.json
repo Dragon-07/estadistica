@@ -1,482 +1,434 @@
 [
   {
     "id": "1",
-    "detalle": "AGUJA 18 G X 1 1/2 CAJA X 100 UNID (GMD)",
-    "medida": "1",
-    "valor": 120
+    "detalle": "ACEITE OLIVA - OLIVETTI EXTRA VIRGEN 500 CC",
+    "medida": "LTS",
+    "valor": 638.75
   },
   {
     "id": "2",
-    "detalle": "AGUJA 21 G X 1 1/2 CAJA X 100 UNID (GMD)",
-    "medida": "1",
-    "valor": 120
-  },
-  {
-    "id": "3",
-    "detalle": "AGUJA 27 G X 1/2 CAJA X 100 UNID (TERUMO)",
-    "medida": "1",
-    "valor": 393
-  },
-  {
-    "id": "4",
-    "detalle": "AGUJA 30 G X 1/2 CAJA X 100 UNID (GMD)",
-    "medida": "1",
-    "valor": 140
-  },
-  {
-    "id": "5",
-    "detalle": "AGUJA 30 G X 1/2 CAJA X 100 UNID (MESORELLE)",
-    "medida": "1",
-    "valor": 950
-  },
-  {
-    "id": "6",
-    "detalle": "ALCOHOL AL 70 % X 700 ML (CSI)",
-    "medida": "ML",
-    "valor": 6
-  },
-  {
-    "id": "7",
-    "detalle": "ALCOHOL GLICERINADO X 1 LITRO (CSI)",
-    "medida": "ML",
-    "valor": 12
-  },
-  {
-    "id": "8",
-    "detalle": "ALGODON EN ZIG ZAG X 50 GRAMOS (M-TEX)",
-    "medida": "GR",
-    "valor": 52
-  },
-  {
-    "id": "9",
-    "detalle": "ALGODON TIPO TORUNDA X 500 GRAMOS (M-TEX)",
-    "medida": "GR",
-    "valor": 44
-  },
-  {
-    "id": "10",
-    "detalle": "AMPOLLAS  L-CARNITINA LHA",
-    "medida": "1",
+    "detalle": "AGNAMAR AMPOLLA 2 ML (LHA)",
+    "medida": "UNIDAD",
     "valor": 7980
   },
   {
-    "id": "11",
-    "detalle": "ANALGESICO SPRAY 220 ML (GOLDCIP)",
+    "id": "3",
+    "detalle": "AGUA ESTERIL 10 ML (CASA DEL MEDICO )",
+    "medida": "UNIDAD",
+    "valor": 1000
+  },
+  {
+    "id": "4",
+    "detalle": "AGUJA 30 G X 1 B.D. REF 305108",
+    "medida": "UNIDAD",
+    "valor": 352.36
+  },
+  {
+    "id": "5",
+    "detalle": "AGUJA DESECHABLE 27 G X 1 1/2 CAJA X 100 LIFE CARE",
+    "medida": "UNIDAD",
+    "valor": 120
+  },
+  {
+    "id": "6",
+    "detalle": "AGUJA DESECHABLE 30 X 1/2 B.D",
+    "medida": "UNIDAD",
+    "valor": 337.36
+  },
+  {
+    "id": "7",
+    "detalle": "AGUJA MULTIPLE VACUNTAINER 21G x 1 1/2 X 100 UND",
+    "medida": "UNIDAD",
+    "valor": 609.88
+  },
+  {
+    "id": "8",
+    "detalle": "AGUJAS DE ACUPUNTURA",
+    "medida": "Unidad",
+    "valor": 214
+  },
+  {
+    "id": "9",
+    "detalle": "AGUJAS DESECHABLE 30 G X 1 B.D",
+    "medida": "UNIDAD",
+    "valor": 352.36
+  },
+  {
+    "id": "10",
+    "detalle": "ALCOHOL 70% GALON X 3800 ML JGB",
     "medida": "ML",
-    "valor": 134
+    "valor": 20
+  },
+  {
+    "id": "11",
+    "detalle": "ALGODÓN ROLLO HIGIETEX X 454 GRAMOS",
+    "medida": "UNIDAD",
+    "valor": 32
   },
   {
     "id": "12",
-    "detalle": "APOSITO TEGADERM 6*7 CAJA X 100 UNID (3M)",
-    "medida": "1",
-    "valor": 1200
+    "detalle": "ANESTECIN CREMA X 5 GRAMOS",
+    "medida": "UNIDAD",
+    "valor": 18207
   },
   {
     "id": "13",
-    "detalle": "ARTROM  - LHA",
-    "medida": "1",
+    "detalle": "AZUPHUR AMPOLLA 2ML (LHA)",
+    "medida": "UNIDAD",
     "valor": 7980
   },
   {
     "id": "14",
-    "detalle": "BAJALENGUA PAQUETE X 20 UNID (GMD)",
-    "medida": "1",
-    "valor": 140
+    "detalle": "BAJALENGUAS X 20 ADULTO ALLMED",
+    "medida": "UNIDAD",
+    "valor": 61
   },
   {
     "id": "15",
-    "detalle": "BANDEJA METALICA RIÑONERA",
-    "medida": "1",
-    "valor": 0
+    "detalle": "BERBULL AMPOLLAS 2ML (LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "16",
-    "detalle": "CANNULA 22G * 50MM STERILE T-LAB",
-    "medida": "1",
-    "valor": 26000
+    "detalle": "BRANDY 5 ESTRELLAS CANECA 375 CC",
+    "medida": "CAJA",
+    "valor": 50420
   },
   {
     "id": "17",
-    "detalle": "CATETER PERIFERICO 22 G (GMD)",
-    "medida": "1",
-    "valor": 1100
+    "detalle": "BRYONAL AMPOLLAS 2ML (LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "18",
-    "detalle": "CATETER PERIFERICO 24 G (GMD)",
-    "medida": "1",
-    "valor": 1100
+    "detalle": "CALHOSE AMPOLLAS 2ML (LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "19",
-    "detalle": "CINTA MICROPORE 1/2 PULGADA * 10 YARDAS CAJA X 24 UNID (3M)",
-    "medida": "1",
-    "valor": 3400
+    "detalle": "CEDRONAL AMPOLLAS (LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "20",
-    "detalle": "CINTA MICROPORE 1 PULGADA * 10 YARDAS CAJA X 12 UNID (3M)",
-    "medida": "1",
-    "valor": 6800
+    "detalle": "CERENEX AMPOLLA (LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "21",
-    "detalle": "CITOKINE (LHA)",
-    "medida": "1",
+    "detalle": "COLOZYN AMPOLLAS 2ML - (LHA)",
+    "medida": "UNIDAD",
     "valor": 7980
   },
   {
     "id": "22",
-    "detalle": "CONECTOR LIBRE DE AGUJA (GMD)",
-    "medida": "1",
-    "valor": 1800
+    "detalle": "CURA REDONDA",
+    "medida": "UNIDAD",
+    "valor": 36.4
   },
   {
     "id": "23",
-    "detalle": "CROMN  - LHA",
-    "medida": "1",
-    "valor": 7980
+    "detalle": "CUTIS COMPOSITUM AMPOLLA 2,2ML CAJA X 5",
+    "medida": "UNIDAD",
+    "valor": 28500
   },
   {
     "id": "24",
-    "detalle": "CUTIS  - LHA",
-    "medida": "1",
+    "detalle": "CUTY AMPOLLAS 2ML (LHA)",
+    "medida": "UNIDAD",
     "valor": 7980
   },
   {
     "id": "25",
-    "detalle": "D-TOX  - LHA",
-    "medida": "1",
+    "detalle": "DISCOLVER AMPOLLAS 2ML (LHA)",
+    "medida": "UNIDAD",
     "valor": 7980
   },
   {
     "id": "26",
-    "detalle": "D-TOX GOTAS (LHA)",
-    "medida": "1",
-    "valor": 35000
+    "detalle": "EPACHEL AMPOLLAS 2ML - (LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "27",
-    "detalle": "DRENA  - LHA",
-    "medida": "1",
-    "valor": 7980
+    "detalle": "EQUIPO MACRO S/A CON SITIO \"Y\"ADAPTADOR LUER",
+    "medida": "UNIDAD",
+    "valor": 925
   },
   {
     "id": "28",
-    "detalle": "EQUIPO DE MACROGOTEO (GMD)",
-    "medida": "1",
-    "valor": 1500
+    "detalle": "FUSOBES AMPOLLA 2ML (LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "29",
-    "detalle": "FUNDA PARA CABECERO X 50 UNID",
-    "medida": "1",
-    "valor": 550
+    "detalle": "GASA NO TEJIDA 7,5 X 7,5 X 2 UNDS ESTERIL - MEDICAL",
+    "medida": "UNIDAD",
+    "valor": 807
   },
   {
     "id": "30",
-    "detalle": "GEL CONDUCTOR X 4000 GRAMOS (CSI)",
-    "medida": "GR",
-    "valor": 6
+    "detalle": "GLANTHY AMPOLLAS 2ML (LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "31",
-    "detalle": "GUANTE DE EXAMEN LATEX TALLA S CAJA X 100 UNID (TOP GLOVE)",
-    "medida": "1",
-    "valor": 260
+    "detalle": "GLOBULOS ARROBA ( LEON VANNIER )",
+    "medida": "MGM",
+    "valor": 30000
   },
   {
     "id": "32",
-    "detalle": "GUANTE DE EXAMEN NITRILO TALLA S CAJA X 100 UNID (TOP GLOVE)",
-    "medida": "1",
-    "valor": 280
+    "detalle": "GLUCONATO DE CALCIO",
+    "medida": "UNIDAD",
+    "valor": 1845
   },
   {
     "id": "33",
-    "detalle": "GUANTE ESTERIL TALLA 7,0 PAR (GMD)",
-    "medida": "PAR",
-    "valor": 1200
+    "detalle": "GORRO REDONDO AZUL TIPO URUGA",
+    "medida": "UNIDAD",
+    "valor": 157.44
   },
   {
     "id": "34",
-    "detalle": "GUANTE ESTERIL TALLA 7,5 PAR (GMD)",
-    "medida": "PAR",
-    "valor": 1200
+    "detalle": "GRADER AMPOLLAS 2ML (LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "35",
-    "detalle": "HEPARINA SODICA 25.000 UI/ 5ML (RYMCO)",
-    "medida": "ML",
-    "valor": 11300
+    "detalle": "GUANTE ESTERIL ALLMED # 7,5",
+    "medida": "UNIDAD",
+    "valor": 1200
   },
   {
     "id": "36",
-    "detalle": "HIPOCLORITO AL 15% X 3800 ML (CSI)",
-    "medida": "ML",
-    "valor": 6
-  },
-  {
-    "id": "37",
-    "detalle": "INYECTADORA 1 CC CAJA X 100 UNID (GMD)",
-    "medida": "1",
-    "valor": 260
-  },
-  {
-    "id": "38",
-    "detalle": "INYECTADORA 10 CC CAJA X 100 UNID (GMD)",
-    "medida": "1",
-    "valor": 320
-  },
-  {
-    "id": "39",
-    "detalle": "INYECTADORA 20 CC CAJA X 50 UNID (GMD)",
-    "medida": "1",
-    "valor": 600
-  },
-  {
-    "id": "40",
-    "detalle": "INYECTADORA 3 CC CAJA X 100 UNID (GMD)",
-    "medida": "1",
+    "detalle": "GUANTES LATEX LISO ALLMED \"S\" CAJA X 100",
+    "medida": "UNIDAD",
     "valor": 180
   },
   {
+    "id": "37",
+    "detalle": "GUANTES LATEX LISO EXAMTEX \"M\"  CAJA X 100",
+    "medida": "UNIDAD",
+    "valor": 180
+  },
+  {
+    "id": "38",
+    "detalle": "JERINGA  INSULINA PRECISION 1ML 27x1/2 3 Pts",
+    "medida": "UNIDAD",
+    "valor": 180
+  },
+  {
+    "id": "39",
+    "detalle": "JERINGA PRECISION 10ml 21X1,5, - 3 PARTES ROSCA",
+    "medida": "UNIDAD",
+    "valor": 334.39
+  },
+  {
+    "id": "40",
+    "detalle": "JERINGA PRECISION 3 ML 21 X 1,5 -3 PARTES ROSCA",
+    "medida": "UNIDAD",
+    "valor": 207.06
+  },
+  {
     "id": "41",
-    "detalle": "INYECTADORA 5 CC CAJA X 100 UNID (GMD)",
-    "medida": "1",
-    "valor": 200
+    "detalle": "JERINGA RYMCO DE 5 Ml 21x 1,5 3 PARTES LOCK",
+    "medida": "UNIDAD",
+    "valor": 230.86
   },
   {
     "id": "42",
-    "detalle": "INYECTADORA 50 CC UND (GMD)",
-    "medida": "1",
-    "valor": 2800
+    "detalle": "MICRONEBULIZADOR - C/MASCARA ADULTO - ALLMED",
+    "medida": "UNIDAD",
+    "valor": 5085
   },
   {
     "id": "43",
-    "detalle": "ISODINE ESPUMA X 120 ML",
-    "medida": "ML",
-    "valor": 150
+    "detalle": "MICRONEBULIZADOR CON MASCARILLA PEDIATRICA",
+    "medida": "UNIDAD",
+    "valor": 5085
   },
   {
     "id": "44",
-    "detalle": "ISODINE SOLUCION X 120 ML",
-    "medida": "ML",
-    "valor": 150
+    "detalle": "MICROPORE C/PIEL 1/2\" x 24 UND / 15 CM",
+    "medida": "CM",
+    "valor": 3.5815396666666666
   },
   {
     "id": "45",
-    "detalle": "JABON ENZYMAX X 1 LITRO (QUIMICOS)",
-    "medida": "ML",
-    "valor": 34
+    "detalle": "NUXVOM AMPOLLAS 2ML -(LHA)",
+    "medida": "UNIDAD",
+    "valor": 7980
   },
   {
     "id": "46",
-    "detalle": "JABON MULTIENZIMATICO (SEPTALKAN) 1 LITRO",
-    "medida": "ML",
-    "valor": 128
+    "detalle": "OKMETER MATCH II TIRAS DE GLUCOMETRIA X 50 TIRAS",
+    "medida": "UNIDAD",
+    "valor": 1165.6
   },
   {
     "id": "47",
-    "detalle": "LIDOCAINA AL 2 % SIN EPINEFRINA FRASCO X 50 ML (RYMCO)",
-    "medida": "ML",
-    "valor": 190
+    "detalle": "OLIGOMAX AMPOLLA V.P X 10 ML (LHA)",
+    "medida": "UND",
+    "valor": 21820
   },
   {
     "id": "48",
-    "detalle": "LINF  - LHA",
-    "medida": "1",
-    "valor": 7980
+    "detalle": "OXIGENO MEDICINAL - X 40S-150,0B (CYOGAS)",
+    "medida": "",
+    "valor": 23250
   },
   {
     "id": "49",
-    "detalle": "LUBRICANTE REFRESH TEARS FRASCO X 15 ML",
-    "medida": "ML",
-    "valor": 3800
+    "detalle": "PERICRANEAL No. 23GX3- NUBENCO (CIMEX COLOMBIA SAS)",
+    "medida": "UNIDAD",
+    "valor": 1036.73
   },
   {
     "id": "50",
-    "detalle": "MASCARILLA PARA NEBULIZAR ADULTO (GMD)",
-    "medida": "1",
-    "valor": 3600
+    "detalle": "PROCAINA - VERSENIKAINA  AL 2% VIAL X 50ML (BIOTERAPEUTICOS)",
+    "medida": "ML",
+    "valor": 700
   },
   {
     "id": "51",
-    "detalle": "MASCARILLA PARA OXIGENO ADULTO (GMD)",
-    "medida": "1",
-    "valor": 3500
+    "detalle": "PROCAINA AL 1% X 50ML (MAGNOFARMA)",
+    "medida": "ML",
+    "valor": 800
   },
   {
     "id": "52",
-    "detalle": "MASCARILLA SENCILLA DESECHABLE PAQUETE X 50 UNID (GMD)",
-    "medida": "1",
-    "valor": 140
+    "detalle": "QUELODIB AMPOLLA 2 CC",
+    "medida": "CC",
+    "valor": 8323.0699
   },
   {
     "id": "53",
-    "detalle": "MUSC  - LHA",
-    "medida": "1",
-    "valor": 7980
+    "detalle": "RECOLECTOR ALLMED 3 LT GRANDE",
+    "medida": "UNIDAD",
+    "valor": 5098
   },
   {
     "id": "54",
-    "detalle": "NEURAL  - LHA",
-    "medida": "1",
-    "valor": 7980
+    "detalle": "RECOLECTOR ALLMED 300 ML  PEQUEÑO",
+    "medida": "UNIDAD",
+    "valor": 2408.66
   },
   {
     "id": "55",
-    "detalle": "OBES  - LHA",
-    "medida": "1",
-    "valor": 7980
+    "detalle": "RENEIXER AMPOLLAS 2,5 ML",
+    "medida": "UNIDAD",
+    "valor": 0
   },
   {
     "id": "56",
-    "detalle": "OSTE  - LHA",
-    "medida": "1",
+    "detalle": "SCROLYN AMPOLLA 2ML (LHA)",
+    "medida": "UNIDAD",
     "valor": 7980
   },
   {
     "id": "57",
-    "detalle": "PANTALON DESECHABLE X 10 UNID",
-    "medida": "1",
-    "valor": 1500
+    "detalle": "SOL. ACU. DE ASCORBATO DE Na 12,5 GR EN 50 ML (DKN-HEILPRO)",
+    "medida": "ML",
+    "valor": 8032.5
   },
   {
     "id": "58",
-    "detalle": "PASA  - LHA",
-    "medida": "1",
-    "valor": 7980
+    "detalle": "SOL. ACU. DE EDTA Na2+AA+Pir. REAX VIAL X 50 ML",
+    "medida": "ML",
+    "valor": 0
   },
   {
     "id": "59",
-    "detalle": "POLAINAS DESECHABLES PAQUETE X 100 UNID (GMD)",
-    "medida": "1",
-    "valor": 220
+    "detalle": "SOL.ACU. A-DTX REAC X 10 Ml",
+    "medida": "UNIDAD",
+    "valor": 0
   },
   {
     "id": "60",
-    "detalle": "PROCAINA 1% FRASCO X 50 ML (RYMCO)",
-    "medida": "ML",
-    "valor": 300
+    "detalle": "SOL.ACU. DE MM16 Forte + Si + V x 10 Ml rea",
+    "medida": "UNIDAD",
+    "valor": 0
   },
   {
     "id": "61",
-    "detalle": "PUNTAS PARA MICRODERMOABRASION PAQUETE X 50 UNID",
-    "medida": "1",
-    "valor": 1200
+    "detalle": "SOL.ACUOSA DE PIRIDOXINA HCI 50 mg/ml Reac, 2 ml",
+    "medida": "UNIDAD",
+    "valor": 0
   },
   {
     "id": "62",
-    "detalle": "RECOLECTOR DE CORTOPUNZANTES (GUARDIAN) 1 LITRO",
-    "medida": "1",
-    "valor": 4500
+    "detalle": "SOL.ACUOSA DE PIRIDOXINA HCI 50 mg/ml Reac, 2 ml",
+    "medida": "UNIDAD",
+    "valor": 0
   },
   {
     "id": "63",
-    "detalle": "RUMC  - LHA",
-    "medida": "1",
-    "valor": 7980
-  },
-  {
-    "id": "64",
-    "detalle": "SABANA DESECHABLE PARA CAMILLA 0,80 * 200 CM X 10 UNID",
-    "medida": "1",
-    "valor": 1800
-  },
-  {
-    "id": "65",
-    "detalle": "SABANA DESECHABLE PARA CAMILLA RESORTE X 10 UNID",
-    "medida": "1",
-    "valor": 2500
-  },
-  {
-    "id": "66",
-    "detalle": "SCRUB DESECHABLE (PANTALON + CAMISA) X 10 UNID",
-    "medida": "1",
-    "valor": 5500
-  },
-  {
-    "id": "67",
-    "detalle": "SHAMPOO PARA TAPETES DESINFECTANTE X 3800 ML (CSI)",
-    "medida": "ML",
-    "valor": 6
-  },
-  {
-    "id": "68",
-    "detalle": "SILIC  - LHA",
-    "medida": "1",
-    "valor": 7980
-  },
-  {
-    "id": "69",
-    "detalle": "SILICEO AMPOLLAS DE 2ML (LHA)",
-    "medida": "1",
-    "valor": 7980
-  },
-  {
-    "id": "70",
-    "detalle": "SOLUCION SALINA NORMAL 0,9% X 100 ML BAXTER",
-    "medida": "1",
-    "valor": 2350
-  },
-  {
-    "id": "71",
-    "detalle": "SOLUCION SALINA NORMAL 0,9% X 250 ML BAXTER",
-    "medida": "1",
-    "valor": 2580
-  },
-  {
-    "id": "72",
     "detalle": "SOLUCION SALINA NORMAL 0,9% X 500 ML BAXTER",
-    "medida": "1",
+    "medida": "UNIDAD",
     "valor": 2865
   },
   {
-    "id": "73",
+    "id": "64",
     "detalle": "TAPABOCA",
-    "medida": "1",
+    "medida": "UNIDAD",
     "valor": 140
   },
   {
-    "id": "74",
+    "id": "65",
     "detalle": "TDRADREM  - LHA",
-    "medida": "1",
+    "medida": "UNIDAD",
     "valor": 7980
   },
   {
-    "id": "75",
+    "id": "66",
     "detalle": "TELA AZUL PARA CAMILLA 0,70 * 100 METROS",
     "medida": "MT",
     "valor": 754.92
   },
   {
-    "id": "76",
+    "id": "67",
     "detalle": "TRARNIC AMPOLLAS DE 2ML (LHA)",
-    "medida": "1",
+    "medida": "UNIDAD",
     "valor": 7980
   },
   {
-    "id": "77",
+    "id": "68",
     "detalle": "TUBO VACUTAINER AZUL X UND",
-    "medida": "1",
+    "medida": "UNIDAD",
     "valor": 1000
   },
   {
-    "id": "78",
+    "id": "69",
     "detalle": "VITAMINA C. FRASCO X100 ML INTRAVENOSA (MAGNOFARMA)",
     "medida": "ML",
-    "valor": 770
+    "valor": 45500
   },
   {
-    "id": "79",
+    "id": "70",
     "detalle": "VINTOX",
     "medida": "ML",
     "valor": 7980
   },
   {
-    "id": "80",
+    "id": "71",
     "detalle": "ECHINAL (REVISAR SI ESTAMOS USANDO Y CUANTO CUESTAS",
     "medida": "ML",
     "valor": 7980
+  },
+  {
+    "id": "72",
+    "detalle": "VITAMINA C DKN 12,5 gramos",
+    "medida": "ML",
+    "valor": 9450
   }
 ]

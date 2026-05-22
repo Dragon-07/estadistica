@@ -997,9 +997,9 @@ export function ProfitabilityReport() {
               <table className="w-full text-left border-separate border-spacing-y-2">
                 <thead>
                   <tr className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] px-4">
-                    <th className="pb-2 pl-6">Detalle del Insumo</th>
-                    <th className="pb-2 w-20 text-center">Medida</th>
-                    <th className="pb-2 w-40 text-right pr-6">Valor ($)</th>
+                    <th className="pb-2 pl-6">DETALLE DEL INSUMO</th>
+                    <th className="pb-2 w-20 text-center"></th>
+                    <th className="pb-2 w-40 text-right pr-6">VALOR UNT</th>
                     <th className="pb-2 w-14 text-center"></th>
                   </tr>
                 </thead>
