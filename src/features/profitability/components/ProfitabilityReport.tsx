@@ -175,6 +175,33 @@ export function ProfitabilityReport() {
     const hoursPerDay = hoursToUse / 6;
     return Math.round(daysToCount * hoursPerDay * 60);
   };
+
+  const periodMonthFactor = useMemo(() => {
+    const startStr = appliedDateRange.start || globalDateRange.start;
+    const endStr = appliedDateRange.end || globalDateRange.end;
+    let daysToCount = 26; // Default fallback
+    
+    if (startStr && endStr) {
+      const start = new Date(startStr + 'T12:00:00');
+      const end = new Date(endStr + 'T12:00:00');
+      
+      if (end >= start) {
+        let workDays = 0;
+        let current = new Date(start);
+        
+        while (current <= end) {
+          const day = current.getDay();
+          if (day !== 0) { // Lunes a Sábado
+            workDays++;
+          }
+          current.setDate(current.getDate() + 1);
+        }
+        daysToCount = workDays;
+      }
+    }
+    return daysToCount / 26;
+  }, [appliedDateRange, globalDateRange]);
+
   const [insumos, setInsumos] = useState<Insumo[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('profitability_insumos');
@@ -606,10 +633,17 @@ export function ProfitabilityReport() {
     return adminData.reduce((acc, item) => {
       const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
       const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
-      const displayedCons = isEnergia ? (item.units - totalKwConsumidoTratamientos) : item.consumption;
-      return acc + (isEnergia ? (displayedCons * pricePerUnit) : ((item.units - item.consumption) * pricePerUnit));
+      if (isEnergia) {
+        const unitsPeriod = item.units * periodMonthFactor;
+        const displayedCons = unitsPeriod - totalKwConsumidoTratamientos;
+        return acc + (displayedCons * pricePerUnit);
+      } else {
+        const unitsPeriod = item.units * periodMonthFactor;
+        const consumptionPeriod = item.consumption * periodMonthFactor;
+        return acc + ((unitsPeriod - consumptionPeriod) * pricePerUnit);
+      }
     }, 0);
-  }, [adminData, totalKwConsumidoTratamientos]);
+  }, [adminData, totalKwConsumidoTratamientos, periodMonthFactor]);
 
   // Distribución del Plan C Administrativo por tratamiento
   const calculatedAdminDistribution = useMemo(() => {
@@ -1726,6 +1760,8 @@ export function ProfitabilityReport() {
                     <th className="px-6 py-4 text-left font-black">Detalle del Gasto</th>
                     <th className="px-4 py-4 text-right font-black w-32">Costo total por mes</th>
                     <th className="px-4 py-4 text-center font-black w-28">Unidades por mes</th>
+                    <th className="px-4 py-4 text-right pr-4 font-black w-32 bg-blue-500/5 rounded-t-xl border-t border-x border-blue-200/20 text-blue-700">Costo por período</th>
+                    <th className="px-4 py-4 text-center font-black w-28 bg-blue-500/5 rounded-t-xl border-t border-x border-blue-200/20 text-blue-650">Unidades por período</th>
                     <th className="px-4 py-4 text-center font-black w-24">$ Unidad</th>
                     <th className="px-4 py-4 text-center font-black w-24">Consumo</th>
                     <th className="px-4 py-4 text-right pr-6 font-black w-36">$ a Distribuir</th>
@@ -1736,10 +1772,16 @@ export function ProfitabilityReport() {
                   {adminData.map((item) => {
                     const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
                     const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
-                    const displayedConsumption = isEnergia ? (item.units - totalKwConsumidoTratamientos) : item.consumption;
+                    
+                    // Prorrateo temporal
+                    const costPeriod = item.cost * periodMonthFactor;
+                    const unitsPeriod = item.units * periodMonthFactor;
+                    const consumptionPeriod = isEnergia ? totalKwConsumidoTratamientos : item.consumption * periodMonthFactor;
+                    
+                    const displayedConsumption = isEnergia ? (unitsPeriod - totalKwConsumidoTratamientos) : consumptionPeriod;
                     const toDistribute = isEnergia 
                       ? (displayedConsumption * pricePerUnit) 
-                      : (item.units - item.consumption) * pricePerUnit;
+                      : (unitsPeriod - consumptionPeriod) * pricePerUnit;
 
                     return (
                       <tr key={item.id} className="group">
@@ -1778,6 +1820,26 @@ export function ProfitabilityReport() {
                             <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 opacity-30" size={8} />
                           </div>
                         </td>
+                        <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] border-x border-blue-500/10 p-2 text-right w-32 font-black text-blue-700 tabular-nums text-xs">
+                          <NeumorphicExplanationTooltip
+                            title="Costo Prorrateado del Período"
+                            formula="Costo por mes × Factor de Período"
+                            text="Costo correspondiente al rango de fechas seleccionado en base a días hábiles."
+                          >
+                            <span>{formatCurrency(costPeriod)}</span>
+                          </NeumorphicExplanationTooltip>
+                        </td>
+                        <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] border-r border-blue-500/10 p-2 text-center w-28 font-black text-blue-600 tabular-nums text-xs">
+                          <NeumorphicExplanationTooltip
+                            title="Unidades Prorrateadas del Período"
+                            formula="Unidades por mes × Factor de Período"
+                            text="Unidades proporcionales correspondientes al rango de fechas seleccionado en base a días hábiles."
+                          >
+                            <span>
+                              {unitsPeriod.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                            </span>
+                          </NeumorphicExplanationTooltip>
+                        </td>
                         <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
                           {pricePerUnit.toFixed(2)}
                         </td>
@@ -1785,8 +1847,8 @@ export function ProfitabilityReport() {
                           {isEnergia ? (
                             <NeumorphicExplanationTooltip
                               title="Energía Restante a Distribuir (Kw)"
-                              formula="Unidades Kw - Consumo Tratamientos"
-                              text="Calculado automáticamente: Kw totales facturados menos el consumo total de Kw acumulado por todos los tratamientos en el período."
+                              formula="Unidades Kw Período - Consumo Tratamientos"
+                              text="Calculado automáticamente: Kw proporcionales del período menos el consumo total de Kw acumulado por todos los tratamientos en el período."
                             >
                               <div className="max-w-[80px] mx-auto bg-emerald-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1.5 border border-emerald-200/30 text-center text-[11px] font-black text-emerald-600 tabular-nums">
                                 {Number(displayedConsumption.toFixed(2))}
@@ -1832,12 +1894,7 @@ export function ProfitabilityReport() {
               </div>
               <div className="text-right bg-blue-500/5 px-4 py-1.5 rounded-xl border border-blue-500/10 shadow-inner">
                 <span className="text-blue-600 text-lg font-black tracking-tighter">
-                  {formatCurrency(adminData.reduce((acc, item) => {
-                    const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
-                    const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
-                    const displayedCons = isEnergia ? (item.units - totalKwConsumidoTratamientos) : item.consumption;
-                    return acc + (isEnergia ? (displayedCons * pricePerUnit) : ((item.units - item.consumption) * pricePerUnit));
-                  }, 0))}
+                  {formatCurrency(totalAdminToDistribute)}
                 </span>
               </div>
             </div>
