@@ -524,11 +524,12 @@ export function ProfitabilityReport() {
     const prices: Record<string, number> = {};
     personalData.forEach(dep => {
       const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
+      const totalSalaryPeriod = totalSalary * periodMonthFactor;
       const totalMinsMes = dep.staff.reduce((acc, w) => acc + getPeriodMinutes(w.weeklyHours), 0);
-      prices[dep.dependency] = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+      prices[dep.dependency] = totalMinsMes > 0 ? totalSalaryPeriod / totalMinsMes : 0;
     });
     return prices;
-  }, [personalData, appliedDateRange, globalDateRange, weeklyHours]);
+  }, [personalData, appliedDateRange, globalDateRange, weeklyHours, periodMonthFactor]);
 
   // Cálculo de tarifa por Kw de la clínica
   const precioPorKw = useMemo(() => {
@@ -590,15 +591,16 @@ export function ProfitabilityReport() {
   const totalToDistribute = useMemo(() => {
     return personalData.reduce((acc, dep) => {
       const totalSalary = dep.staff.reduce((sAcc, w) => sAcc + w.salary, 0);
+      const totalSalaryPeriod = totalSalary * periodMonthFactor;
       const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + getPeriodMinutes(w.weeklyHours), 0);
-      const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+      const avgPriceMin = totalMinsMes > 0 ? totalSalaryPeriod / totalMinsMes : 0;
       
       const depMinsTrabaja = matrixTotals[dep.dependency] || 0;
       const depMinsNoTrabaja = totalMinsMes - depMinsTrabaja;
       
       return acc + (depMinsNoTrabaja * avgPriceMin);
     }, 0);
-  }, [personalData, getPeriodMinutes, matrixTotals, weeklyHours]);
+  }, [personalData, getPeriodMinutes, matrixTotals, weeklyHours, periodMonthFactor]);
 
   // Distribución del Plan C por tratamiento
   const calculatedDistribution = useMemo(() => {
@@ -1149,11 +1151,12 @@ export function ProfitabilityReport() {
             {personalData.map((dep) => {
               const dynamicMins = getPeriodMinutes();
               const totalSalary = dep.staff.reduce((acc, w) => acc + w.salary, 0);
+              const totalSalaryPeriod = totalSalary * periodMonthFactor;
               const totalMinsMes = dep.staff.reduce((acc, w) => acc + getPeriodMinutes(w.weeklyHours), 0);
               const totalMinsTrabaja = matrixTotals[dep.dependency] || 0;
               const totalMinsNoTrabaja = totalMinsMes - totalMinsTrabaja;
               
-              const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+              const avgPriceMin = totalMinsMes > 0 ? totalSalaryPeriod / totalMinsMes : 0;
               const depTotalToDistribute = totalMinsNoTrabaja * avgPriceMin;
               
               return (
@@ -1224,8 +1227,8 @@ export function ProfitabilityReport() {
                           <th className="pb-1 w-24 text-center text-blue-500">
                             <NeumorphicExplanationTooltip
                               title="Costo por Minuto"
-                              formula="Sueldo Base / Minutos del Periodo"
-                              text="El costo exacto de cada minuto del tiempo del profesional disponible para la unidad médica."
+                              formula="Sueldo Período / Minutos del Período"
+                              text="El costo exacto de cada minuto de trabajo disponible de este empleado, calculado dividiendo su sueldo prorrateado por sus minutos hábiles del período."
                               position="bottom"
                             >
                               <span className="cursor-help border-b border-dashed border-blue-400 pb-0.5">$ Minuto</span>
@@ -1269,8 +1272,8 @@ export function ProfitabilityReport() {
                           const salary = worker.salary || 0;
                           const workerMins = getPeriodMinutes(worker.weeklyHours);
                           const minsMes = workerMins > 0 ? workerMins : 1;
-                          const pricePerMinute = salary / minsMes;
                           const workerSalaryPeriod = salary * periodMonthFactor;
+                          const pricePerMinute = workerSalaryPeriod / minsMes;
 
                           return (
                             <tr key={worker.id} className="group">
@@ -1414,10 +1417,10 @@ export function ProfitabilityReport() {
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-blue-600">
                               <NeumorphicExplanationTooltip
-                                title="Costo Promedio por Minuto"
-                                formula={`$${avgPriceMin.toFixed(2)} / min`}
-                                text="Sueldo Base Total dividido entre Minutos Disponibles Totales. Se usa como costo de referencia."
-                              >
+                                  title="Costo Promedio por Minuto"
+                                  formula={`$${avgPriceMin.toFixed(2)} / min`}
+                                  text="Sueldo del Período Total dividido entre Minutos Disponibles Totales del período. Se usa como costo de referencia."
+                                >
                                 <span>{avgPriceMin.toFixed(2)}</span>
                               </NeumorphicExplanationTooltip>
                             </td>
