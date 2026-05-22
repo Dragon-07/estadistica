@@ -2261,6 +2261,12 @@ export function ProfitabilityReport() {
           const energiaRowForCard = (serviceAdminCosts[serviceName] || []).find(r => r.id === 'energia' || r.adminId === '1');
           const directEnergiaCostForCard = energiaRowForCard ? ((energiaRowForCard.kw || 0) * precioPorKw) : 0;
           const adminCost = directEnergiaCostForCard + serviceAdminCostPerSession;
+          
+          const stats = serviceRevenueStats[serviceName] || { count: 0, revenue: 0 };
+          const valorCobrado = stats.count > 0 ? stats.revenue / stats.count : 0;
+          const costoPorSesion = insumosCost + personalCost + adminCost;
+          const gananciaSesion = valorCobrado - costoPorSesion;
+
           const isActive = activeService === serviceName;
 
           return (
@@ -2289,12 +2295,16 @@ export function ProfitabilityReport() {
                   { label: '$ Insumos', value: insumosCost, color: 'text-orange-500' },
                   { label: '$ Personal', value: personalCost, color: 'text-blue-500' },
                   { label: '$ Administrati', value: adminCost, color: 'text-emerald-500' },
+                  { label: 'VALOR COBRADO', value: valorCobrado, color: 'text-slate-700 font-extrabold' },
+                  { label: 'COSTO POR SESIÓN', value: costoPorSesion, color: 'text-slate-700 font-extrabold' },
+                  { label: 'GANANCIA POR SESIÓN', value: gananciaSesion, color: gananciaSesion >= 0 ? 'text-emerald-600 font-black' : 'text-red-500 font-black' },
                 ].map((row, rIdx) => (
                   <div key={rIdx} className="flex items-stretch">
                     <div className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] px-4 py-2 rounded-l-xl flex-1 flex items-center">
-                      <span className="text-[11px] font-black text-slate-500 uppercase tracking-tighter">{row.label}</span>
+                      <span className="text-[9.5px] font-black text-slate-500 uppercase tracking-tighter leading-none">{row.label}</span>
                     </div>
-                    <div className="bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] px-4 py-2 rounded-r-xl w-28 flex items-center justify-end">
+                    <div className="bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] px-4 py-2 rounded-r-xl w-28 flex items-center justify-end gap-1">
+                      <span className={`text-[11.5px] font-black opacity-60 ${row.color}`}>$</span>
                       <span className={`text-[13px] font-black ${row.color}`}>{row.value.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</span>
                     </div>
                   </div>
