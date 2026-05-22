@@ -2611,7 +2611,7 @@ export function ProfitabilityReport() {
 
                   return (
                     <div className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40 border-l-4 border-l-emerald-500">
-                      <span className="flex-1 text-[10px] font-black text-emerald-700 uppercase tracking-tight">INDIRECTOS (PLAN C)</span>
+                      <span className="flex-1 text-[10px] font-black text-emerald-700 uppercase tracking-tight">ADMINISTRATIVO</span>
                       
                       <div className="w-20 flex justify-center">
                         <NeumorphicExplanationTooltip
