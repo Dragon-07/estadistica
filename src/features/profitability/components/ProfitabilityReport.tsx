@@ -1899,94 +1899,6 @@ export function ProfitabilityReport() {
               </div>
             </div>
 
-            {/* Matriz de Energía Acumulada (Kw) */}
-            {(() => {
-              if (activeDashboardTreatments.length === 0) return null;
-
-              return (
-                <div className="mt-8 pt-6 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                  <h4 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
-                    <div className="w-2 h-4 bg-emerald-500 rounded-full"></div>
-                    Desglose de Consumo de Energía por Tratamiento (Kw)
-                  </h4>
-                  <div className="bg-[#e6e7ee] rounded-[2rem] p-4 shadow-[inset_8px_8px_16px_#b8b9be,inset_-8px_-8px_16px_#ffffff] overflow-x-auto border border-white/40">
-                    <table className="w-full text-left border-collapse min-w-[500px]">
-                      <thead>
-                        <tr>
-                          <th className="py-2.5 px-3 font-black text-emerald-700 uppercase text-[10px] tracking-widest w-40 bg-emerald-500/10 rounded-tl-2xl border-b-2 border-r-2 border-white/50">Consumo Acumulado</th>
-                          {activeDashboardTreatments.map((t) => (
-                            <th key={t} className="py-2.5 px-3 font-black text-emerald-700 uppercase text-[10px] tracking-widest text-center bg-emerald-500/10 border-b-2 border-white/50 border-r-2 border-white/50">
-                              {t}
-                            </th>
-                          ))}
-                          <th className="py-2.5 px-3 font-black text-emerald-850 uppercase text-[10px] tracking-widest text-center bg-emerald-500/20 rounded-tr-2xl border-b-2 border-white/50">
-                            Kw total
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Fila 1: Kw por Sesión */}
-                        <tr className="group/row transition-all hover:bg-white/40">
-                          <td className="py-2 px-3 font-black text-slate-600 bg-emerald-500/10 border-r-2 border-white/50 border-b-2 border-white/50 uppercase text-[10px] tracking-tight">
-                            Kw por Sesión
-                          </td>
-                          {activeDashboardTreatments.map((t) => {
-                            const energiaRow = (serviceAdminCosts[t] || []).find(r => r.id === 'energia' || r.adminId === '1');
-                            const kw = energiaRow ? (energiaRow.kw || 0) : 0;
-                            return (
-                              <td key={t} className="py-2 px-3 text-center font-bold text-slate-600 border-b border-white/50 border-r border-slate-300/20 text-[11px] tabular-nums">
-                                {kw > 0 ? `${kw} Kw` : '-'}
-                              </td>
-                            );
-                          })}
-                          <td className="py-2 px-3 text-center font-black text-emerald-800 bg-emerald-500/10 border-b-2 border-white/50 text-[11px]">-</td>
-                        </tr>
-
-                        {/* Fila 2: Sesiones en Período */}
-                        <tr className="group/row transition-all hover:bg-white/40">
-                          <td className="py-2 px-3 font-black text-slate-600 bg-emerald-500/10 border-r-2 border-white/50 border-b-2 border-white/50 uppercase text-[10px] tracking-tight">
-                            N° de Sesiones
-                          </td>
-                          {activeDashboardTreatments.map((t) => {
-                            const count = serviceRevenueStats[t]?.count || 0;
-                            return (
-                              <td key={t} className="py-2 px-3 text-center font-bold text-slate-600 border-b border-white/50 border-r border-slate-300/20 text-[11px] tabular-nums">
-                                {count}
-                              </td>
-                            );
-                          })}
-                          <td className="py-2 px-3 text-center font-black text-emerald-800 bg-emerald-500/10 border-b-2 border-white/50 text-[11px] tabular-nums">
-                            {activeDashboardTreatments.reduce((acc, t) => acc + (serviceRevenueStats[t]?.count || 0), 0)}
-                          </td>
-                        </tr>
-
-                        {/* Fila 3: Kw Acumulado */}
-                        <tr className="group/row transition-all hover:bg-white/40">
-                          <td className="py-2 px-3 font-black text-emerald-700 bg-emerald-500/10 border-r-2 border-white/50 rounded-bl-2xl uppercase text-[10px] tracking-tight">
-                            Consumo Total (Kw)
-                          </td>
-                          {activeDashboardTreatments.map((t) => {
-                            const energiaRow = (serviceAdminCosts[t] || []).find(r => r.id === 'energia' || r.adminId === '1');
-                            const kw = energiaRow ? (energiaRow.kw || 0) : 0;
-                            const count = serviceRevenueStats[t]?.count || 0;
-                            const totalKw = kw * count;
-                            return (
-                              <td key={t} className="py-2 px-3 text-center font-black text-emerald-600 border-r border-slate-300/20 text-[12px] tabular-nums">
-                                {totalKw > 0 ? `${totalKw} Kw` : ''}
-                              </td>
-                            );
-                          })}
-                          <td className="py-2 px-3 text-center font-black text-emerald-850 bg-emerald-500/25 rounded-br-2xl text-[13px] tabular-nums">
-                            {totalKwConsumidoTratamientos} Kw
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })()}
-
             {/* Desplegable Listado de distribución Administrativo */}
             <div className="mt-6 flex flex-col gap-4">
               <button
@@ -2273,6 +2185,94 @@ export function ProfitabilityReport() {
                 );
               })()}
             </div>
+
+            {/* Matriz de Energía Acumulada (Kw) */}
+            {(() => {
+              if (activeDashboardTreatments.length === 0) return null;
+
+              return (
+                <div className="mt-8 pt-6 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <h4 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
+                    <div className="w-2 h-4 bg-emerald-500 rounded-full"></div>
+                    Desglose de Consumo de Energía por Tratamiento (Kw)
+                  </h4>
+                  <div className="bg-[#e6e7ee] rounded-[2rem] p-4 shadow-[inset_8px_8px_16px_#b8b9be,inset_-8px_-8px_16px_#ffffff] overflow-x-auto border border-white/40">
+                    <table className="w-full text-left border-collapse min-w-[500px]">
+                      <thead>
+                        <tr>
+                          <th className="py-2.5 px-3 font-black text-emerald-700 uppercase text-[10px] tracking-widest w-40 bg-emerald-500/10 rounded-tl-2xl border-b-2 border-r-2 border-white/50">Consumo Acumulado</th>
+                          {activeDashboardTreatments.map((t) => (
+                            <th key={t} className="py-2.5 px-3 font-black text-emerald-700 uppercase text-[10px] tracking-widest text-center bg-emerald-500/10 border-b-2 border-white/50 border-r-2 border-white/50">
+                              {t}
+                            </th>
+                          ))}
+                          <th className="py-2.5 px-3 font-black text-emerald-850 uppercase text-[10px] tracking-widest text-center bg-emerald-500/20 rounded-tr-2xl border-b-2 border-white/50">
+                            Kw total
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Fila 1: Kw por Sesión */}
+                        <tr className="group/row transition-all hover:bg-white/40">
+                          <td className="py-2 px-3 font-black text-slate-600 bg-emerald-500/10 border-r-2 border-white/50 border-b-2 border-white/50 uppercase text-[10px] tracking-tight">
+                            Kw por Sesión
+                          </td>
+                          {activeDashboardTreatments.map((t) => {
+                            const energiaRow = (serviceAdminCosts[t] || []).find(r => r.id === 'energia' || r.adminId === '1');
+                            const kw = energiaRow ? (energiaRow.kw || 0) : 0;
+                            return (
+                              <td key={t} className="py-2 px-3 text-center font-bold text-slate-600 border-b border-white/50 border-r border-slate-300/20 text-[11px] tabular-nums">
+                                {kw > 0 ? `${kw} Kw` : '-'}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 px-3 text-center font-black text-emerald-800 bg-emerald-500/10 border-b-2 border-white/50 text-[11px]">-</td>
+                        </tr>
+
+                        {/* Fila 2: Sesiones en Período */}
+                        <tr className="group/row transition-all hover:bg-white/40">
+                          <td className="py-2 px-3 font-black text-slate-600 bg-emerald-500/10 border-r-2 border-white/50 border-b-2 border-white/50 uppercase text-[10px] tracking-tight">
+                            N° de Sesiones
+                          </td>
+                          {activeDashboardTreatments.map((t) => {
+                            const count = serviceRevenueStats[t]?.count || 0;
+                            return (
+                              <td key={t} className="py-2 px-3 text-center font-bold text-slate-600 border-b border-white/50 border-r border-slate-300/20 text-[11px] tabular-nums">
+                                {count}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 px-3 text-center font-black text-emerald-800 bg-emerald-500/10 border-b-2 border-white/50 text-[11px] tabular-nums">
+                            {activeDashboardTreatments.reduce((acc, t) => acc + (serviceRevenueStats[t]?.count || 0), 0)}
+                          </td>
+                        </tr>
+
+                        {/* Fila 3: Kw Acumulado */}
+                        <tr className="group/row transition-all hover:bg-white/40">
+                          <td className="py-2 px-3 font-black text-emerald-700 bg-emerald-500/10 border-r-2 border-white/50 rounded-bl-2xl uppercase text-[10px] tracking-tight">
+                            Consumo Total (Kw)
+                          </td>
+                          {activeDashboardTreatments.map((t) => {
+                            const energiaRow = (serviceAdminCosts[t] || []).find(r => r.id === 'energia' || r.adminId === '1');
+                            const kw = energiaRow ? (energiaRow.kw || 0) : 0;
+                            const count = serviceRevenueStats[t]?.count || 0;
+                            const totalKw = kw * count;
+                            return (
+                              <td key={t} className="py-2 px-3 text-center font-black text-emerald-600 border-r border-slate-300/20 text-[12px] tabular-nums">
+                                {totalKw > 0 ? `${totalKw} Kw` : ''}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 px-3 text-center font-black text-emerald-850 bg-emerald-500/25 rounded-br-2xl text-[13px] tabular-nums">
+                            {totalKwConsumidoTratamientos} Kw
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
