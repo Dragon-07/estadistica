@@ -484,6 +484,88 @@ export function ProfitabilityReport() {
     return prices;
   }, [personalData, appliedDateRange, globalDateRange, weeklyHours]);
 
+  // Matriz de tiempos acumulados trabajados por dependencia y tratamiento
+  const timeMatrix = useMemo(() => {
+    const treatments = activeDashboardTreatments;
+    const matrix: Record<string, Record<string, number>> = {};
+    
+    personalData.forEach(dep => {
+      matrix[dep.dependency] = {};
+      treatments.forEach(t => {
+        matrix[dep.dependency][t] = 0;
+      });
+    });
+
+    treatments.forEach(t => {
+      const staffTimes = serviceStaffTimes[t] || [];
+      staffTimes.forEach(st => {
+        let depName = '';
+        if (st.tipo === 'Doctor') depName = 'Doctores';
+        else if (st.tipo === 'Enfermera') depName = 'Enfermeras';
+        else depName = st.tipo;
+        
+        if (matrix[depName] !== undefined && matrix[depName][t] !== undefined) {
+          const count = serviceRevenueStats[t]?.count || 0;
+          matrix[depName][t] += (st.mins || 0) * count;
+        }
+      });
+    });
+
+    return matrix;
+  }, [activeDashboardTreatments, personalData, serviceStaffTimes, serviceRevenueStats]);
+
+  // Totales de minutos trabajados acumulados por dependencia
+  const matrixTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    const treatments = activeDashboardTreatments;
+    personalData.forEach(dep => {
+      totals[dep.dependency] = treatments.reduce((acc, t) => acc + (timeMatrix[dep.dependency]?.[t] || 0), 0);
+    });
+    return totals;
+  }, [timeMatrix, personalData, activeDashboardTreatments]);
+
+  // Costo total de minutos ociosos/no trabajados a distribuir en la clínica
+  const totalToDistribute = useMemo(() => {
+    return personalData.reduce((acc, dep) => {
+      const totalSalary = dep.staff.reduce((sAcc, w) => sAcc + w.salary, 0);
+      const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + getPeriodMinutes(w.weeklyHours), 0);
+      const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
+      
+      const depMinsTrabaja = matrixTotals[dep.dependency] || 0;
+      const depMinsNoTrabaja = totalMinsMes - depMinsTrabaja;
+      
+      return acc + (depMinsNoTrabaja * avgPriceMin);
+    }, 0);
+  }, [personalData, getPeriodMinutes, matrixTotals, weeklyHours]);
+
+  // Distribución del Plan C por tratamiento
+  const calculatedDistribution = useMemo(() => {
+    const totalSessions = distributionData.reduce((acc, item) => acc + item.count, 0);
+    const totalRevenue = distributionData.reduce((acc, item) => acc + item.revenue, 0);
+
+    return distributionData.map(item => {
+      const pctCount = totalSessions > 0 ? (item.count / totalSessions) : 0;
+      const pctRevenue = totalRevenue > 0 ? (item.revenue / totalRevenue) : 0;
+
+      const allocCount = totalToDistribute * pctCount;
+      const allocRevenue = totalToDistribute * pctRevenue;
+      const allocMixed = 0.5 * allocCount + 0.5 * allocRevenue;
+      const pctOfTotalAlloc = totalToDistribute > 0 ? (allocMixed / totalToDistribute) * 105 : 0; // Se adaptará el porcentaje en base a totalToDistribute
+
+      return {
+        name: item.name,
+        count: item.count,
+        pctCount: pctCount * 100,
+        revenue: item.revenue,
+        pctRevenue: pctRevenue * 100,
+        allocCount,
+        allocRevenue,
+        allocMixed,
+        pctOfTotalAlloc: totalToDistribute > 0 ? (allocMixed / totalToDistribute) * 100 : 0
+      };
+    });
+  }, [distributionData, totalToDistribute]);
+
   const handleUpdateInsumo = (id: string, field: keyof Insumo, value: string | number) => {
     setInsumos(prev => prev.map(item => 
       item.id === id ? { ...item, [field]: value } : item
@@ -840,75 +922,8 @@ export function ProfitabilityReport() {
       {/* Sección Desplegable: Sistema de Salario por Tiempo (Personal) */}
       {activeCategory === 'personal' && (() => {
         const treatments = activeDashboardTreatments;
-        const timeMatrix: Record<string, Record<string, number>> = {};
-        const matrixTotals: Record<string, number> = {};
-        
-        personalData.forEach(dep => {
-          timeMatrix[dep.dependency] = {};
-          matrixTotals[dep.dependency] = 0;
-          treatments.forEach(t => {
-            timeMatrix[dep.dependency][t] = 0;
-          });
-        });
-
-        treatments.forEach(t => {
-          const staffTimes = serviceStaffTimes[t] || [];
-          staffTimes.forEach(st => {
-            let depName = '';
-            if (st.tipo === 'Doctor') depName = 'Doctores';
-            else if (st.tipo === 'Enfermera') depName = 'Enfermeras';
-            else depName = st.tipo;
-            
-            if (timeMatrix[depName] !== undefined && timeMatrix[depName][t] !== undefined) {
-              const count = serviceRevenueStats[t]?.count || 0;
-              timeMatrix[depName][t] += (st.mins || 0) * count;
-            }
-          });
-        });
-
-        Object.keys(timeMatrix).forEach(depName => {
-          matrixTotals[depName] = treatments.reduce((acc, t) => acc + timeMatrix[depName][t], 0);
-        });
-
         const activeTreatmentsCols = treatments;
         const validDeps = personalData.filter(dep => dep.dependency !== 'Operativo' && dep.dependency !== 'Administrativos');
-
-        const totalToDistribute = personalData.reduce((acc, dep) => {
-          const totalSalary = dep.staff.reduce((sAcc, w) => sAcc + w.salary, 0);
-          const totalMinsMes = dep.staff.reduce((sAcc, w) => sAcc + getPeriodMinutes(w.weeklyHours), 0);
-          const avgPriceMin = totalMinsMes > 0 ? totalSalary / totalMinsMes : 0;
-          
-          const depMinsTrabaja = matrixTotals[dep.dependency] || 0;
-          const depMinsNoTrabaja = totalMinsMes - depMinsTrabaja;
-          
-          return acc + (depMinsNoTrabaja * avgPriceMin);
-        }, 0);
-
-        // Cálculos del Plan C
-        const totalSessions = distributionData.reduce((acc, item) => acc + item.count, 0);
-        const totalRevenue = distributionData.reduce((acc, item) => acc + item.revenue, 0);
-
-        const calculatedDistribution = distributionData.map(item => {
-          const pctCount = totalSessions > 0 ? (item.count / totalSessions) : 0;
-          const pctRevenue = totalRevenue > 0 ? (item.revenue / totalRevenue) : 0;
-
-          const allocCount = totalToDistribute * pctCount;
-          const allocRevenue = totalToDistribute * pctRevenue;
-          const allocMixed = 0.5 * allocCount + 0.5 * allocRevenue;
-          const pctOfTotalAlloc = totalToDistribute > 0 ? (allocMixed / totalToDistribute) * 100 : 0;
-
-          return {
-            name: item.name,
-            count: item.count,
-            pctCount: pctCount * 100,
-            revenue: item.revenue,
-            pctRevenue: pctRevenue * 100,
-            allocCount,
-            allocRevenue,
-            allocMixed,
-            pctOfTotalAlloc
-          };
-        });
 
         // Filtrar por búsqueda
         const filteredDistribution = calculatedDistribution.filter(item => 
@@ -1739,11 +1754,16 @@ export function ProfitabilityReport() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2 pb-4">
         {activeDashboardTreatments.map((serviceName, idx) => {
           const insumosCost = (serviceInsumos[serviceName] || []).reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0);
-          const personalCost = (serviceStaffTimes[serviceName] || []).reduce((acc, row) => {
+          const serviceDistribution = calculatedDistribution.find(item => item.name.toLowerCase() === serviceName.toLowerCase());
+          const serviceCostPerSession = serviceDistribution 
+            ? (serviceDistribution.count > 0 ? (serviceDistribution.allocMixed / serviceDistribution.count) : 0)
+            : 0;
+
+          const personalCost = ((serviceStaffTimes[serviceName] || []).reduce((acc, row) => {
             const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
             const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
             return acc + val;
-          }, 0);
+          }, 0)) + serviceCostPerSession;
           const adminCost = (serviceAdminCosts[serviceName] || []).reduce((acc, row) => acc + row.valor, 0);
           const isActive = activeService === serviceName;
 
@@ -1966,6 +1986,36 @@ export function ProfitabilityReport() {
                     </div>
                   );
                 })}
+
+                {/* Fila de Operativos (Plan C) */}
+                {(() => {
+                  const activeServiceDistribution = calculatedDistribution.find(item => item.name.toLowerCase() === activeService.toLowerCase());
+                  const activeServiceCostPerSession = activeServiceDistribution 
+                    ? (activeServiceDistribution.count > 0 ? (activeServiceDistribution.allocMixed / activeServiceDistribution.count) : 0)
+                    : 0;
+
+                  return (
+                    <div className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40 border-l-4 border-l-blue-500">
+                      <span className="flex-1 text-[10px] font-black text-blue-700 uppercase tracking-tight">OPERATIVOS</span>
+                      
+                      <div className="w-20 flex justify-center">
+                        <NeumorphicExplanationTooltip
+                          title="Costo Indirecto Prorrateado"
+                          text="Este costo representa la parte proporcional de tiempo ocioso y operativo asignado por el Plan C por sesión de tratamiento."
+                        >
+                          <span className="text-[11px] font-bold text-slate-400 cursor-help uppercase tracking-tight">Indirecto</span>
+                        </NeumorphicExplanationTooltip>
+                      </div>
+
+                      <div className="w-24 flex justify-end items-center gap-1">
+                        <span className="text-[10px] text-slate-400 font-black">$</span>
+                        <span className="text-[11px] font-black tabular-nums text-blue-700">
+                          {activeServiceCostPerSession.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Sumatoria Total de Personal */}
@@ -1974,10 +2024,19 @@ export function ProfitabilityReport() {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Personal del Servicio</span>
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-black text-blue-600 tracking-tighter">
-                      {formatCurrency(serviceStaffTimes[activeService]?.reduce((acc, row) => {
-                        const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
-                        return acc + (row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice);
-                      }, 0) || 0)}
+                      {(() => {
+                        const directStaffCost = serviceStaffTimes[activeService]?.reduce((acc, row) => {
+                          const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
+                          return acc + (row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice);
+                        }, 0) || 0;
+
+                        const activeServiceDistribution = calculatedDistribution.find(item => item.name.toLowerCase() === activeService.toLowerCase());
+                        const activeServiceCostPerSession = activeServiceDistribution 
+                          ? (activeServiceDistribution.count > 0 ? (activeServiceDistribution.allocMixed / activeServiceDistribution.count) : 0)
+                          : 0;
+
+                        return formatCurrency(directStaffCost + activeServiceCostPerSession);
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -2070,7 +2129,17 @@ export function ProfitabilityReport() {
           {(() => {
             const stats = serviceRevenueStats[activeService] || { count: 0, revenue: 0 };
             const insumosTotal = serviceInsumos[activeService]?.reduce((acc, row) => acc + (insumos.find(i => i.id === row.insumoId)?.valor || 0) * row.cantidad, 0) || 0;
-            const staffTotal = serviceStaffTimes[activeService]?.reduce((acc, row) => acc + row.valor, 0) || 0;
+            
+            const activeServiceDistribution = calculatedDistribution.find(item => item.name.toLowerCase() === activeService.toLowerCase());
+            const activeServiceCostPerSession = activeServiceDistribution 
+              ? (activeServiceDistribution.count > 0 ? (activeServiceDistribution.allocMixed / activeServiceDistribution.count) : 0)
+              : 0;
+
+            const staffTotal = (serviceStaffTimes[activeService]?.reduce((acc, row) => {
+              const depPrice = dependencyPrices[row.tipo === 'Doctor' ? 'Doctores' : row.tipo === 'Enfermera' ? 'Enfermeras' : ''] || 0;
+              return acc + (row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice);
+            }, 0) || 0) + activeServiceCostPerSession;
+
             const adminTotal = serviceAdminCosts[activeService]?.reduce((acc, row) => acc + row.valor, 0) || 0;
             const totalServiceCost = insumosTotal + staffTotal + adminTotal;
 
