@@ -874,6 +874,33 @@ export function ProfitabilityReport() {
     saveToSupabase(serviceName, serviceStaffTimes[serviceName], newItems);
   };
 
+  const handleUpdateServicePackageMultiplier = (serviceName: string, multiplier: number) => {
+    const validatedMultiplier = Math.max(0.01, multiplier);
+    const currentItems = serviceInsumos[serviceName] || [];
+    const multiplierIndex = currentItems.findIndex(item => item.insumoId === 'multiplier');
+    
+    let newItems = [...currentItems];
+    if (multiplierIndex > -1) {
+      newItems[multiplierIndex] = { 
+        ...newItems[multiplierIndex], 
+        cantidad: validatedMultiplier 
+      };
+    } else {
+      newItems.push({
+        id: 'multiplier',
+        insumoId: 'multiplier',
+        cantidad: validatedMultiplier
+      });
+    }
+    
+    setServiceInsumos(prev => ({
+      ...prev,
+      [serviceName]: newItems
+    }));
+    
+    saveToSupabase(serviceName, serviceStaffTimes[serviceName], newItems);
+  };
+
   const handleUpdateServiceStaffTime = (serviceName: string, id: string, field: 'mins' | 'valor', value: number) => {
     const newTimes = serviceStaffTimes[serviceName].map(item => 
       item.id === id ? { ...item, [field]: value } : item
@@ -2459,7 +2486,11 @@ export function ProfitabilityReport() {
       {/* Rejilla de Servicios y Costos Consolidados (Al final para que baje al desplegar) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2 pb-4">
         {activeDashboardTreatments.map((serviceName, idx) => {
-          const insumosCost = (serviceInsumos[serviceName] || []).reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0);
+          const serviceItems = serviceInsumos[serviceName] || [];
+          const itemsList = serviceItems.filter(item => item.insumoId !== 'multiplier');
+          const multiplierItem = serviceItems.find(item => item.insumoId === 'multiplier');
+          const packageMultiplier = multiplierItem ? multiplierItem.cantidad : 1;
+          const insumosCost = itemsList.reduce((acc, item) => acc + ((insumos.find(i => i.id === item.insumoId)?.valor || 0) * item.cantidad), 0) * packageMultiplier;
           const serviceDistribution = calculatedDistribution.find(item => item.name.toLowerCase() === serviceName.toLowerCase());
           const serviceCostPerSession = serviceDistribution 
             ? (serviceDistribution.count > 0 ? (serviceDistribution.allocMixed / serviceDistribution.count) : 0)
@@ -2579,128 +2610,162 @@ export function ProfitabilityReport() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Columna de Insumos del Servicio */}
             <div className="space-y-6">
-              <div className="flex flex-col gap-4 px-2 relative z-30">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 shadow-inner border border-orange-200/20">
-                    <Package size={18} />
-                  </div>
-                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Insumos del Servicio</h4>
-                </div>
-                <div className="relative w-full z-40" ref={insumoDropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setShowInsumoDropdown(!showInsumoDropdown)}
-                    className="w-full bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all text-left flex items-center justify-between outline-none"
-                  >
-                    <span>+ Agregar Insumo</span>
-                    <Plus size={12} className="text-blue-600 shrink-0" />
-                  </button>
+              {(() => {
+                const serviceItems = serviceInsumos[activeService] || [];
+                const itemsList = serviceItems.filter(item => item.insumoId !== 'multiplier');
+                const multiplierItem = serviceItems.find(item => item.insumoId === 'multiplier');
+                const activePackageMultiplier = multiplierItem ? multiplierItem.cantidad : 1;
+                const baseInsumosCost = itemsList.reduce((acc, item) => {
+                  const insumo = insumos.find(i => i.id === item.insumoId);
+                  return acc + ((insumo?.valor || 0) * item.cantidad);
+                }, 0);
+                const hasValidInsumos = itemsList.length > 0;
 
-                  {showInsumoDropdown && (
-                    <div className="absolute left-0 mt-2 w-full bg-[#e6e7ee] rounded-2xl shadow-[10px_10px_30px_#b8b9be,-10px_-10px_30px_#ffffff] border border-white/60 p-4 z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
-                      {/* Campo de búsqueda interna */}
-                      <div className="relative mb-3">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                          type="text"
-                          autoFocus
-                          placeholder="Escribe para buscar..."
-                          value={insumoSearchQuery}
-                          onChange={(e) => setInsumoSearchQuery(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#e6e7ee] text-slate-700 text-xs shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
-                        />
+                return (
+                  <>
+                    <div className="flex flex-col gap-4 px-2 relative z-30">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 shadow-inner border border-orange-200/20">
+                          <Package size={18} />
+                        </div>
+                        <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Insumos del Servicio</h4>
                       </div>
+                      <div className="relative w-full z-40" ref={insumoDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setShowInsumoDropdown(!showInsumoDropdown)}
+                          className="w-full bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all text-left flex items-center justify-between outline-none"
+                        >
+                          <span>+ Agregar Insumo</span>
+                          <Plus size={12} className="text-blue-600 shrink-0" />
+                        </button>
 
-                      {/* Lista de resultados filtrados */}
-                      <div className="max-h-60 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
-                        {filteredAndSortedInsumosForSearch.length === 0 ? (
-                          <span className="text-[10px] text-center text-slate-455 py-3 font-bold uppercase tracking-wider">No se encontraron insumos</span>
-                        ) : (
-                          filteredAndSortedInsumosForSearch.map((ins) => (
-                            <button
-                              key={ins.id}
-                              type="button"
-                              onClick={() => {
-                                handleAddInsumoToService(activeService, ins.id);
-                                setInsumoSearchQuery('');
-                                setShowInsumoDropdown(false);
-                              }}
-                              className="w-full text-left px-3 py-2 rounded-xl text-[10px] font-bold text-slate-650 hover:bg-white/50 hover:text-blue-600 transition-colors flex justify-between items-center"
-                            >
-                              <span className="truncate mr-2">{ins.detalle}</span>
-                              <span className="shrink-0 font-black text-blue-500">{formatCurrency(ins.valor)}</span>
-                            </button>
-                          ))
+                        {showInsumoDropdown && (
+                          <div className="absolute left-0 mt-2 w-full bg-[#e6e7ee] rounded-2xl shadow-[10px_10px_30px_#b8b9be,-10px_-10px_30px_#ffffff] border border-white/60 p-4 z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
+                            {/* Campo de búsqueda interna */}
+                            <div className="relative mb-3">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                              <input
+                                type="text"
+                                autoFocus
+                                placeholder="Escribe para buscar..."
+                                value={insumoSearchQuery}
+                                onChange={(e) => setInsumoSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#e6e7ee] text-slate-700 text-xs shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
+                              />
+                            </div>
+
+                            {/* Lista de resultados filtrados */}
+                            <div className="max-h-60 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
+                              {filteredAndSortedInsumosForSearch.length === 0 ? (
+                                <span className="text-[10px] text-center text-slate-455 py-3 font-bold uppercase tracking-wider">No se encontraron insumos</span>
+                              ) : (
+                                filteredAndSortedInsumosForSearch.map((ins) => (
+                                  <button
+                                    key={ins.id}
+                                    type="button"
+                                    onClick={() => {
+                                      handleAddInsumoToService(activeService, ins.id);
+                                      setInsumoSearchQuery('');
+                                      setShowInsumoDropdown(false);
+                                    }}
+                                    className="w-full text-left px-3 py-2 rounded-xl text-[10px] font-bold text-slate-650 hover:bg-white/50 hover:text-blue-600 transition-colors flex justify-between items-center"
+                                  >
+                                    <span className="truncate mr-2">{ins.detalle}</span>
+                                    <span className="shrink-0 font-black text-blue-500">{formatCurrency(ins.valor)}</span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
 
-              <div className="relative z-0 space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 pt-1 pb-1 custom-scrollbar">
-                {(!serviceInsumos[activeService] || serviceInsumos[activeService].length === 0) ? (
-                  <div className="py-10 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin insumos asignados</p>
-                  </div>
-                ) : (
-                  serviceInsumos[activeService].map((item, index) => {
-                    const insumoDetails = insumos.find(i => i.id === item.insumoId);
-                    return (
-                      <div key={item.id} className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-4 duration-300 w-full min-w-0">
-                        <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40 min-w-0">
-                          <div className="flex-1 min-w-0 mr-2 py-2">
-                            <NeumorphicTooltip text={insumoDetails?.detalle || ''} position={index === 0 ? 'bottom' : 'top'}>
-                              <span className="text-[10px] font-bold text-slate-600 block truncate">{insumoDetails?.detalle}</span>
-                            </NeumorphicTooltip>
-                          </div>
-                          
-                          <div className="flex items-center shrink-0 ml-auto">
-                            {/* Selector de Cantidad */}
-                            <div className="relative group/qty w-12 shrink-0">
+                    <div className="relative z-0 space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 pt-1 pb-1 custom-scrollbar">
+                      {!hasValidInsumos ? (
+                        <div className="py-10 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin insumos asignados</p>
+                        </div>
+                      ) : (
+                        itemsList.map((item, index) => {
+                          const insumoDetails = insumos.find(i => i.id === item.insumoId);
+                          return (
+                            <div key={item.id} className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-4 duration-300 w-full min-w-0">
+                              <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40 min-w-0">
+                                <div className="flex-1 min-w-0 mr-2 py-2">
+                                  <NeumorphicTooltip text={insumoDetails?.detalle || ''} position={index === 0 ? 'bottom' : 'top'}>
+                                    <span className="text-[10px] font-bold text-slate-600 block truncate">{insumoDetails?.detalle}</span>
+                                  </NeumorphicTooltip>
+                                </div>
+                                
+                                <div className="flex items-center shrink-0 ml-auto">
+                                  {/* Selector de Cantidad */}
+                                  <div className="relative group/qty w-12 shrink-0">
+                                    <input 
+                                      type="number"
+                                      min="0"
+                                      step="any"
+                                      value={item.cantidad}
+                                      onChange={(e) => handleUpdateServiceInsumoQuantity(activeService, item.id, parseFloat(e.target.value) || 0)}
+                                      className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
+                                    />
+                                  </div>
+                                  <span className="text-[11px] font-black text-orange-600 w-16 text-right tabular-nums shrink-0">
+                                    {formatCurrency((insumoDetails?.valor || 0) * item.cantidad)}
+                                  </span>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => handleRemoveInsumoFromService(activeService, item.id)}
+                                className="w-10 h-10 flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] rounded-xl text-slate-400 hover:text-red-500 transition-all shrink-0"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    
+                    {/* Sumatoria Total de Insumos */}
+                    {hasValidInsumos && (
+                      <div className="flex flex-col gap-3 mt-0 pt-0.5 border-t border-slate-300/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        {/* Opción "Paquete por" */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 flex items-center h-12 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-2xl px-6 border border-white/40">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Paquete por</span>
+                            <div className="relative w-20 shrink-0">
                               <input 
                                 type="number"
-                                min="0"
+                                min="0.01"
                                 step="any"
-                                value={item.cantidad}
-                                onChange={(e) => handleUpdateServiceInsumoQuantity(activeService, item.id, parseFloat(e.target.value) || 0)}
-                                className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
+                                value={activePackageMultiplier}
+                                onChange={(e) => handleUpdateServicePackageMultiplier(activeService, parseFloat(e.target.value) || 1)}
+                                className="w-full bg-white/40 shadow-inner rounded-xl py-1.5 text-center text-[13px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
                               />
                             </div>
-                            <span className="text-[11px] font-black text-orange-600 w-16 text-right tabular-nums shrink-0">
-                              {formatCurrency((insumoDetails?.valor || 0) * item.cantidad)}
-                            </span>
                           </div>
+                          <div className="w-10 shrink-0" />
                         </div>
-                        <button 
-                          onClick={() => handleRemoveInsumoFromService(activeService, item.id)}
-                          className="w-10 h-10 flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] rounded-xl text-slate-400 hover:text-red-500 transition-all shrink-0"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+
+                        {/* Total Insumos del Servicio */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 flex items-center h-12 bg-white/40 shadow-inner rounded-2xl px-6 border border-orange-200/30">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Insumos del Servicio</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl font-black text-orange-600 tracking-tighter">
+                                {formatCurrency(baseInsumosCost * activePackageMultiplier)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="w-10 shrink-0" />
+                        </div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-              
-              {/* Sumatoria Total de Insumos */}
-              {serviceInsumos[activeService]?.length > 0 && (
-                <div className="flex items-center gap-3 mt-0 pt-0.5 border-t border-slate-300/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                  <div className="flex-1 flex items-center h-12 bg-white/40 shadow-inner rounded-2xl px-6 border border-orange-200/30">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Insumos del Servicio</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-black text-orange-600 tracking-tighter">
-                        {formatCurrency((serviceInsumos[activeService] || []).reduce((acc, item) => {
-                          const insumo = insumos.find(i => i.id === item.insumoId);
-                          return acc + ((insumo?.valor || 0) * item.cantidad);
-                        }, 0))}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-10" />
-                </div>
-              )}
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Columna de Personal del Servicio (Placeholder para consistencia) */}
@@ -2924,7 +2989,11 @@ export function ProfitabilityReport() {
           {/* Tabla Alargada Inferior */}
           {(() => {
             const stats = serviceRevenueStats[activeService] || { count: 0, revenue: 0 };
-            const insumosTotal = serviceInsumos[activeService]?.reduce((acc, row) => acc + (insumos.find(i => i.id === row.insumoId)?.valor || 0) * row.cantidad, 0) || 0;
+            const activeInsumos = serviceInsumos[activeService] || [];
+            const insumosFiltered = activeInsumos.filter(row => row.insumoId !== 'multiplier');
+            const multiplierRow = activeInsumos.find(row => row.insumoId === 'multiplier');
+            const currentPackageMultiplier = multiplierRow ? multiplierRow.cantidad : 1;
+            const insumosTotal = insumosFiltered.reduce((acc, row) => acc + (insumos.find(i => i.id === row.insumoId)?.valor || 0) * row.cantidad, 0) * currentPackageMultiplier;
             
             const activeServiceDistribution = calculatedDistribution.find(item => item.name.toLowerCase() === activeService.toLowerCase());
             const activeServiceCostPerSession = activeServiceDistribution 
