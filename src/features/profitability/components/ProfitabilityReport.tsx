@@ -1201,6 +1201,16 @@ export function ProfitabilityReport() {
                               <span className="cursor-help border-b border-dashed border-slate-350 pb-0.5">Horas Sem.</span>
                             </NeumorphicExplanationTooltip>
                           </th>
+                          <th className="pb-1 w-32 text-right pr-2">
+                            <NeumorphicExplanationTooltip
+                              title="Sueldo del Período"
+                              formula="Sueldo Base × Factor de Período"
+                              text="Sueldo base proporcional calculado para el rango de fechas seleccionado en base a los días hábiles laborables."
+                              position="bottom"
+                            >
+                              <span className="cursor-help border-b border-dashed border-slate-350 pb-0.5 text-indigo-650">Sueldo Período</span>
+                            </NeumorphicExplanationTooltip>
+                          </th>
                           <th className="pb-1 w-24 text-center">
                             <NeumorphicExplanationTooltip
                               title="Minutos del Periodo"
@@ -1260,6 +1270,7 @@ export function ProfitabilityReport() {
                           const workerMins = getPeriodMinutes(worker.weeklyHours);
                           const minsMes = workerMins > 0 ? workerMins : 1;
                           const pricePerMinute = salary / minsMes;
+                          const workerSalaryPeriod = salary * periodMonthFactor;
 
                           return (
                             <tr key={worker.id} className="group">
@@ -1305,6 +1316,17 @@ export function ProfitabilityReport() {
                                       className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[11px] font-black text-slate-700 text-center tabular-nums"
                                     />
                                     <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                                  </div>
+                                </NeumorphicExplanationTooltip>
+                              </td>
+                              <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-32 pr-2">
+                                <NeumorphicExplanationTooltip
+                                  title="Sueldo del Período"
+                                  formula={`$${workerSalaryPeriod.toFixed(1)}`}
+                                  text="Sueldo base prorrateado para el rango de fechas seleccionado en base a los días hábiles de trabajo (excluyendo domingos)."
+                                >
+                                  <div className="max-w-[100px] ml-auto bg-indigo-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1 border border-indigo-200/30 text-right text-[11px] font-black text-indigo-600 tabular-nums">
+                                    {formatCurrency(workerSalaryPeriod)}
                                   </div>
                                 </NeumorphicExplanationTooltip>
                               </td>
@@ -1364,6 +1386,7 @@ export function ProfitabilityReport() {
                         {/* Fila de Totales por Dependencia */}
                         {(() => {
                           const safeMinsNoTrabaja = Math.max(0, totalMinsNoTrabaja);
+                          const depSalaryPeriod = dep.staff.reduce((acc, w) => acc + ((w.salary || 0) * periodMonthFactor), 0);
                           return (
                           <tr className="bg-slate-200/40">
                             <td className="p-2 pl-6 rounded-l-xl text-[10px] font-black text-slate-500 uppercase tracking-wider">
@@ -1373,6 +1396,14 @@ export function ProfitabilityReport() {
                               {formatCurrency(totalSalary)}
                             </td>
                             <td className="p-2 text-center text-[11px] font-black text-slate-500"></td>
+                            <td className="p-2 text-right text-[11px] font-black text-indigo-700 pr-2 tabular-nums">
+                              <NeumorphicExplanationTooltip
+                                title="Total Sueldo del Período"
+                                text="La suma de los sueldos del período prorrateados de todos los profesionales de esta dependencia."
+                              >
+                                <span>{formatCurrency(depSalaryPeriod)}</span>
+                              </NeumorphicExplanationTooltip>
+                            </td>
                             <td className="p-2 text-center text-[11px] font-black text-slate-500">
                               <NeumorphicExplanationTooltip
                                 title="Total Minutos Disponibles"
