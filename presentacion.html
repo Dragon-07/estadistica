@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Holística - Propuesta de Optimización y Rentabilidad</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons (CDN) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-light: #e6e7ee;
+      --text-dark: #2d3748;
+      --text-gray: #718096;
+      --blue-cobalt: #0f44bb;
+      --blue-pastel: #b3ccf1;
+      --blue-shadow: #9cb2ce;
+      --white: #ffffff;
+      --green-emerald: #10b981;
+      --red-soft: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+    }
+
+    /* Estilo Neumórfico General */
+    .neumorphic-flat {
+      background: var(--bg-light);
+      box-shadow: 9px 9px 16px #bebebe, -9px -9px 16px #ffffff;
+      border-radius: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .neumorphic-inset {
+      background: var(--bg-light);
+      box-shadow: inset 5px 5px 10px #b8b9be, inset -5px -5px 10px #ffffff;
+      border-radius: 1.5rem;
+    }
+
+    .neumorphic-inset-blue {
+      background: var(--blue-pastel);
+      box-shadow: inset 4px 4px 8px var(--blue-shadow), inset -4px -4px 8px #ffffff;
+      border-radius: 1.5rem;
+    }
+
+    /* Animaciones */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse-soft {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 9px 9px 16px #bebebe, -9px -9px 16px #ffffff;
+      }
+      50% {
+        transform: scale(1.02);
+        box-shadow: 12px 12px 24px #b2b2b2, -12px -12px 24px #ffffff;
+      }
+    }
+
+    .animate-fade-in {
+      animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .scroll-trigger {
+      opacity: 0;
+      transform: translateY(45px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .scroll-trigger.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Presentación Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      padding: 3rem 1rem;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      border-radius: 2rem;
+      background: var(--bg-light);
+      box-shadow: 6px 6px 12px #bebebe, -6px -6px 12px #ffffff;
+      margin-bottom: 2rem;
+      color: var(--blue-cobalt);
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      line-height: 1.1;
+      color: var(--text-dark);
+      max-width: 800px;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, var(--text-dark) 30%, var(--blue-cobalt));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--text-gray);
+      max-width: 600px;
+      margin-bottom: 3rem;
+      line-height: 1.6;
+    }
+
+    .btn-primary {
+      padding: 1.2rem 2.5rem;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--white);
+      background: var(--blue-cobalt);
+      border: none;
+      border-radius: 1.5rem;
+      box-shadow: 4px 4px 10px rgba(15, 68, 187, 0.3), -4px -4px 10px #ffffff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 6px 6px 15px rgba(15, 68, 187, 0.4), -6px -6px 15px #ffffff;
+    }
+
+    /* Módulo Explicativo (Sección Tarjeta de Tratamiento) */
+    .section-title {
+      font-size: 2.2rem;
+      text-align: center;
+      margin-bottom: 1rem;
+      color: var(--text-dark);
+      background: linear-gradient(135deg, var(--text-dark) 50%, var(--blue-cobalt));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: var(--text-gray);
+      font-size: 1.05rem;
+      margin-bottom: 4rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    .grid-benefits {
+      display: grid;
+      grid-template-cols: 1fr;
+      gap: 3rem;
+      margin-bottom: 6rem;
+    }
+
+    @media (min-width: 768px) {
+      .grid-benefits {
+        grid-template-cols: 1.2fr 1fr;
+        align-items: center;
+      }
+    }
+
+    /* Simulación Visual de la Tarjeta del Programa */
+    .card-simulator {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: var(--bg-light);
+      border-radius: 2.5rem;
+      box-shadow: 12px 12px 24px #bebebe, -12px -12px 24px #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      position: relative;
+    }
+
+    .card-header-sim {
+      padding: 1rem;
+      background: var(--bg-light);
+      box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff;
+      border-radius: 1.2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .card-header-sim h4 {
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      color: #4a5568;
+    }
+
+    .sim-row {
+      display: flex;
+      align-items: stretch;
+      margin-bottom: 0.8rem;
+    }
+
+    .sim-label {
+      background: var(--bg-light);
+      box-shadow: 3px 3px 6px #bebebe, -3px -3px 6px #ffffff;
+      padding: 0.75rem 1.2rem;
+      border-radius: 1rem 0 0 1rem;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: #718096;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .sim-value-box {
+      background: var(--bg-light);
+      box-shadow: inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff;
+      padding: 0.75rem 1.2rem;
+      border-radius: 0 1rem 1rem 0;
+      width: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 0.9rem;
+      font-weight: 800;
+      gap: 0.2rem;
+    }
+
+    /* La fila mágica */
+    .sim-row-magic .sim-label {
+      background: var(--bg-light);
+      border-right: none;
+    }
+
+    .sim-row-magic .sim-value-box {
+      background: var(--blue-pastel);
+      box-shadow: inset 3px 3px 6px var(--blue-shadow), inset -3px -3px 6px #ffffff;
+      color: var(--blue-cobalt) !important;
+      animation: pulse-soft 3s infinite ease-in-out;
+    }
+
+    .sim-row-magic span {
+      color: var(--blue-cobalt) !important;
+    }
+
+    /* Explicaciones de Beneficios */
+    .benefits-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .benefit-item {
+      display: flex;
+      gap: 1.2rem;
+      align-items: flex-start;
+      padding: 1.5rem;
+      border-radius: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .benefit-item:hover {
+      box-shadow: 4px 4px 10px #bebebe, -4px -4px 10px #ffffff;
+      transform: translateX(5px);
+    }
+
+    .benefit-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 50px;
+      border-radius: 1.2rem;
+      background: var(--bg-light);
+      box-shadow: 4px 4px 8px #bebebe, -4px -4px 8px #ffffff;
+      color: var(--blue-cobalt);
+      flex-shrink: 0;
+    }
+
+    .benefit-text h3 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-dark);
+    }
+
+    .benefit-text p {
+      font-size: 0.95rem;
+      color: var(--text-gray);
+      line-content: 1.5;
+    }
+
+    /* Widget Interactivo del ROI */
+    .roi-section {
+      padding: 4rem 2rem;
+      margin-bottom: 6rem;
+      text-align: center;
+    }
+
+    .roi-card {
+      max-width: 700px;
+      margin: 2rem auto 0 auto;
+      padding: 2.5rem;
+      background: var(--bg-light);
+      border-radius: 2.5rem;
+      box-shadow: 12px 12px 24px #bebebe, -12px -12px 24px #ffffff;
+    }
+
+    .roi-slider-container {
+      margin: 2.5rem 0;
+    }
+
+    .roi-slider-label {
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 1rem;
+      display: block;
+      font-size: 1.1rem;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+
+    input[type=range]:focus {
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 12px;
+      cursor: pointer;
+      background: var(--bg-light);
+      box-shadow: inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff;
+      border-radius: 6px;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      height: 28px;
+      width: 28px;
+      border-radius: 50%;
+      background: var(--blue-cobalt);
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -8px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2), -2px -2px 5px #ffffff;
+      transition: transform 0.1s ease;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    .roi-results-grid {
+      display: grid;
+      grid-template-cols: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .roi-result-card {
+      padding: 1.5rem;
+      background: var(--bg-light);
+      box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff;
+      border-radius: 1.5rem;
+    }
+
+    .roi-result-card.highlight {
+      background: var(--blue-pastel);
+      box-shadow: inset 3px 3px 6px var(--blue-shadow), inset -3px -3px 6px #white;
+    }
+
+    .roi-result-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-gray);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .roi-result-card.highlight .roi-result-title {
+      color: #55719e;
+    }
+
+    .roi-result-value {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--blue-cobalt);
+    }
+
+    .roi-result-card.highlight .roi-result-value {
+      color: var(--blue-cobalt);
+    }
+
+    /* Tabla de Propuesta Económica */
+    .pricing-container {
+      display: grid;
+      grid-template-cols: 1fr;
+      gap: 3rem;
+      max-width: 900px;
+      margin: 3rem auto 0 auto;
+    }
+
+    @media (min-width: 768px) {
+      .pricing-container {
+        grid-template-cols: 1fr 1.1fr;
+        align-items: stretch;
+      }
+    }
+
+    .price-card {
+      padding: 3rem 2rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .price-card.standard {
+      opacity: 0.75;
+    }
+
+    .price-card.family {
+      border: 2px solid var(--blue-pastel);
+      animation: pulse-soft 5s infinite ease-in-out;
+    }
+
+    .badge-family {
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--blue-cobalt);
+      color: var(--white);
+      padding: 0.5rem 1.5rem;
+      border-radius: 1rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      box-shadow: 2px 4px 10px rgba(15, 68, 187, 0.3);
+    }
+
+    .price-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .price-header h3 {
+      font-size: 1.4rem;
+      color: var(--text-gray);
+      margin-bottom: 1rem;
+    }
+
+    .price-card.family .price-header h3 {
+      color: var(--blue-cobalt);
+    }
+
+    .price-amount {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--text-dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .price-card.standard .price-amount {
+      text-decoration: line-through;
+      color: var(--text-gray);
+    }
+
+    .price-card.family .price-amount {
+      font-size: 2.8rem;
+      color: var(--blue-cobalt);
+      background: linear-gradient(135deg, var(--blue-cobalt) 60%, #1e5de9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .price-features {
+      list-style: none;
+      margin-bottom: 2.5rem;
+      flex-grow: 1;
+    }
+
+    .price-features li {
+      padding: 0.8rem 0;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      font-size: 0.95rem;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .price-features li i {
+      color: var(--blue-cobalt);
+      flex-shrink: 0;
+    }
+
+    .price-features li.disabled {
+      color: var(--text-gray);
+      opacity: 0.5;
+    }
+
+    .price-features li.disabled i {
+      color: var(--text-gray);
+    }
+
+    .price-footer {
+      text-align: center;
+    }
+
+    .price-btn {
+      width: 100%;
+      padding: 1.1rem;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      border: none;
+      border-radius: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+
+    .price-card.standard .price-btn {
+      background: transparent;
+      box-shadow: inset 2px 2px 5px #b8b9be, inset -2px -2px 5px #ffffff;
+      color: var(--text-gray);
+      cursor: not-allowed;
+    }
+
+    .price-card.family .price-btn {
+      background: var(--blue-cobalt);
+      color: var(--white);
+      box-shadow: 4px 4px 10px rgba(15, 68, 187, 0.25);
+    }
+
+    .price-card.family .price-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 5px 8px 15px rgba(15, 68, 187, 0.35);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 4rem 1.5rem;
+      color: var(--text-gray);
+      font-size: 0.9rem;
+      border-top: 1px solid rgba(0,0,0,0.05);
+      margin-top: 6rem;
+    }
+
+    footer p {
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Hero Section -->
+    <section class="hero animate-fade-in">
+      <div class="logo-container">
+        <i data-lucide="activity" style="width: 40px; height: 40px;"></i>
+      </div>
+      <h1>Optimización, Control y Rentabilidad Real para Holística</h1>
+      <p>Un potente tablero de control financiero diseñado a medida que te muestra dónde ganas dinero, dónde hay pérdidas y cómo optimizar cada centavo de tus servicios médicos.</p>
+      <a href="#demostracion" class="btn-primary">
+        Conocer el Módulo
+        <i data-lucide="chevron-down"></i>
+      </a>
+    </section>
+
+    <!-- Explicación Visual y Beneficios -->
+    <section id="demostracion" class="scroll-trigger" style="padding: 4rem 0;">
+      <h2 class="section-title">El Corazón del Análisis: La Tarjeta de Sesión</h2>
+      <p class="section-subtitle">Hemos rediseñado por completo el visor de tratamientos para brindarte un diagnóstico visual exacto de tus finanzas en segundos.</p>
+      
+      <div class="grid-benefits">
+        
+        <!-- Tarjeta de Tratamiento Interactiva simulada -->
+        <div class="card-simulator">
+          <div class="card-header-sim">
+            <h4>ACUPUNTURA</h4>
+          </div>
+          <div class="space-y-3">
+            <div class="sim-row">
+              <div class="sim-label">$ INSUMOS</div>
+              <div class="sim-value-box" style="color: #ed8936;">$ 1.200,0</div>
+            </div>
+            <div class="sim-row">
+              <div class="sim-label">$ PERSONAL</div>
+              <div class="sim-value-box" style="color: #3182ce;">$ 23.613,3</div>
+            </div>
+            <div class="sim-row">
+              <div class="sim-label">$ ADMINISTRATIVOS</div>
+              <div class="sim-value-box" style="color: #38a169;">$ 3.246,8</div>
+            </div>
+            <div class="sim-row">
+              <div class="sim-label">VALOR COBRADO</div>
+              <div class="sim-value-box" style="color: #4a5568; font-weight: 900;">$ 40.000,0</div>
+            </div>
+            <div class="sim-row">
+              <div class="sim-label">COSTO POR SESIÓN</div>
+              <div class="sim-value-box" style="color: #4a5568; font-weight: 900;">$ 28.060,1</div>
+            </div>
+            <!-- La Fila Especial en Azul Cobalto -->
+            <div class="sim-row sim-row-magic">
+              <div class="sim-label" style="color: var(--blue-cobalt); font-weight: 900;">GANANCIA POR SESIÓN</div>
+              <div class="sim-value-box">
+                <span style="font-weight: 900;">$ 11.939,9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Explicación de Beneficios -->
+        <div class="benefits-content">
+          
+          <div class="benefit-item">
+            <div class="benefit-icon">
+              <i data-lucide="trending-up"></i>
+            </div>
+            <div class="benefit-text">
+              <h3>Ganancia Neta por Sesión Visible al Instante</h3>
+              <p>El recuadro especial azul pastel con números en azul cobalto resalta el verdadero margen neto de cada tratamiento individual, alertando en rojo si algún servicio produce pérdidas.</p>
+            </div>
+          </div>
+
+          <div class="benefit-item">
+            <div class="benefit-icon">
+              <i data-lucide="dollar-sign"></i>
+            </div>
+            <div class="benefit-text">
+              <h3>Prorrateo Científico de Personal (Plan B)</h3>
+              <p>Divide los salarios mensuales en base a los días hábiles del período (lunes a sábado) de forma milimétrica, revelando el costo real de inactividad de cada profesional.</p>
+            </div>
+          </div>
+
+          <div class="benefit-item">
+            <div class="benefit-icon">
+              <i data-lucide="pie-chart"></i>
+            </div>
+            <div class="benefit-text">
+              <h3>Distribución de Costos Fijos (Plan C)</h3>
+              <p>Distribuye el arriendo, internet, recepcionistas y energía (50% por volumen de sesiones y 50% por cuota de ingresos brutos), logrando una precisión contable absoluta.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Widget del Retorno de Inversión (ROI) -->
+    <section class="roi-section scroll-trigger neumorphic-flat">
+      <h2 class="section-title">¿Cómo se paga sola esta herramienta?</h2>
+      <p class="section-subtitle">Simula cuánto dinero puedes recuperar al detectar y corregir pérdidas invisibles en tus tratamientos clínicos mensuales.</p>
+      
+      <div class="roi-card">
+        <div class="roi-slider-container">
+          <label for="roi-slider" class="roi-slider-label">
+            Pérdida diaria detectada y corregida: <span id="roi-slider-val" style="color: var(--blue-cobalt); font-weight: 800;">$50.000</span> COP
+          </label>
+          <input type="range" id="roi-slider" min="10000" max="250000" step="5000" value="50000">
+        </div>
+
+        <div class="roi-results-grid">
+          <div class="roi-result-card">
+            <div class="roi-result-title">Ahorro en 1 Mes (26 Días Hábiles)</div>
+            <div class="roi-result-value" id="roi-month">$1'300.000</div>
+          </div>
+          <div class="roi-result-card highlight">
+            <div class="roi-result-title">Ahorro en 6 Meses (Mitad de Año)</div>
+            <div class="roi-result-value" id="roi-half-year" style="color: var(--blue-cobalt);">$7'800.000</div>
+          </div>
+        </div>
+        <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--text-gray); font-style: italic;">*Cálculo proporcional basado en la estructura de 26 días laborables mensuales configurada en el sistema.</p>
+      </div>
+    </section>
+
+    <!-- Propuesta Económica -->
+    <section class="scroll-trigger">
+      <h2 class="section-title">Propuesta de Inversión Especial</h2>
+      <p class="section-subtitle">Valores exclusivos y facilidades de pago para impulsar la gestión de Holística.</p>
+      
+      <div class="pricing-container">
+        
+        <!-- Tarjeta de Mercado -->
+        <div class="price-card standard neumorphic-flat">
+          <div class="price-header">
+            <h3>Valor Corporativo (Mercado)</h3>
+            <div class="price-amount">$ 6'500.000</div>
+            <p style="color: var(--text-gray); font-size: 0.85rem;">COP Pago Único</p>
+          </div>
+          <ul class="price-features">
+            <li><i data-lucide="check" style="width: 18px; height: 18px;"></i> Tablero de control de costos</li>
+            <li><i data-lucide="check" style="width: 18px; height: 18px;"></i> Lógica de prorrateo temporal</li>
+            <li><i data-lucide="check" style="width: 18px; height: 18px;"></i> Exportación a CSV</li>
+            <li class="disabled"><i data-lucide="x" style="width: 18px; height: 18px;"></i> Descuento familiar</li>
+            <li class="disabled"><i data-lucide="x" style="width: 18px; height: 18px;"></i> Facilidades de pago</li>
+            <li class="disabled"><i data-lucide="x" style="width: 18px; height: 18px;"></i> Soporte post-entrega de 3 meses</li>
+          </ul>
+          <div class="price-footer">
+            <button class="price-btn" disabled>Valor Regular</button>
+          </div>
+        </div>
+
+        <!-- Tarjeta Especial Familiar -->
+        <div class="price-card family neumorphic-flat" style="background: rgba(255,255,255,0.4);">
+          <div class="badge-family">DESCUENTO ESPECIAL FAMILIAR</div>
+          <div class="price-header">
+            <h3>Inversión para Tía</h3>
+            <div class="price-amount" style="font-size: 2.5rem;">$ 2'500.000</div>
+            <p style="color: var(--blue-cobalt); font-weight: 700; font-size: 0.9rem;">COP (Opcional: 3 cuotas de $833.000)</p>
+          </div>
+          <ul class="price-features">
+            <li><i data-lucide="check" style="width: 18px; height: 18px;"></i> <b>Módulo Completo de Rentabilidad</b></li>
+            <li><i data-lucide="check" style="width: 18px; height: 18px;"></i> Lógica de Prorrateo Plan B & Plan C</li>
+            <li><i data-lucide="check" style="width: 18px; height: 18px;"></i> Interfaz Premium Neumórfica (Gama Alta)</li>
+            <li><i data-lucide="check" style="width: 18px; height: 18px;"></i> Exportación de Reportes en 1 clic</li>
+            <li><i data-lucide="check" style="width: 18px; height: 18px;"></i> <b>Facilidades de Pago (3 meses)</b></li>
+            <li><i data-lucide="check" style="width: 18px; height: 18px;"></i> <b>Soporte Técnico de 3 Meses Gratis</b></li>
+          </ul>
+          <div class="price-footer">
+            <button class="price-btn" onclick="document.getElementById('contacto').scrollIntoView();">Aceptar Propuesta Especial</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Sección de Contacto/Cierre -->
+    <section id="contacto" class="scroll-trigger text-center" style="margin-top: 6rem; padding: 4rem 2rem;">
+      <div class="neumorphic-flat" style="max-width: 600px; margin: 0 auto; padding: 3rem 2rem;">
+        <i data-lucide="heart" style="width: 48px; height: 48px; color: var(--blue-cobalt); margin-bottom: 1.5rem;"></i>
+        <h2 style="font-size: 1.8rem; margin-bottom: 1rem;">¡Hagamos crecer a Holística!</h2>
+        <p style="color: var(--text-gray); line-height: 1.6; margin-bottom: 2rem;">
+          Este módulo está completamente programado, validado técnicamente y listo para ser desplegado. Es la herramienta definitiva para que Holística alcance su máximo potencial operativo y comercial.
+        </p>
+        <div style="font-weight: 700; color: var(--blue-cobalt); font-size: 1.1rem;">
+          Desarrollado con dedicación y el apoyo de Inteligencia Artificial de Vanguardia.
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>© 2026 Holística - Módulo de Analítica y Finanzas</p>
+    <p>Desarrollado en Colombia con Inteligencia Artificial</p>
+  </footer>
+
+  <script>
+    // Inicializar Iconos Lucide
+    lucide.createIcons();
+
+    // Animaciones al hacer Scroll (IntersectionObserver)
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        }
+      });
+    }, {
+      threshold: 0.15
+    });
+
+    document.querySelectorAll('.scroll-trigger').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Widget Interactivo de ROI
+    const slider = document.getElementById('roi-slider');
+    const sliderVal = document.getElementById('roi-slider-val');
+    const roiMonth = document.getElementById('roi-month');
+    const roiHalf = document.getElementById('roi-half-year');
+
+    function formatCOP(value) {
+      return '$' + value.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace(/,/g, '.');
+    }
+
+    slider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value);
+      sliderVal.textContent = formatCOP(val);
+
+      const monthSaving = val * 26;
+      const halfYearSaving = monthSaving * 6;
+
+      roiMonth.textContent = formatCOP(monthSaving);
+      roiHalf.textContent = formatCOP(halfYearSaving);
+    });
+  </script>
+</body>
+</html>
