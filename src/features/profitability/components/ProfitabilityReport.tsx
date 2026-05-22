@@ -137,6 +137,7 @@ export function ProfitabilityReport() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
   const [weeklyHours, setWeeklyHours] = useState<number>(44);
+  const [editingKw, setEditingKw] = useState<{ serviceName: string; id: string; value: string } | null>(null);
   
   const [serviceRevenueStats, setServiceRevenueStats] = useState<Record<string, { count: number, revenue: number }>>({});
   const fetchedStats = useRef<Set<string>>(new Set());
@@ -501,6 +502,16 @@ export function ProfitabilityReport() {
     const energiaAdmin = adminData.find(a => a.id === '1' || a.detail.toUpperCase().includes('ENERGÍA'));
     return energiaAdmin && energiaAdmin.units > 0 ? energiaAdmin.cost / energiaAdmin.units : 0;
   }, [adminData]);
+
+  // Consumo acumulado de energía en Kw por todos los tratamientos en el período
+  const totalKwConsumidoTratamientos = useMemo(() => {
+    return activeDashboardTreatments.reduce((acc, t) => {
+      const energiaRow = (serviceAdminCosts[t] || []).find(r => r.id === 'energia' || r.adminId === '1');
+      const kw = energiaRow ? (energiaRow.kw || 0) : 0;
+      const count = serviceRevenueStats[t]?.count || 0;
+      return acc + (kw * count);
+    }, 0);
+  }, [activeDashboardTreatments, serviceAdminCosts, serviceRevenueStats]);
 
   // Matriz de tiempos acumulados trabajados por dependencia y tratamiento
   const timeMatrix = useMemo(() => {
@@ -1681,7 +1692,9 @@ export function ProfitabilityReport() {
                 <tbody>
                   {adminData.map((item) => {
                     const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
-                    const toDistribute = (item.units - item.consumption) * pricePerUnit;
+                    const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
+                    const consumption = isEnergia ? totalKwConsumidoTratamientos : item.consumption;
+                    const toDistribute = (item.units - consumption) * pricePerUnit;
 
                     return (
                       <tr key={item.id} className="group">
@@ -1724,19 +1737,31 @@ export function ProfitabilityReport() {
                           {pricePerUnit.toFixed(2)}
                         </td>
                         <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
-                          <div className="relative group/input max-w-[80px] mx-auto">
-                            <input
-                              type="number"
-                              value={item.consumption}
-                              onChange={(e) => handleUpdateAdmin(item.id, 'consumption', parseFloat(e.target.value) || 0)}
-                              className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-center text-[11px] font-black text-orange-600"
-                            />
-                            <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 opacity-30" size={8} />
-                          </div>
+                          {isEnergia ? (
+                            <NeumorphicExplanationTooltip
+                              title="Consumo de Energía Kw"
+                              formula="∑ (Kw Tratamiento × Sesiones)"
+                              text="Calculado automáticamente a partir de los Kw asignados en cada tratamiento y sus sesiones correspondientes en el período."
+                            >
+                              <div className="max-w-[80px] mx-auto bg-emerald-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1.5 border border-emerald-200/30 text-center text-[11px] font-black text-emerald-600 tabular-nums">
+                                {totalKwConsumidoTratamientos}
+                              </div>
+                            </NeumorphicExplanationTooltip>
+                          ) : (
+                            <div className="relative group/input max-w-[80px] mx-auto">
+                              <input
+                                type="number"
+                                value={item.consumption}
+                                onChange={(e) => handleUpdateAdmin(item.id, 'consumption', parseFloat(e.target.value) || 0)}
+                                className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-center text-[11px] font-black text-orange-600"
+                              />
+                              <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 opacity-30" size={8} />
+                            </div>
+                          )}
                         </td>
                         <td className="p-2 text-right pr-6 w-36">
                           <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-blue-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-blue-600 inline-block min-w-[100px] tabular-nums">
-                            {formatCurrency(toDistribute)}
+                             {formatCurrency(toDistribute)}
                           </div>
                         </td>
                         <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
@@ -1764,11 +1789,101 @@ export function ProfitabilityReport() {
                 <span className="text-blue-600 text-lg font-black tracking-tighter">
                   {formatCurrency(adminData.reduce((acc, item) => {
                     const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
-                    return acc + ((item.units - item.consumption) * pricePerUnit);
+                    const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
+                    const consumption = isEnergia ? totalKwConsumidoTratamientos : item.consumption;
+                    return acc + ((item.units - consumption) * pricePerUnit);
                   }, 0))}
                 </span>
               </div>
             </div>
+
+            {/* Matriz de Energía Acumulada (Kw) */}
+            {(() => {
+              if (activeDashboardTreatments.length === 0) return null;
+
+              return (
+                <div className="mt-8 pt-6 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <h4 className="text-xs font-black text-emerald-800 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
+                    <div className="w-2 h-4 bg-emerald-500 rounded-full"></div>
+                    Desglose de Consumo de Energía por Tratamiento (Kw)
+                  </h4>
+                  <div className="bg-[#e6e7ee] rounded-[2rem] p-4 shadow-[inset_8px_8px_16px_#b8b9be,inset_-8px_-8px_16px_#ffffff] overflow-x-auto border border-white/40">
+                    <table className="w-full text-left border-collapse min-w-[500px]">
+                      <thead>
+                        <tr>
+                          <th className="py-2.5 px-3 font-black text-emerald-700 uppercase text-[10px] tracking-widest w-40 bg-emerald-500/10 rounded-tl-2xl border-b-2 border-r-2 border-white/50">Consumo Acumulado</th>
+                          {activeDashboardTreatments.map((t) => (
+                            <th key={t} className="py-2.5 px-3 font-black text-emerald-700 uppercase text-[10px] tracking-widest text-center bg-emerald-500/10 border-b-2 border-white/50 border-r-2 border-white/50">
+                              {t}
+                            </th>
+                          ))}
+                          <th className="py-2.5 px-3 font-black text-emerald-850 uppercase text-[10px] tracking-widest text-center bg-emerald-500/20 rounded-tr-2xl border-b-2 border-white/50">
+                            Kw total
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Fila 1: Kw por Sesión */}
+                        <tr className="group/row transition-all hover:bg-white/40">
+                          <td className="py-2 px-3 font-black text-slate-600 bg-emerald-500/10 border-r-2 border-white/50 border-b-2 border-white/50 uppercase text-[10px] tracking-tight">
+                            Kw por Sesión
+                          </td>
+                          {activeDashboardTreatments.map((t) => {
+                            const energiaRow = (serviceAdminCosts[t] || []).find(r => r.id === 'energia' || r.adminId === '1');
+                            const kw = energiaRow ? (energiaRow.kw || 0) : 0;
+                            return (
+                              <td key={t} className="py-2 px-3 text-center font-bold text-slate-600 border-b border-white/50 border-r border-slate-300/20 text-[11px] tabular-nums">
+                                {kw > 0 ? `${kw} Kw` : '-'}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 px-3 text-center font-black text-emerald-800 bg-emerald-500/10 border-b-2 border-white/50 text-[11px]">-</td>
+                        </tr>
+
+                        {/* Fila 2: Sesiones en Período */}
+                        <tr className="group/row transition-all hover:bg-white/40">
+                          <td className="py-2 px-3 font-black text-slate-600 bg-emerald-500/10 border-r-2 border-white/50 border-b-2 border-white/50 uppercase text-[10px] tracking-tight">
+                            N° de Sesiones
+                          </td>
+                          {activeDashboardTreatments.map((t) => {
+                            const count = serviceRevenueStats[t]?.count || 0;
+                            return (
+                              <td key={t} className="py-2 px-3 text-center font-bold text-slate-600 border-b border-white/50 border-r border-slate-300/20 text-[11px] tabular-nums">
+                                {count}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 px-3 text-center font-black text-emerald-800 bg-emerald-500/10 border-b-2 border-white/50 text-[11px] tabular-nums">
+                            {activeDashboardTreatments.reduce((acc, t) => acc + (serviceRevenueStats[t]?.count || 0), 0)}
+                          </td>
+                        </tr>
+
+                        {/* Fila 3: Kw Acumulado */}
+                        <tr className="group/row transition-all hover:bg-white/40">
+                          <td className="py-2 px-3 font-black text-emerald-700 bg-emerald-500/10 border-r-2 border-white/50 rounded-bl-2xl uppercase text-[10px] tracking-tight">
+                            Consumo Total (Kw)
+                          </td>
+                          {activeDashboardTreatments.map((t) => {
+                            const energiaRow = (serviceAdminCosts[t] || []).find(r => r.id === 'energia' || r.adminId === '1');
+                            const kw = energiaRow ? (energiaRow.kw || 0) : 0;
+                            const count = serviceRevenueStats[t]?.count || 0;
+                            const totalKw = kw * count;
+                            return (
+                              <td key={t} className="py-2 px-3 text-center font-black text-emerald-600 border-r border-slate-300/20 text-[12px] tabular-nums">
+                                {totalKw > 0 ? `${totalKw} Kw` : ''}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 px-3 text-center font-black text-emerald-850 bg-emerald-500/25 rounded-br-2xl text-[13px] tabular-nums">
+                            {totalKwConsumidoTratamientos} Kw
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -2114,6 +2229,9 @@ export function ProfitabilityReport() {
                   const energiaRow = (serviceAdminCosts[activeService] || []).find(r => r.id === 'energia' || r.adminId === '1') || { id: 'energia', adminId: '1', kw: 0, valor: 0 };
                   const calculatedValor = (energiaRow.kw || 0) * precioPorKw;
                   
+                  const isEditingThis = editingKw && editingKw.serviceName === activeService && editingKw.id === energiaRow.id;
+                  const inputValue = isEditingThis ? editingKw.value : (energiaRow.kw !== undefined ? energiaRow.kw : 0);
+                  
                   return (
                     <div key={energiaRow.id} className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
                       <span className="flex-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight">ENERGÍA</span>
@@ -2122,8 +2240,16 @@ export function ProfitabilityReport() {
                         <div className="relative group/qty w-14">
                           <input 
                             type="number"
-                            value={energiaRow.kw || 0}
-                            onChange={(e) => handleUpdateServiceAdminKw(activeService, energiaRow.id, parseFloat(e.target.value) || 0)}
+                            step="any"
+                            inputMode="decimal"
+                            value={inputValue}
+                            onFocus={() => setEditingKw({ serviceName: activeService, id: energiaRow.id, value: energiaRow.kw !== undefined ? String(energiaRow.kw) : '0' })}
+                            onChange={(e) => {
+                              const valStr = e.target.value;
+                              setEditingKw({ serviceName: activeService, id: energiaRow.id, value: valStr });
+                              handleUpdateServiceAdminKw(activeService, energiaRow.id, parseFloat(valStr) || 0);
+                            }}
+                            onBlur={() => setEditingKw(null)}
                             className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
                           />
                         </div>
