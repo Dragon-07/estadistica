@@ -2394,9 +2394,13 @@ export function ProfitabilityReport() {
                     <div className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] px-4 py-2 rounded-l-xl flex-1 flex items-center">
                       <span className="text-[9.5px] font-black text-slate-500 uppercase tracking-tighter leading-none">{row.label}</span>
                     </div>
-                    <div className="bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] px-4 py-2 rounded-r-xl w-28 flex items-center justify-end gap-1">
-                      <span className={`text-[11.5px] font-black opacity-60 ${row.color}`}>$</span>
-                      <span className={`text-[13px] font-black ${row.color}`}>{row.value.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</span>
+                    <div className={`${
+                      row.label === 'GANANCIA POR SESIÓN'
+                        ? 'bg-[#b3ccf1] shadow-[inset_3px_3px_6px_#9cb2ce,inset_-3px_-3px_6px_#ffffff]'
+                        : 'bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]'
+                    } px-4 py-2 rounded-r-xl w-28 flex items-center justify-end gap-1`}>
+                      <span className={`text-[11.5px] font-black opacity-60 ${row.label === 'GANANCIA POR SESIÓN' ? 'text-[#0f44bb]' : row.color}`}>$</span>
+                      <span className={`text-[13px] font-black ${row.label === 'GANANCIA POR SESIÓN' ? 'text-[#0f44bb]' : row.color}`}>{row.value.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</span>
                     </div>
                   </div>
                 ))}
