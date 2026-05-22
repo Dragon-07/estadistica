@@ -1693,8 +1693,10 @@ export function ProfitabilityReport() {
                   {adminData.map((item) => {
                     const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
                     const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
-                    const consumption = isEnergia ? totalKwConsumidoTratamientos : item.consumption;
-                    const toDistribute = (item.units - consumption) * pricePerUnit;
+                    const displayedConsumption = isEnergia ? (item.units - totalKwConsumidoTratamientos) : item.consumption;
+                    const toDistribute = isEnergia 
+                      ? (displayedConsumption * pricePerUnit) 
+                      : (item.units - item.consumption) * pricePerUnit;
 
                     return (
                       <tr key={item.id} className="group">
@@ -1739,12 +1741,12 @@ export function ProfitabilityReport() {
                         <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
                           {isEnergia ? (
                             <NeumorphicExplanationTooltip
-                              title="Consumo de Energía Kw"
-                              formula="∑ (Kw Tratamiento × Sesiones)"
-                              text="Calculado automáticamente a partir de los Kw asignados en cada tratamiento y sus sesiones correspondientes en el período."
+                              title="Energía Restante a Distribuir (Kw)"
+                              formula="Unidades Kw - Consumo Tratamientos"
+                              text="Calculado automáticamente: Kw totales facturados menos el consumo total de Kw acumulado por todos los tratamientos en el período."
                             >
                               <div className="max-w-[80px] mx-auto bg-emerald-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1.5 border border-emerald-200/30 text-center text-[11px] font-black text-emerald-600 tabular-nums">
-                                {totalKwConsumidoTratamientos}
+                                {Number(displayedConsumption.toFixed(2))}
                               </div>
                             </NeumorphicExplanationTooltip>
                           ) : (
@@ -1790,8 +1792,8 @@ export function ProfitabilityReport() {
                   {formatCurrency(adminData.reduce((acc, item) => {
                     const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
                     const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
-                    const consumption = isEnergia ? totalKwConsumidoTratamientos : item.consumption;
-                    return acc + ((item.units - consumption) * pricePerUnit);
+                    const displayedCons = isEnergia ? (item.units - totalKwConsumidoTratamientos) : item.consumption;
+                    return acc + (isEnergia ? (displayedCons * pricePerUnit) : ((item.units - item.consumption) * pricePerUnit));
                   }, 0))}
                 </span>
               </div>
