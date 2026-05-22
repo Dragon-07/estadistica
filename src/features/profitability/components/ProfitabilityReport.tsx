@@ -208,6 +208,12 @@ export function ProfitabilityReport() {
   const [distCurrentPage, setDistCurrentPage] = useState(1);
   const [distSortOrder, setDistSortOrder] = useState('allocMixedDesc');
 
+  // Estados para el Listado de Distribución (Plan C - Administrativo)
+  const [isAdminListOpen, setIsAdminListOpen] = useState(false);
+  const [adminDistSearchQuery, setAdminDistSearchQuery] = useState('');
+  const [adminDistCurrentPage, setAdminDistCurrentPage] = useState(1);
+  const [adminDistSortOrder, setAdminDistSortOrder] = useState('allocMixedDesc');
+
   // Estados dinámicos para los tratamientos
   const [availableTreatments, setAvailableTreatments] = useState<string[]>([]);
   const [activeDashboardTreatments, setActiveDashboardTreatments] = useState<string[]>(['acupuntura', 'TERAPIA NEURAL', 'SUERO VITAMINA C']);
@@ -594,6 +600,43 @@ export function ProfitabilityReport() {
       };
     });
   }, [distributionData, totalToDistribute]);
+
+  // Costo total administrativo no asignado a distribuir en la clínica
+  const totalAdminToDistribute = useMemo(() => {
+    return adminData.reduce((acc, item) => {
+      const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
+      const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
+      const displayedCons = isEnergia ? (item.units - totalKwConsumidoTratamientos) : item.consumption;
+      return acc + (isEnergia ? (displayedCons * pricePerUnit) : ((item.units - item.consumption) * pricePerUnit));
+    }, 0);
+  }, [adminData, totalKwConsumidoTratamientos]);
+
+  // Distribución del Plan C Administrativo por tratamiento
+  const calculatedAdminDistribution = useMemo(() => {
+    const totalSessions = distributionData.reduce((acc, item) => acc + item.count, 0);
+    const totalRevenue = distributionData.reduce((acc, item) => acc + item.revenue, 0);
+
+    return distributionData.map(item => {
+      const pctCount = totalSessions > 0 ? (item.count / totalSessions) : 0;
+      const pctRevenue = totalRevenue > 0 ? (item.revenue / totalRevenue) : 0;
+
+      const allocCount = totalAdminToDistribute * pctCount;
+      const allocRevenue = totalAdminToDistribute * pctRevenue;
+      const allocMixed = 0.5 * allocCount + 0.5 * allocRevenue;
+
+      return {
+        name: item.name,
+        count: item.count,
+        pctCount: pctCount * 100,
+        revenue: item.revenue,
+        pctRevenue: pctRevenue * 100,
+        allocCount,
+        allocRevenue,
+        allocMixed,
+        pctOfTotalAlloc: totalAdminToDistribute > 0 ? (allocMixed / totalAdminToDistribute) * 100 : 0
+      };
+    });
+  }, [distributionData, totalAdminToDistribute]);
 
   const handleUpdateInsumo = (id: string, field: keyof Insumo, value: string | number) => {
     setInsumos(prev => prev.map(item => 
@@ -1886,6 +1929,293 @@ export function ProfitabilityReport() {
                 </div>
               );
             })()}
+
+            {/* Desplegable Listado de distribución Administrativo */}
+            <div className="mt-6 flex flex-col gap-4">
+              <button
+                onClick={() => setIsAdminListOpen(!isAdminListOpen)}
+                className={`w-full py-4 px-6 rounded-2xl transition-all duration-300 flex items-center justify-between font-black text-sm active:scale-[0.99] bg-[#e6e7ee] ${
+                  isAdminListOpen 
+                    ? 'shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] text-emerald-700' 
+                    : 'shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] hover:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] text-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] transition-transform ${isAdminListOpen ? 'rotate-90 scale-90' : ''}`}>
+                    <Briefcase size={16} />
+                  </div>
+                  <span className="uppercase tracking-wider">Listado de distribución</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">
+                    {isAdminListOpen ? 'Ocultar listado' : 'Mostrar listado'}
+                  </span>
+                  <div className={`w-6 h-6 rounded-lg bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center text-emerald-600 transition-transform duration-300 ${isAdminListOpen ? 'rotate-180' : ''}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </div>
+                </div>
+              </button>
+
+              {isAdminListOpen && (() => {
+                // Filtrar por búsqueda
+                const filteredAdminDistribution = calculatedAdminDistribution.filter(item => 
+                  item.name.toLowerCase().includes(adminDistSearchQuery.toLowerCase())
+                );
+
+                // Ordenar
+                const sortedAdminDistribution = [...filteredAdminDistribution];
+                sortedAdminDistribution.sort((a, b) => {
+                  if (adminDistSortOrder === 'allocMixedDesc') return b.allocMixed - a.allocMixed;
+                  if (adminDistSortOrder === 'allocMixedAsc') return a.allocMixed - b.allocMixed;
+                  if (adminDistSortOrder === 'countDesc') return b.count - a.count;
+                  if (adminDistSortOrder === 'revenueDesc') return b.revenue - a.revenue;
+                  if (adminDistSortOrder === 'nameAsc') return a.name.localeCompare(b.name);
+                  return 0;
+                });
+
+                // Paginación
+                const itemsPerPage = 10;
+                const totalPages = Math.ceil(sortedAdminDistribution.length / itemsPerPage);
+                const paginatedAdminData = sortedAdminDistribution.slice(
+                  (adminDistCurrentPage - 1) * itemsPerPage,
+                  adminDistCurrentPage * itemsPerPage
+                );
+
+                const exportToAdminCSV = () => {
+                  if (sortedAdminDistribution.length === 0) return;
+
+                  const headers = [
+                    'N°',
+                    'Tratamiento Clinico',
+                    'Sesiones (Volumen)',
+                    '% Volumen',
+                    'Ingresos Brutos ($)',
+                    '% Ingresos',
+                    'Monto Volumen (50%)',
+                    'Monto Ingresos (50%)',
+                    'Plan C: Monto Final ($)',
+                    '% Total',
+                    'Costo por Sesión'
+                  ];
+
+                  const rows = sortedAdminDistribution.map((item, idx) => [
+                    idx + 1,
+                    item.name,
+                    item.count,
+                    item.pctCount.toFixed(4) + '%',
+                    item.revenue.toFixed(2),
+                    item.pctRevenue.toFixed(4) + '%',
+                    item.allocCount.toFixed(2),
+                    item.allocRevenue.toFixed(2),
+                    item.allocMixed.toFixed(2),
+                    item.pctOfTotalAlloc.toFixed(4) + '%',
+                    (item.count > 0 ? (item.allocMixed / item.count) : 0).toFixed(2)
+                  ]);
+
+                  const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+                    + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+                  
+                  const encodedUri = encodeURI(csvContent);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", encodedUri);
+                  link.setAttribute("download", `plan_c_distribucion_administrativo_${appliedDateRange.start || 'historico'}_a_${appliedDateRange.end || 'historico'}.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                };
+
+                return (
+                  <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff] border border-white/40 animate-in slide-in-from-top-4 duration-300 flex flex-col gap-6">
+                    {/* Cabecera del Panel */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div>
+                        <h4 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2">
+                          <div className="w-2 h-5 bg-emerald-500 rounded-full"></div>
+                          TABLA DE PRORRATEO DEFINITIVA (PLAN C - ADMINISTRATIVO)
+                        </h4>
+                        <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                          Listado completo y exhaustivo de todos los tratamientos de la clínica bajo distribución equitativa de costos administrativos (50/50).
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                        {/* Buscador */}
+                        <div className="relative flex-1 md:flex-none md:w-60">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                          <input
+                            type="text"
+                            placeholder="Buscar por tratamiento..."
+                            value={adminDistSearchQuery}
+                            onChange={(e) => {
+                              setAdminDistSearchQuery(e.target.value);
+                              setAdminDistCurrentPage(1);
+                            }}
+                            className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#e6e7ee] text-slate-700 text-xs shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Ordenación */}
+                        <select
+                          value={adminDistSortOrder}
+                          onChange={(e) => {
+                            setAdminDistSortOrder(e.target.value);
+                            setAdminDistCurrentPage(1);
+                          }}
+                          className="px-3 py-2 rounded-xl bg-[#e6e7ee] text-slate-700 text-xs font-black shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border-none outline-none cursor-pointer focus:ring-1 focus:ring-emerald-500/20"
+                        >
+                          <option value="allocMixedDesc">Asignación: Mayor a Menor</option>
+                          <option value="allocMixedAsc">Asignación: Menor a Mayor</option>
+                          <option value="countDesc">Sesiones: Mayor a Menor</option>
+                          <option value="revenueDesc">Ingresos: Mayor a Menor</option>
+                          <option value="nameAsc">Tratamiento: A - Z</option>
+                        </select>
+
+                        {/* Exportar */}
+                        <button
+                          onClick={exportToAdminCSV}
+                          disabled={sortedAdminDistribution.length === 0}
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs rounded-xl shadow-[3px_3px_6px_rgba(16,185,129,0.3)] hover:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                          <span>Exportar CSV</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Tabla de Resultados */}
+                    <div className="overflow-x-auto rounded-3xl">
+                      {isListLoading ? (
+                        <div className="flex flex-col items-center justify-center py-12 gap-3 bg-[#e6e7ee] rounded-2xl shadow-inner">
+                          <div className="w-8 h-8 rounded-full border-4 border-emerald-500/30 border-t-emerald-600 animate-spin"></div>
+                          <span className="text-xs font-bold text-slate-500">Cargando estadísticas de tratamientos...</span>
+                        </div>
+                      ) : paginatedAdminData.length === 0 ? (
+                        <div className="text-center py-12 text-slate-400 font-bold bg-[#e6e7ee] rounded-2xl shadow-inner border border-white/20">
+                          Ningún tratamiento coincide con la búsqueda
+                        </div>
+                      ) : (
+                        <table className="w-full border-separate border-spacing-y-2 text-left">
+                          <thead>
+                            <tr className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                              <th className="pb-1 pl-4 text-center w-12">N°</th>
+                              <th className="pb-1">Tratamiento Clínico</th>
+                              <th className="pb-1 text-center w-36">Sesiones (Volumen)</th>
+                              <th className="pb-1 text-right pr-4 w-36">Ingresos Brutos ($)</th>
+                              <th className="pb-1 text-right pr-4 w-36">Monto Volumen (50%)</th>
+                              <th className="pb-1 text-right pr-4 w-36">Monto Ingresos (50%)</th>
+                              <th className="pb-1 text-right pr-4 w-44 bg-emerald-500/10 rounded-t-xl border-x border-t border-emerald-200/50 text-emerald-800">Plan C: Monto Final ($)</th>
+                              <th className="pb-1 text-center w-24">% Total</th>
+                              <th className="pb-1 text-right pr-4 w-36">Costo por Sesión</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {paginatedAdminData.map((item, index) => {
+                              const globalIndex = (adminDistCurrentPage - 1) * itemsPerPage + index + 1;
+                              return (
+                                <tr key={item.name} className="group transition-all hover:bg-white/30">
+                                  <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] rounded-l-2xl p-2.5 text-center font-bold text-slate-400 tabular-nums">
+                                    {globalIndex}
+                                  </td>
+                                  <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 font-bold text-slate-700 leading-snug">
+                                    {item.name}
+                                  </td>
+                                  <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-center font-semibold text-slate-500 tabular-nums text-xs">
+                                    {new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(item.count)}{' '}
+                                    <span className="text-[9px] text-slate-400 font-medium">({item.pctCount.toFixed(3)}%)</span>
+                                  </td>
+                                  <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-right pr-4 font-semibold text-slate-600 tabular-nums text-xs">
+                                    {formatCurrency(item.revenue)}{' '}
+                                    <span className="text-[9px] text-slate-400 font-medium">({item.pctRevenue.toFixed(3)}%)</span>
+                                  </td>
+                                  <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-right pr-4 font-medium text-slate-500 tabular-nums text-xs">
+                                    {formatCurrency(item.allocCount)}
+                                  </td>
+                                  <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-right pr-4 font-medium text-slate-500 tabular-nums text-xs">
+                                    {formatCurrency(item.allocRevenue)}
+                                  </td>
+                                  <td className="p-2.5 text-right pr-4 font-black text-emerald-700 tabular-nums text-xs bg-emerald-500/5 group-hover:bg-emerald-500/10 border-x border-emerald-200/50 shadow-inner">
+                                    {formatCurrency(item.allocMixed)}
+                                  </td>
+                                  <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] p-2.5 text-center font-black text-slate-700 tabular-nums text-xs">
+                                    {item.pctOfTotalAlloc.toFixed(4)}%
+                                  </td>
+                                  <td className="bg-[#e6e7ee] shadow-[1px_1px_2px_rgba(0,0,0,0.01)] rounded-r-2xl p-2.5 text-right pr-4 font-black text-slate-700 tabular-nums text-xs">
+                                    {formatCurrency(item.count > 0 ? (item.allocMixed / item.count) : 0)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+
+                            {/* Fila de Totales */}
+                            {(() => {
+                              const totalSess = sortedAdminDistribution.reduce((acc, item) => acc + item.count, 0);
+                              const totalRev = sortedAdminDistribution.reduce((acc, item) => acc + item.revenue, 0);
+                              const totalVolAlloc = sortedAdminDistribution.reduce((acc, item) => acc + item.allocCount, 0);
+                              const totalRevAlloc = sortedAdminDistribution.reduce((acc, item) => acc + item.allocRevenue, 0);
+                              const totalMixedAlloc = sortedAdminDistribution.reduce((acc, item) => acc + item.allocMixed, 0);
+                              const totalPct = sortedAdminDistribution.reduce((acc, item) => acc + item.pctOfTotalAlloc, 0);
+                              
+                              return (
+                                <tr className="bg-slate-900/5 rounded-2xl border border-white/50 font-black">
+                                  <td className="p-3 pl-4 rounded-l-2xl text-center text-slate-500 font-bold">∑</td>
+                                  <td className="p-3 text-slate-800 uppercase tracking-tight text-xs font-black">Totales consolidados</td>
+                                  <td className="p-3 text-center text-slate-700 tabular-nums text-xs">{new Intl.NumberFormat('es-CO').format(totalSess)} <span className="text-[9px] text-slate-400 font-bold">(100%)</span></td>
+                                  <td className="p-3 text-right pr-4 text-slate-700 tabular-nums text-xs">{formatCurrency(totalRev)} <span className="text-[9px] text-slate-400 font-bold">(100%)</span></td>
+                                  <td className="p-3 text-right pr-4 text-slate-600 tabular-nums text-xs">{formatCurrency(totalVolAlloc)}</td>
+                                  <td className="p-3 text-right pr-4 text-slate-600 tabular-nums text-xs">{formatCurrency(totalRevAlloc)}</td>
+                                  <td className="p-3 text-right pr-4 text-emerald-700 bg-emerald-500/10 border-x border-b border-emerald-200/50 shadow-inner tabular-nums text-xs font-black">{formatCurrency(totalMixedAlloc)}</td>
+                                  <td className="p-3 text-center text-slate-800 tabular-nums text-xs font-black">{totalPct.toFixed(4)}%</td>
+                                  <td className="p-3 rounded-r-2xl text-right pr-4 text-slate-800 tabular-nums text-xs font-black">{formatCurrency(totalSess > 0 ? (totalMixedAlloc / totalSess) : 0)}</td>
+                                </tr>
+                              );
+                            })()}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+
+                    {/* Paginación */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-4 mt-2">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                          Mostrando <strong className="text-slate-700">{((adminDistCurrentPage - 1) * itemsPerPage) + 1}</strong> a <strong className="text-slate-700">{Math.min(adminDistCurrentPage * itemsPerPage, sortedAdminDistribution.length)}</strong> de <strong className="text-slate-700">{sortedAdminDistribution.length}</strong> tratamientos
+                        </span>
+                        
+                        <div className="flex items-center gap-1.5 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] bg-[#e6e7ee] p-1.5 rounded-xl border border-white/40">
+                          <button
+                            onClick={() => setAdminDistCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={adminDistCurrentPage === 1}
+                            className={`p-1.5 rounded-lg border border-white/50 transition-all ${
+                              adminDistCurrentPage === 1
+                                ? 'opacity-40 cursor-not-allowed text-slate-400'
+                                : 'bg-[#e6e7ee] text-emerald-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] active:scale-95'
+                            }`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                          </button>
+                          
+                          <span className="text-[10px] font-black text-slate-600 px-2.5">
+                            Pág. <strong className="text-emerald-700">{adminDistCurrentPage}</strong> de {totalPages}
+                          </span>
+                          
+                          <button
+                            onClick={() => setAdminDistCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={adminDistCurrentPage === totalPages}
+                            className={`p-1.5 rounded-lg border border-white/50 transition-all ${
+                              adminDistCurrentPage === totalPages
+                                ? 'opacity-40 cursor-not-allowed text-slate-400'
+                                : 'bg-[#e6e7ee] text-emerald-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] active:scale-95'
+                            }`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}
@@ -1923,12 +2253,17 @@ export function ProfitabilityReport() {
             const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
             return acc + val;
           }, 0)) + serviceCostPerSession;
-          const adminCost = (serviceAdminCosts[serviceName] || []).reduce((acc, row) => {
+          const serviceAdminDistribution = calculatedAdminDistribution.find(item => item.name.toLowerCase() === serviceName.toLowerCase());
+          const serviceAdminCostPerSession = serviceAdminDistribution 
+            ? (serviceAdminDistribution.count > 0 ? (serviceAdminDistribution.allocMixed / serviceAdminDistribution.count) : 0)
+            : 0;
+
+          const adminCost = ((serviceAdminCosts[serviceName] || []).reduce((acc, row) => {
             if (row.id === 'energia' || row.adminId === '1') {
               return acc + ((row.kw || 0) * precioPorKw);
             }
             return acc + row.valor;
-          }, 0);
+          }, 0)) + serviceAdminCostPerSession;
           const isActive = activeService === serviceName;
 
           return (
@@ -2185,7 +2520,7 @@ export function ProfitabilityReport() {
               {/* Sumatoria Total de Personal */}
               <div className="flex items-center gap-3 mt-0 pt-0.5 border-t border-slate-300/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="flex-1 flex items-center h-12 bg-white/40 shadow-inner rounded-2xl px-6 border border-blue-200/30">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Personal del Servicio</span>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Personal</span>
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-black text-blue-600 tracking-tighter">
                       {(() => {
@@ -2266,6 +2601,36 @@ export function ProfitabilityReport() {
                     </div>
                   );
                 })()}
+
+                {/* Fila de Indirectos (Plan C) */}
+                {(() => {
+                  const activeServiceAdminDistribution = calculatedAdminDistribution.find(item => item.name.toLowerCase() === activeService.toLowerCase());
+                  const activeServiceAdminCostPerSession = activeServiceAdminDistribution 
+                    ? (activeServiceAdminDistribution.count > 0 ? (activeServiceAdminDistribution.allocMixed / activeServiceAdminDistribution.count) : 0)
+                    : 0;
+
+                  return (
+                    <div className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40 border-l-4 border-l-emerald-500">
+                      <span className="flex-1 text-[10px] font-black text-emerald-700 uppercase tracking-tight">INDIRECTOS (PLAN C)</span>
+                      
+                      <div className="w-20 flex justify-center">
+                        <NeumorphicExplanationTooltip
+                          title="Costo Administrativo Indirecto Prorrateado"
+                          text="Este costo representa la porción de los gastos administrativos generales (arriendo, agua, energía restante) asignada a este tratamiento por el Plan C por sesión."
+                        >
+                          <span className="text-[11px] font-bold text-slate-400 cursor-help uppercase tracking-tight">Indirecto</span>
+                        </NeumorphicExplanationTooltip>
+                      </div>
+
+                      <div className="w-24 flex justify-end items-center gap-1">
+                        <span className="text-[10px] text-slate-400 font-black">$</span>
+                        <span className="text-[11px] font-black tabular-nums text-emerald-700">
+                          {activeServiceAdminCostPerSession.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Sumatoria Total de Administrativos */}
@@ -2275,8 +2640,19 @@ export function ProfitabilityReport() {
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-black text-emerald-600 tracking-tighter">
                       {(() => {
-                        const energiaRow = (serviceAdminCosts[activeService] || []).find(r => r.id === 'energia' || r.adminId === '1') || { id: 'energia', adminId: '1', kw: 0, valor: 0 };
-                        return formatCurrency((energiaRow.kw || 0) * precioPorKw);
+                        const directAdminCost = (serviceAdminCosts[activeService] || []).reduce((acc, row) => {
+                          if (row.id === 'energia' || row.adminId === '1') {
+                            return acc + ((row.kw || 0) * precioPorKw);
+                          }
+                          return acc + row.valor;
+                        }, 0);
+
+                        const activeServiceAdminDistribution = calculatedAdminDistribution.find(item => item.name.toLowerCase() === activeService.toLowerCase());
+                        const activeServiceAdminCostPerSession = activeServiceAdminDistribution 
+                          ? (activeServiceAdminDistribution.count > 0 ? (activeServiceAdminDistribution.allocMixed / activeServiceAdminDistribution.count) : 0)
+                          : 0;
+
+                        return formatCurrency(directAdminCost + activeServiceAdminCostPerSession);
                       })()}
                     </span>
                   </div>
@@ -2300,12 +2676,17 @@ export function ProfitabilityReport() {
               return acc + (row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice);
             }, 0) || 0) + activeServiceCostPerSession;
 
-            const adminTotal = (serviceAdminCosts[activeService] || []).reduce((acc, row) => {
+            const activeServiceAdminDistribution = calculatedAdminDistribution.find(item => item.name.toLowerCase() === activeService.toLowerCase());
+            const activeServiceAdminCostPerSession = activeServiceAdminDistribution 
+              ? (activeServiceAdminDistribution.count > 0 ? (activeServiceAdminDistribution.allocMixed / activeServiceAdminDistribution.count) : 0)
+              : 0;
+
+            const adminTotal = ((serviceAdminCosts[activeService] || []).reduce((acc, row) => {
               if (row.id === 'energia' || row.adminId === '1') {
                 return acc + ((row.kw || 0) * precioPorKw);
               }
               return acc + row.valor;
-            }, 0);
+            }, 0)) + activeServiceAdminCostPerSession;
             const totalServiceCost = insumosTotal + staffTotal + adminTotal;
 
             const unitRevenue = stats.count > 0 ? stats.revenue / stats.count : 0;
