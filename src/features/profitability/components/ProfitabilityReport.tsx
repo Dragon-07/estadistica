@@ -764,7 +764,7 @@ export function ProfitabilityReport() {
 
   const handleUpdateServiceInsumoQuantity = (serviceName: string, id: string, cantidad: number) => {
     const newItems = serviceInsumos[serviceName].map(item => 
-      item.id === id ? { ...item, cantidad: Math.max(1, cantidad) } : item
+      item.id === id ? { ...item, cantidad: Math.max(0, cantidad) } : item
     );
     setServiceInsumos(prev => ({
       ...prev,
@@ -2499,9 +2499,10 @@ export function ProfitabilityReport() {
                             <div className="relative group/qty w-12 shrink-0">
                               <input 
                                 type="number"
-                                min="1"
+                                min="0"
+                                step="any"
                                 value={item.cantidad}
-                                onChange={(e) => handleUpdateServiceInsumoQuantity(activeService, item.id, parseInt(e.target.value) || 1)}
+                                onChange={(e) => handleUpdateServiceInsumoQuantity(activeService, item.id, parseFloat(e.target.value) || 0)}
                                 className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
                               />
                             </div>
