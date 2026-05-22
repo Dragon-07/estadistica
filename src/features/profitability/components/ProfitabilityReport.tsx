@@ -213,6 +213,10 @@ export function ProfitabilityReport() {
   const [showInsumoDropdown, setShowInsumoDropdown] = useState(false);
   const [insumoSearchQuery, setInsumoSearchQuery] = useState('');
   const insumoDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [showTreatmentDropdown, setShowTreatmentDropdown] = useState(false);
+  const [treatmentSearchQuery, setTreatmentSearchQuery] = useState('');
+  const treatmentDropdownRef = useRef<HTMLDivElement>(null);
   
   const [personalData, setPersonalData] = useState<Dependency[]>(() => {
     if (typeof window !== 'undefined') {
@@ -562,6 +566,50 @@ export function ProfitabilityReport() {
       .sort((a, b) => b.score - a.score || a.ins.detalle.localeCompare(b.ins.detalle))
       .map(item => item.ins);
   }, [insumos, insumoSearchQuery]);
+
+  // Click outside para el dropdown de agregar tratamientos
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (treatmentDropdownRef.current && !treatmentDropdownRef.current.contains(event.target as Node)) {
+        setShowTreatmentDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Filtrado y ordenación inteligente de tratamientos para el buscador del panel
+  const filteredAndSortedTreatmentsForSearch = useMemo(() => {
+    // Filtramos los tratamientos que NO están actualmente en el panel
+    const unaddedTreatments = availableTreatments.filter(t => !activeDashboardTreatments.includes(t));
+
+    if (!treatmentSearchQuery.trim()) {
+      return unaddedTreatments;
+    }
+
+    const query = treatmentSearchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    return unaddedTreatments
+      .map(t => {
+        const tNormalized = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        let score = 0;
+        if (tNormalized.startsWith(query)) {
+          score = 100;
+        } else if (new RegExp(`\\b${query}\\b`).test(tNormalized)) {
+          score = 50;
+        } else if (tNormalized.includes(query)) {
+          score = 10;
+        }
+
+        return { t, score };
+      })
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score || a.t.localeCompare(b.t))
+      .map(item => item.t);
+  }, [availableTreatments, activeDashboardTreatments, treatmentSearchQuery]);
 
   // Cálculo de precios promedio por minuto por dependencia
   const dependencyPrices = useMemo(() => {
@@ -2355,22 +2403,56 @@ export function ProfitabilityReport() {
         </div>
       )}
 
-      {/* Nuevo Desplegable: Agregar Tratamientos Dinámicos */}
-      <div className="flex justify-start px-2 mt-2 z-10">
-        <div className="relative group w-auto min-w-[250px]">
-          <select 
-            onChange={(e) => {
-              handleAddTreatment(e.target.value);
-              e.target.value = '';
-            }}
-            className="w-full appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
+      {/* Nuevo Desplegable: Agregar Tratamientos Dinámicos con Buscador */}
+      <div className="flex justify-start px-2 mt-2 z-30">
+        <div className="relative w-auto min-w-[250px]" ref={treatmentDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setShowTreatmentDropdown(!showTreatmentDropdown)}
+            className="w-full bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-widest transition-all text-left flex items-center justify-between outline-none"
           >
-            <option value="">+ AGREGAR TRATAMIENTOS</option>
-            {availableTreatments.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          <Plus size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 pointer-events-none" />
+            <span>+ AGREGAR TRATAMIENTOS</span>
+            <Plus size={12} className="text-blue-600 shrink-0 ml-4" />
+          </button>
+
+          {showTreatmentDropdown && (
+            <div className="absolute left-0 mt-2 w-full min-w-[250px] bg-[#e6e7ee] rounded-2xl shadow-[10px_10px_30px_#b8b9be,-10px_-10px_30px_#ffffff] border border-white/60 p-4 z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* Campo de búsqueda interna */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Buscar tratamiento..."
+                  value={treatmentSearchQuery}
+                  onChange={(e) => setTreatmentSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#e6e7ee] text-slate-700 text-xs shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
+                />
+              </div>
+
+              {/* Lista de resultados filtrados */}
+              <div className="max-h-60 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
+                {filteredAndSortedTreatmentsForSearch.length === 0 ? (
+                  <span className="text-[10px] text-center text-slate-400 py-3 font-bold uppercase tracking-wider">No se encontraron tratamientos</span>
+                ) : (
+                  filteredAndSortedTreatmentsForSearch.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => {
+                        handleAddTreatment(t);
+                        setTreatmentSearchQuery('');
+                        setShowTreatmentDropdown(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl text-[10px] font-bold text-slate-650 hover:bg-white/50 hover:text-blue-600 transition-colors flex justify-between items-center uppercase"
+                    >
+                      <span className="truncate">{t}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
