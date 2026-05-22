@@ -1724,8 +1724,8 @@ export function ProfitabilityReport() {
                 <thead>
                   <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                     <th className="px-6 py-4 text-left font-black">Detalle del Gasto</th>
-                    <th className="px-4 py-4 text-right font-black w-26">Costo Total</th>
-                    <th className="px-4 py-4 text-center font-black w-24">Unidades</th>
+                    <th className="px-4 py-4 text-right font-black w-32">Costo total por mes</th>
+                    <th className="px-4 py-4 text-center font-black w-28">Unidades por mes</th>
                     <th className="px-4 py-4 text-center font-black w-24">$ Unidad</th>
                     <th className="px-4 py-4 text-center font-black w-24">Consumo</th>
                     <th className="px-4 py-4 text-right pr-6 font-black w-36">$ a Distribuir</th>
