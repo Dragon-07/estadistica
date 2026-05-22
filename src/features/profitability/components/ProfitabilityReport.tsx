@@ -284,10 +284,10 @@ export function ProfitabilityReport() {
   });
 
   // Estado para los costos administrativos por servicio
-  const [serviceAdminCosts, setServiceAdminCosts] = useState<Record<string, { id: string, adminId: string, valor: number }[]>>({
-    'acupuntura': [],
-    'TERAPIA NEURAL': [],
-    'SUERO VITAMINA C': [],
+  const [serviceAdminCosts, setServiceAdminCosts] = useState<Record<string, { id: string, adminId: string, valor: number, kw?: number }[]>>({
+    'acupuntura': [{ id: 'energia', adminId: '1', valor: 0, kw: 0 }],
+    'TERAPIA NEURAL': [{ id: 'energia', adminId: '1', valor: 0, kw: 0 }],
+    'SUERO VITAMINA C': [{ id: 'energia', adminId: '1', valor: 0, kw: 0 }],
   });
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -320,6 +320,8 @@ export function ProfitabilityReport() {
       { id: Math.random().toString(), tipo: 'Enfermera', mins: 0, valor: 0 },
     ];
 
+    const defaultAdmin = [{ id: 'energia', adminId: '1', valor: 0, kw: 0 }];
+
     // Inicializar los estados del nuevo tratamiento si no existen
     if (!serviceInsumos[name]) {
       setServiceInsumos(prev => ({ ...prev, [name]: [] }));
@@ -331,7 +333,7 @@ export function ProfitabilityReport() {
       }));
     }
     if (!serviceAdminCosts[name]) {
-      setServiceAdminCosts(prev => ({ ...prev, [name]: [] }));
+      setServiceAdminCosts(prev => ({ ...prev, [name]: defaultAdmin }));
     }
 
     // Persistir el nuevo tratamiento en la base de datos
@@ -339,7 +341,7 @@ export function ProfitabilityReport() {
       name, 
       serviceStaffTimes[name] || defaultStaff, 
       serviceInsumos[name] || [], 
-      serviceAdminCosts[name] || []
+      serviceAdminCosts[name] || defaultAdmin
     );
   };
 
@@ -404,7 +406,17 @@ export function ProfitabilityReport() {
           loadedTreatments.push(setting.service_name);
           if (setting.insumos) newInsumos[setting.service_name] = setting.insumos;
           if (setting.staff_times) newStaffTimes[setting.service_name] = setting.staff_times;
-          if (setting.admin_costs) newAdminCosts[setting.service_name] = setting.admin_costs;
+          
+          let costs = setting.admin_costs;
+          if (!costs || !Array.isArray(costs) || costs.length === 0) {
+            costs = [{ id: 'energia', adminId: '1', valor: 0, kw: 0 }];
+          } else {
+            const hasEnergia = costs.some((c: any) => c.id === 'energia' || c.adminId === '1');
+            if (!hasEnergia) {
+              costs = [{ id: 'energia', adminId: '1', valor: 0, kw: 0 }, ...costs];
+            }
+          }
+          newAdminCosts[setting.service_name] = costs;
         });
         
         setServiceInsumos(newInsumos);
@@ -483,6 +495,12 @@ export function ProfitabilityReport() {
     });
     return prices;
   }, [personalData, appliedDateRange, globalDateRange, weeklyHours]);
+
+  // Cálculo de tarifa por Kw de la clínica
+  const precioPorKw = useMemo(() => {
+    const energiaAdmin = adminData.find(a => a.id === '1' || a.detail.toUpperCase().includes('ENERGÍA'));
+    return energiaAdmin && energiaAdmin.units > 0 ? energiaAdmin.cost / energiaAdmin.units : 0;
+  }, [adminData]);
 
   // Matriz de tiempos acumulados trabajados por dependencia y tratamiento
   const timeMatrix = useMemo(() => {
@@ -708,6 +726,30 @@ export function ProfitabilityReport() {
       [serviceName]: newItems
     }));
     saveToSupabase(serviceName, serviceStaffTimes[serviceName], serviceInsumos[serviceName], newItems);
+  };
+
+  const handleUpdateServiceAdminKw = (serviceName: string, id: string, kw: number) => {
+    const calculatedValor = kw * precioPorKw;
+    const currentCosts = serviceAdminCosts[serviceName] || [];
+    let hasItem = false;
+    const newItems = currentCosts.map(item => {
+      if (item.id === id || item.adminId === '1') {
+        hasItem = true;
+        return { ...item, id: 'energia', adminId: '1', kw, valor: calculatedValor };
+      }
+      return item;
+    });
+
+    let finalItems = newItems;
+    if (!hasItem) {
+      finalItems = [...newItems, { id: 'energia', adminId: '1', kw, valor: calculatedValor }];
+    }
+
+    setServiceAdminCosts(prev => ({
+      ...prev,
+      [serviceName]: finalItems
+    }));
+    saveToSupabase(serviceName, serviceStaffTimes[serviceName], serviceInsumos[serviceName], finalItems);
   };
 
   const handleRemoveAdminFromService = (serviceName: string, id: string) => {
@@ -1764,7 +1806,12 @@ export function ProfitabilityReport() {
             const val = row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice;
             return acc + val;
           }, 0)) + serviceCostPerSession;
-          const adminCost = (serviceAdminCosts[serviceName] || []).reduce((acc, row) => acc + row.valor, 0);
+          const adminCost = (serviceAdminCosts[serviceName] || []).reduce((acc, row) => {
+            if (row.id === 'energia' || row.adminId === '1') {
+              return acc + ((row.kw || 0) * precioPorKw);
+            }
+            return acc + row.valor;
+          }, 0);
           const isActive = activeService === serviceName;
 
           return (
@@ -2052,63 +2099,45 @@ export function ProfitabilityReport() {
                   </div>
                   <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Gastos Administrativos</h4>
                 </div>
-                <div className="relative group w-full">
-                  <select 
-                    onChange={(e) => {
-                      handleAddAdminToService(activeService, e.target.value);
-                      e.target.value = '';
-                    }}
-                    className="w-full appearance-none bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-emerald-600 uppercase tracking-widest transition-all cursor-pointer outline-none border-none pr-10"
-                  >
-                    <option value="">+ Asignar Gasto Administrativo</option>
-                    {adminData.map(adm => (
-                      <option key={adm.id} value={adm.id}>{adm.detail} - {formatCurrency(adm.cost)}</option>
-                    ))}
-                  </select>
-                  <Plus size={12} className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-600 pointer-events-none" />
-                </div>
               </div>
 
               <div className="space-y-2 pr-2">
                 {/* Encabezado Simple */}
                 <div className="flex px-4 mb-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                  <span className="flex-1">Detalle del Gasto</span>
+                  <span className="flex-1">Tipo</span>
+                  <span className="w-20 text-center">Kw</span>
                   <span className="w-24 text-right">Valor</span>
                 </div>
 
-                {/* Filas de Gastos Administrativos */}
-                {(!serviceAdminCosts[activeService] || serviceAdminCosts[activeService].length === 0) ? (
-                  <div className="py-6 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center opacity-40 bg-white/5">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sin gastos asignados</p>
-                  </div>
-                ) : (
-                  serviceAdminCosts[activeService].map((row) => {
-                    const adminDetails = adminData.find(a => a.id === row.adminId);
-                    return (
-                      <div key={row.id} className="flex items-center gap-2 group">
-                        <div className="flex-1 flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
-                          <span className="flex-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight truncate">{adminDetails?.detail || 'Gasto Eliminado'}</span>
-                          
-                          <div className="w-24 flex justify-end items-center gap-1">
-                            <span className="text-[10px] text-emerald-400 font-black">$</span>
-                            <input 
-                              type="number"
-                              value={row.valor}
-                              onChange={(e) => handleUpdateServiceAdminCostValue(activeService, row.id, parseFloat(e.target.value) || 0)}
-                              className="w-20 bg-transparent border-none focus:outline-none text-right text-[11px] font-black tabular-nums text-emerald-600"
-                            />
-                          </div>
+                {/* Fila de Energía Fija */}
+                {(() => {
+                  const energiaRow = (serviceAdminCosts[activeService] || []).find(r => r.id === 'energia' || r.adminId === '1') || { id: 'energia', adminId: '1', kw: 0, valor: 0 };
+                  const calculatedValor = (energiaRow.kw || 0) * precioPorKw;
+                  
+                  return (
+                    <div key={energiaRow.id} className="flex items-center h-10 bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-xl px-4 border border-white/40">
+                      <span className="flex-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight">ENERGÍA</span>
+                      
+                      <div className="w-20 flex justify-center">
+                        <div className="relative group/qty w-14">
+                          <input 
+                            type="number"
+                            value={energiaRow.kw || 0}
+                            onChange={(e) => handleUpdateServiceAdminKw(activeService, energiaRow.id, parseFloat(e.target.value) || 0)}
+                            className="w-full bg-white/40 shadow-inner rounded-lg py-1 text-center text-[11px] font-black text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all tabular-nums"
+                          />
                         </div>
-                        <button 
-                          onClick={() => handleRemoveAdminFromService(activeService, row.id)}
-                          className="w-10 h-10 flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] rounded-xl text-slate-400 hover:text-red-500 transition-all shrink-0"
-                        >
-                          <Trash2 size={14} />
-                        </button>
                       </div>
-                    );
-                  })
-                )}
+
+                      <div className="w-24 flex justify-end items-center gap-1">
+                        <span className="text-[10px] text-slate-400 font-black">$</span>
+                        <span className="text-[11px] font-black tabular-nums text-emerald-600">
+                          {calculatedValor.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Sumatoria Total de Administrativos */}
@@ -2117,7 +2146,10 @@ export function ProfitabilityReport() {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex-1">Total Administrativo</span>
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-black text-emerald-600 tracking-tighter">
-                      {formatCurrency(serviceAdminCosts[activeService]?.reduce((acc, row) => acc + row.valor, 0) || 0)}
+                      {(() => {
+                        const energiaRow = (serviceAdminCosts[activeService] || []).find(r => r.id === 'energia' || r.adminId === '1') || { id: 'energia', adminId: '1', kw: 0, valor: 0 };
+                        return formatCurrency((energiaRow.kw || 0) * precioPorKw);
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -2140,7 +2172,12 @@ export function ProfitabilityReport() {
               return acc + (row.tipo === 'Administrativos' ? row.valor : row.mins * depPrice);
             }, 0) || 0) + activeServiceCostPerSession;
 
-            const adminTotal = serviceAdminCosts[activeService]?.reduce((acc, row) => acc + row.valor, 0) || 0;
+            const adminTotal = (serviceAdminCosts[activeService] || []).reduce((acc, row) => {
+              if (row.id === 'energia' || row.adminId === '1') {
+                return acc + ((row.kw || 0) * precioPorKw);
+              }
+              return acc + row.valor;
+            }, 0);
             const totalServiceCost = insumosTotal + staffTotal + adminTotal;
 
             const unitRevenue = stats.count > 0 ? stats.revenue / stats.count : 0;
