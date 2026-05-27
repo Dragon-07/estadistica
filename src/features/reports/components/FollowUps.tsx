@@ -106,6 +106,22 @@ export function FollowUps() {
   const [excelError, setExcelError] = useState<string | null>(null);
   const [copiedDoc, setCopiedDoc] = useState<string | null>(null);
 
+  // Cargar autorizaciones persistidas desde localStorage al montar el componente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedAuth = localStorage.getItem('auth_patients_data');
+      if (savedAuth) {
+        try {
+          setAuthPatients(JSON.parse(savedAuth));
+          // Cambiar a la pestaña de autorizaciones si ya hay datos cargados previamente
+          setActiveSubTab('authorizations');
+        } catch (e) {
+          console.error('Error al cargar autorizaciones guardadas:', e);
+        }
+      }
+    }
+  }, []);
+
   // Función auxiliar para buscar valor por múltiples llaves posibles de forma flexible
   const findValueByPossibleKeys = (row: any, keys: string[]): any => {
     for (const key of keys) {
@@ -249,6 +265,7 @@ export function FollowUps() {
         });
 
         setAuthPatients(finalRows);
+        localStorage.setItem('auth_patients_data', JSON.stringify(finalRows));
       } catch (err: any) {
         console.error(err);
         setExcelError(err.message || 'Error al procesar el archivo Excel.');
@@ -320,6 +337,7 @@ export function FollowUps() {
         });
 
         setAuthPatients(updatedPatients);
+        localStorage.setItem('auth_patients_data', JSON.stringify(updatedPatients));
         
         // Dar feedback al usuario
         alert(`¡Base de datos cruzada con éxito! Se encontraron e inyectaron ${matchedCount} números telefónicos adicionales.`);
@@ -778,6 +796,7 @@ export function FollowUps() {
                       setAuthPatients([]);
                       setAuthSearchTerm('');
                       setExcelError(null);
+                      localStorage.removeItem('auth_patients_data');
                     }}
                     className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-red-500 rounded-xl bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all"
                   >
