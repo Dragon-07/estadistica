@@ -265,6 +265,80 @@ export function FollowUps() {
     reader.readAsArrayBuffer(file);
   };
 
+  // Función para procesar el segundo Excel de base de datos local y cruzar teléfonos
+  const handleDatabaseExcelUpload = async (file: File) => {
+    if (!file || authPatients.length === 0) return;
+
+    setIsProcessingExcel(true);
+    setExcelError(null);
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        if (workbook.SheetNames.length === 0) {
+          throw new Error('El archivo Excel de base de datos está vacío.');
+        }
+
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<any>(worksheet);
+
+        if (jsonData.length === 0) {
+          throw new Error('No se encontraron registros en la primera hoja del Excel de base de datos.');
+        }
+
+        // Crear mapa de documento -> teléfono a partir del Excel subido
+        const localPhoneMap = new Map<string, string>();
+        
+        jsonData.forEach((row: any) => {
+          const docRaw = findValueByPossibleKeys(row, ['Documento', 'Cédula', 'Cedula', 'Identificación', 'Identificacion', 'Doc']);
+          const doc = docRaw !== undefined ? String(docRaw).trim() : '';
+
+          const phoneRaw = findValueByPossibleKeys(row, ['Teléfono', 'Telefono', 'Tel', 'Celular', 'Cel', 'Phone', 'Móvil', 'Movil']);
+          const phone = phoneRaw !== undefined ? String(phoneRaw).trim() : '';
+
+          if (doc && phone && phone !== '-') {
+            localPhoneMap.set(doc, phone);
+          }
+        });
+
+        // Cruzar con los pacientes actualmente en pantalla
+        let matchedCount = 0;
+        const updatedPatients = authPatients.map(p => {
+          const currentPhone = p.telefono;
+          const docKey = p.documento ? String(p.documento).trim() : '';
+          const localPhone = localPhoneMap.get(docKey);
+
+          if (localPhone && localPhone !== '-' && (currentPhone === '-' || !currentPhone)) {
+            matchedCount++;
+            return { ...p, telefono: localPhone };
+          }
+          return p;
+        });
+
+        setAuthPatients(updatedPatients);
+        
+        // Dar feedback al usuario
+        alert(`¡Base de datos cruzada con éxito! Se encontraron e inyectaron ${matchedCount} números telefónicos adicionales.`);
+      } catch (err: any) {
+        console.error(err);
+        setExcelError(err.message || 'Error al procesar la base de datos de Excel.');
+      } finally {
+        setIsProcessingExcel(false);
+      }
+    };
+
+    reader.onerror = () => {
+      setExcelError('Error al leer el archivo de base de datos.');
+      setIsProcessingExcel(false);
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
   // Función para copiar texto al portapapeles con feedback
   const handleCopyText = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -668,7 +742,7 @@ export function FollowUps() {
           ) : (
             <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
                   <span className="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1.5 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
                     {authStats.total} filas importadas
@@ -679,17 +753,38 @@ export function FollowUps() {
                   </span>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setAuthPatients([]);
-                    setAuthSearchTerm('');
-                    setExcelError(null);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-red-500 rounded-xl bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  Limpiar y subir otro
-                </button>
+                <div className="flex items-center gap-3">
+                  {/* Selector e Input oculto para subir base de datos local */}
+                  <input
+                    type="file"
+                    id="excel-db-upload"
+                    accept=".xlsx, .xls"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleDatabaseExcelUpload(file);
+                    }}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="excel-db-upload"
+                    className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-indigo-600 rounded-xl bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all cursor-pointer select-none"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                    Subir base de datos
+                  </label>
+
+                  <button
+                    onClick={() => {
+                      setAuthPatients([]);
+                      setAuthSearchTerm('');
+                      setExcelError(null);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-red-500 rounded-xl bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Limpiar y subir otro
+                  </button>
+                </div>
               </div>
 
               {filteredAuthList.length === 0 ? (
