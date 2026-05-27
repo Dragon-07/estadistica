@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/shared/lib/supabase/client';
-import { Gift, Calendar, User, Phone, Search, PartyPopper } from 'lucide-react';
+import { Gift, Calendar, User, Phone, Search, PartyPopper, ChevronDown } from 'lucide-react';
 
 interface PatientBirthday {
   doc: string;
@@ -67,6 +67,8 @@ export function FollowUps() {
   const [patients, setPatients] = useState<PatientBirthday[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isTodayCollapsed, setIsTodayCollapsed] = useState(false);
+  const [isMonthCollapsed, setIsMonthCollapsed] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -293,30 +295,50 @@ export function FollowUps() {
       <div className="grid grid-cols-1 gap-8">
         {/* Cumpleaños de HOY */}
         <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
-          <div className="flex items-center justify-between mb-4">
+          <div 
+            onClick={() => setIsTodayCollapsed(!isTodayCollapsed)}
+            className="flex items-center justify-between mb-4 cursor-pointer select-none group"
+          >
             <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
               <PartyPopper className="w-5 h-5 text-indigo-500" />
               Cumplen Hoy
             </h3>
-            <span className="bg-indigo-100 text-indigo-600 text-xs font-bold px-3 py-1 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_#ffffff]">
-              {birthdaysToday.length} paciente(s)
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="bg-indigo-100 text-indigo-600 text-xs font-bold px-3 py-1 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_#ffffff]">
+                {birthdaysToday.length} paciente(s)
+              </span>
+              <button className={`p-1.5 rounded-full bg-[#e6e7ee] shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] text-indigo-500 transition-all duration-300 ${isTodayCollapsed ? '' : 'rotate-180'}`}>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          {renderTable(birthdaysToday, true)}
+          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isTodayCollapsed ? 'max-h-0 opacity-0 mt-0' : 'max-h-[1000px] opacity-100 mt-2'}`}>
+            {renderTable(birthdaysToday, true)}
+          </div>
         </div>
 
         {/* Cumpleaños del MES */}
         <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
-          <div className="flex items-center justify-between mb-4">
+          <div 
+            onClick={() => setIsMonthCollapsed(!isMonthCollapsed)}
+            className="flex items-center justify-between mb-4 cursor-pointer select-none group"
+          >
             <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-blue-500" />
               Cumplen el resto del mes
             </h3>
-            <span className="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_#ffffff]">
-              {birthdaysThisMonth.length} paciente(s)
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_#ffffff]">
+                {birthdaysThisMonth.length} paciente(s)
+              </span>
+              <button className={`p-1.5 rounded-full bg-[#e6e7ee] shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] text-blue-500 transition-all duration-300 ${isMonthCollapsed ? '' : 'rotate-180'}`}>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          {renderTable(birthdaysThisMonth, false)}
+          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isMonthCollapsed ? 'max-h-0 opacity-0 mt-0' : 'max-h-[2500px] opacity-100 mt-2'}`}>
+            {renderTable(birthdaysThisMonth, false)}
+          </div>
         </div>
       </div>
     </div>
