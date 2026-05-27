@@ -2,7 +2,24 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/shared/lib/supabase/client';
-import { Gift, Calendar, User, Phone, Search, PartyPopper, ChevronDown } from 'lucide-react';
+import { 
+  Gift, 
+  Calendar, 
+  User, 
+  Phone, 
+  Search, 
+  PartyPopper, 
+  ChevronDown, 
+  Upload, 
+  FileSpreadsheet, 
+  CheckCircle2, 
+  AlertCircle, 
+  RefreshCw, 
+  Copy, 
+  ExternalLink, 
+  X 
+} from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface PatientBirthday {
   doc: string;
@@ -63,12 +80,213 @@ function calculateAge(parsed: { month: number, day: number, year?: number } | nu
   return age;
 }
 
+interface AuthRecord {
+  documento: string;
+  paciente: string;
+  autorizacion: string;
+  servicio: string;
+  cantidadAutorizada: number | string;
+  cantidadAsistida: number | string;
+  fechaAdmision: string;
+  telefono: string;
+}
+
 export function FollowUps() {
   const [patients, setPatients] = useState<PatientBirthday[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isTodayCollapsed, setIsTodayCollapsed] = useState(false);
   const [isMonthCollapsed, setIsMonthCollapsed] = useState(false);
+
+  // Estados para la pestaña de Autorizaciones (Excel)
+  const [activeSubTab, setActiveSubTab] = useState<'birthdays' | 'authorizations'>('birthdays');
+  const [authPatients, setAuthPatients] = useState<AuthRecord[]>([]);
+  const [authSearchTerm, setAuthSearchTerm] = useState('');
+  const [isProcessingExcel, setIsProcessingExcel] = useState(false);
+  const [excelError, setExcelError] = useState<string | null>(null);
+  const [copiedDoc, setCopiedDoc] = useState<string | null>(null);
+
+  // Función auxiliar para buscar valor por múltiples llaves posibles de forma flexible
+  const findValueByPossibleKeys = (row: any, keys: string[]): any => {
+    for (const key of keys) {
+      if (row[key] !== undefined) return row[key];
+      // Búsqueda flexible sin espacios, tildes ni mayúsculas
+      const cleanKey = key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      for (const rowKey of Object.keys(row)) {
+        const cleanRowKey = rowKey.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        if (cleanRowKey === cleanKey) {
+          return row[rowKey];
+        }
+      }
+    }
+    return undefined;
+  };
+
+  // Función para parsear fechas de Excel de forma robusta
+  const parseExcelDate = (val: any): string => {
+    if (val === undefined || val === null || val === '') return '-';
+    const str = String(val).trim();
+    
+    // Si es número de fecha de Excel (ej: 45700)
+    if (!isNaN(Number(str)) && Number(str) > 10000) {
+      const excelEpoch = new Date(1899, 11, 30);
+      const date = new Date(excelEpoch.getTime() + Number(str) * 86400000);
+      return date.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    }
+
+    // Si es un formato ISO o string parseable
+    const dateObj = new Date(str);
+    if (!isNaN(dateObj.getTime())) {
+      // Para evitar desfases por zona horaria de strings tipo 'YYYY-MM-DD'
+      if (str.includes('-') && !str.includes('T')) {
+        const parts = str.split('-');
+        if (parts.length === 3) {
+          const year = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          return new Date(year, month, day).toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+      }
+      return dateObj.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    }
+
+    return str;
+  };
+
+  // Función principal para procesar el Excel subido
+  const handleExcelUpload = async (file: File) => {
+    if (!file) return;
+    
+    setIsProcessingExcel(true);
+    setExcelError(null);
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        if (workbook.SheetNames.length === 0) {
+          throw new Error('El archivo Excel está vacío.');
+        }
+
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<any>(worksheet);
+
+        if (jsonData.length === 0) {
+          throw new Error('No se encontraron registros en la primera hoja del Excel.');
+        }
+
+        // Mapear llaves flexibles a nuestro tipo AuthRecord
+        const mappedRows = jsonData.map((row: any) => {
+          const docRaw = findValueByPossibleKeys(row, ['Documento', 'Cédula', 'Cedula', 'Identificación', 'Identificacion', 'Doc']);
+          const doc = docRaw !== undefined ? String(docRaw).trim() : '';
+
+          const paciente = findValueByPossibleKeys(row, ['Paciente', 'Nombre', 'Cliente', 'Nombre Paciente', 'Nombres']) || '-';
+          const autorizacion = findValueByPossibleKeys(row, ['Número', 'Numero', 'Autorización', 'Autorizacion', 'Número de Autorización', 'Numero de Autorizacion']) || '-';
+          const servicio = findValueByPossibleKeys(row, ['Servicio', 'Concepto', 'Procedimiento']) || '-';
+          const cantAut = findValueByPossibleKeys(row, ['Cantidad Autorizada', 'Cant Autorizada', 'Cantidad Aut', 'Cant Aut', 'Autorizado', 'Cantidad']) ?? '-';
+          const cantAsis = findValueByPossibleKeys(row, ['Cantidad Asistida', 'Cant Asistida', 'Cantidad Asis', 'Cant Asis', 'Asistido', 'Asistidos']) ?? '-';
+          
+          const fechaAdmRaw = findValueByPossibleKeys(row, ['Fecha Admisión', 'Fecha Admision', 'Fecha de Admisión', 'Fecha de Admision', 'Admisión', 'Admision', 'Fecha']);
+          const fechaAdmision = parseExcelDate(fechaAdmRaw);
+
+          return {
+            documento: doc,
+            paciente: String(paciente).trim(),
+            autorizacion: String(autorizacion).trim(),
+            servicio: String(servicio).trim(),
+            cantidadAutorizada: cantAut,
+            cantidadAsistida: cantAsis,
+            fechaAdmision,
+            telefono: '-' // Se rellena en el cruce de Supabase
+          };
+        });
+
+        // Obtener documentos únicos no vacíos
+        const uniqueDocs = Array.from(
+          new Set(
+            mappedRows
+              .map(r => r.documento)
+              .filter(Boolean)
+          )
+        );
+
+        const phoneMap = new Map<string, string>();
+        const supabase = createClient();
+
+        if (uniqueDocs.length > 0) {
+          // Consultar Supabase en lotes de 500 para evitar desbordamiento
+          const chunkSize = 500;
+          for (let i = 0; i < uniqueDocs.length; i += chunkSize) {
+            const chunk = uniqueDocs.slice(i, i + chunkSize);
+            const { data: dbRecords, error } = await supabase
+              .from('medical_records')
+              .select('patient_doc, extra_data')
+              .in('patient_doc', chunk);
+
+            if (error) {
+              console.error('Error al realizar cruce de teléfonos:', error);
+              continue;
+            }
+
+            dbRecords?.forEach(rec => {
+              const doc = rec.patient_doc ? String(rec.patient_doc).trim() : '';
+              const extra = rec.extra_data || {};
+              const phone = extra['Teléfono'] ? String(extra['Teléfono']).trim() : '';
+              if (doc && phone) {
+                phoneMap.set(doc, phone);
+              }
+            });
+          }
+        }
+
+        // Rellenar la columna de teléfono final
+        const finalRows = mappedRows.map(r => {
+          const phone = phoneMap.get(r.documento) || '-';
+          return { ...r, telefono: phone };
+        });
+
+        setAuthPatients(finalRows);
+      } catch (err: any) {
+        console.error(err);
+        setExcelError(err.message || 'Error al procesar el archivo Excel.');
+      } finally {
+        setIsProcessingExcel(false);
+      }
+    };
+
+    reader.onerror = () => {
+      setExcelError('Error al leer el archivo.');
+      setIsProcessingExcel(false);
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
+  // Función para copiar texto al portapapeles con feedback
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedDoc(text);
+    setTimeout(() => setCopiedDoc(null), 2000);
+  };
+
+  // Filtrado de autorizaciones por término de búsqueda
+  const filteredAuthList = useMemo(() => {
+    return authPatients.filter(p => {
+      if (!authSearchTerm) return true;
+      const lowerSearch = authSearchTerm.toLowerCase();
+      return p.paciente.toLowerCase().includes(lowerSearch) || p.documento.toLowerCase().includes(lowerSearch);
+    });
+  }, [authPatients, authSearchTerm]);
+
+  // Estadísticas del cruce de autorizaciones
+  const authStats = useMemo(() => {
+    const total = authPatients.length;
+    const withPhone = authPatients.filter(p => p.telefono && p.telefono !== '-').length;
+    return { total, withPhone };
+  }, [authPatients]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -270,77 +488,305 @@ export function FollowUps() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header y Buscador */}
-      <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div>
-          <h2 className="text-2xl font-black text-gray-800 flex items-center gap-3">
-            <Gift className="w-6 h-6 text-indigo-500" />
-            Cumpleaños y Fidelización
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">Identifica a los pacientes que cumplen años para enviarles beneficios especiales.</p>
-        </div>
-
-        <div className="w-full md:w-auto flex items-center px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]">
-          <Search className="w-4 h-4 text-gray-400 mr-2" />
-          <input
-            type="text"
-            placeholder="Buscar paciente..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 outline-none w-full md:w-64"
-          />
-        </div>
+      {/* Pestañas Neumórficas Internas */}
+      <div className="flex gap-4 p-2 bg-[#e6e7ee] rounded-3xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] max-w-md">
+        <button
+          onClick={() => setActiveSubTab('birthdays')}
+          className={`flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all duration-300 flex-1 ${
+            activeSubTab === 'birthdays'
+              ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-[0_4px_12px_rgba(99,102,241,0.35)]'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Gift className="w-4 h-4" />
+          <span>Cumpleaños</span>
+        </button>
+        <button
+          onClick={() => setActiveSubTab('authorizations')}
+          className={`flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all duration-300 flex-1 ${
+            activeSubTab === 'authorizations'
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-[0_4px_12px_rgba(59,130,246,0.35)]'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>Autorizaciones</span>
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        {/* Cumpleaños de HOY */}
-        <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
-          <div 
-            onClick={() => setIsTodayCollapsed(!isTodayCollapsed)}
-            className="flex items-center justify-between mb-4 cursor-pointer select-none group"
-          >
-            <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
-              <PartyPopper className="w-5 h-5 text-indigo-500" />
-              Cumplen Hoy
-            </h3>
-            <div className="flex items-center gap-3">
-              <span className="bg-indigo-100 text-indigo-600 text-xs font-bold px-3 py-1 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_#ffffff]">
-                {birthdaysToday.length} paciente(s)
-              </span>
-              <button className={`p-1.5 rounded-full bg-[#e6e7ee] shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] text-indigo-500 transition-all duration-300 ${isTodayCollapsed ? '' : 'rotate-180'}`}>
-                <ChevronDown className="w-4 h-4" />
-              </button>
+      {/* VISTA 1: CUMPLEAÑOS */}
+      {activeSubTab === 'birthdays' && (
+        <div className="space-y-8 animate-fade-in">
+          {/* Header y Buscador */}
+          <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-black text-gray-800 flex items-center gap-3">
+                <Gift className="w-6 h-6 text-indigo-500" />
+                Cumpleaños y Fidelización
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">Identifica a los pacientes que cumplen años para enviarles beneficios especiales.</p>
             </div>
-          </div>
-          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isTodayCollapsed ? 'max-h-0 opacity-0 mt-0' : 'max-h-[1000px] opacity-100 mt-2'}`}>
-            {renderTable(birthdaysToday, true)}
-          </div>
-        </div>
 
-        {/* Cumpleaños del MES */}
-        <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
-          <div 
-            onClick={() => setIsMonthCollapsed(!isMonthCollapsed)}
-            className="flex items-center justify-between mb-4 cursor-pointer select-none group"
-          >
-            <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-500" />
-              Cumplen el resto del mes
-            </h3>
-            <div className="flex items-center gap-3">
-              <span className="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_#ffffff]">
-                {birthdaysThisMonth.length} paciente(s)
-              </span>
-              <button className={`p-1.5 rounded-full bg-[#e6e7ee] shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] text-blue-500 transition-all duration-300 ${isMonthCollapsed ? '' : 'rotate-180'}`}>
-                <ChevronDown className="w-4 h-4" />
-              </button>
+            <div className="w-full md:w-auto flex items-center px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]">
+              <Search className="w-4 h-4 text-gray-400 mr-2" />
+              <input
+                type="text"
+                placeholder="Buscar paciente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 outline-none w-full md:w-64"
+              />
             </div>
           </div>
-          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isMonthCollapsed ? 'max-h-0 opacity-0 mt-0' : 'max-h-[2500px] opacity-100 mt-2'}`}>
-            {renderTable(birthdaysThisMonth, false)}
+
+          <div className="grid grid-cols-1 gap-8">
+            {/* Cumpleaños de HOY */}
+            <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
+              <div 
+                onClick={() => setIsTodayCollapsed(!isTodayCollapsed)}
+                className="flex items-center justify-between mb-4 cursor-pointer select-none group"
+              >
+                <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+                  <PartyPopper className="w-5 h-5 text-indigo-500" />
+                  Cumplen Hoy
+                </h3>
+                <div className="flex items-center gap-3">
+                  <span className="bg-indigo-100 text-indigo-600 text-xs font-bold px-3 py-1 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_#ffffff]">
+                    {birthdaysToday.length} paciente(s)
+                  </span>
+                  <button className={`p-1.5 rounded-full bg-[#e6e7ee] shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] text-indigo-500 transition-all duration-300 ${isTodayCollapsed ? '' : 'rotate-180'}`}>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isTodayCollapsed ? 'max-h-0 opacity-0 mt-0' : 'max-h-[1000px] opacity-100 mt-2'}`}>
+                {renderTable(birthdaysToday, true)}
+              </div>
+            </div>
+
+            {/* Cumpleaños del MES */}
+            <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
+              <div 
+                onClick={() => setIsMonthCollapsed(!isMonthCollapsed)}
+                className="flex items-center justify-between mb-4 cursor-pointer select-none group"
+              >
+                <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-500" />
+                  Cumplen el resto del mes
+                </h3>
+                <div className="flex items-center gap-3">
+                  <span className="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_#ffffff]">
+                    {birthdaysThisMonth.length} paciente(s)
+                  </span>
+                  <button className={`p-1.5 rounded-full bg-[#e6e7ee] shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] text-blue-500 transition-all duration-300 ${isMonthCollapsed ? '' : 'rotate-180'}`}>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isMonthCollapsed ? 'max-h-0 opacity-0 mt-0' : 'max-h-[2500px] opacity-100 mt-2'}`}>
+                {renderTable(birthdaysThisMonth, false)}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* VISTA 2: AUTORIZACIONES (EXCEL) */}
+      {activeSubTab === 'authorizations' && (
+        <div className="space-y-8 animate-fade-in">
+          {/* Header y Buscador */}
+          <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-black text-gray-800 flex items-center gap-3">
+                <FileSpreadsheet className="w-6 h-6 text-blue-500" />
+                Control y Seguimiento de Autorizaciones
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">Carga un archivo Excel de autorizaciones para visualizar la asistencia de pacientes y sus números telefónicos.</p>
+            </div>
+
+            {authPatients.length > 0 && (
+              <div className="w-full md:w-auto flex items-center px-4 py-2 bg-[#e6e7ee] rounded-2xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]">
+                <Search className="w-4 h-4 text-gray-400 mr-2" />
+                <input
+                  type="text"
+                  placeholder="Buscar por paciente o documento..."
+                  value={authSearchTerm}
+                  onChange={(e) => setAuthSearchTerm(e.target.value)}
+                  className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 outline-none w-full md:w-64"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Área de Carga o Tabla */}
+          {authPatients.length === 0 ? (
+            <div className="bg-[#e6e7ee] rounded-3xl p-8 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] flex flex-col items-center justify-center min-h-[350px] transition-all">
+              <input
+                type="file"
+                id="excel-file-upload"
+                accept=".xlsx, .xls"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleExcelUpload(file);
+                }}
+                className="hidden"
+              />
+              
+              {isProcessingExcel ? (
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] flex items-center justify-center animate-spin">
+                    <RefreshCw className="w-6 h-6 text-blue-500" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-700">Procesando archivo...</h3>
+                  <p className="text-sm text-gray-400 max-w-xs">Leyendo las columnas del Excel y cruzando datos con la base de datos para obtener los números de teléfono...</p>
+                </div>
+              ) : (
+                <label 
+                  htmlFor="excel-file-upload"
+                  className="flex flex-col items-center gap-6 cursor-pointer text-center max-w-lg p-8 rounded-3xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50/10 transition-all duration-300 group"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] flex items-center justify-center text-blue-500 group-hover:scale-105 transition-transform">
+                    <Upload className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-700 group-hover:text-blue-500 transition-colors">Sube tu archivo Excel</h3>
+                    <p className="text-sm text-gray-400 mt-1">Haz clic para buscar o arrastra tu archivo aquí</p>
+                    <div className="mt-4 inline-flex items-center gap-2 bg-blue-50/60 border border-blue-100 rounded-xl px-3 py-1.5 text-xs text-blue-600 font-semibold shadow-sm">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>Extrae: Documento, Paciente, Autorización, Servicio, Cantidades, Fechas y busca el Teléfono en Supabase</span>
+                    </div>
+                  </div>
+                  {excelError && (
+                    <div className="mt-2 text-xs text-red-500 font-bold bg-red-50 border border-red-100 rounded-xl px-4 py-2 flex items-center gap-2 animate-bounce">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{excelError}</span>
+                    </div>
+                  )}
+                </label>
+              )}
+            </div>
+          ) : (
+            <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <span className="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1.5 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
+                    {authStats.total} filas importadas
+                  </span>
+                  <span className="bg-green-100 text-green-600 text-xs font-bold px-3 py-1.5 rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-green-500" />
+                    {authStats.withPhone} teléfonos cruzados
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setAuthPatients([]);
+                    setAuthSearchTerm('');
+                    setExcelError(null);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-red-500 rounded-xl bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Limpiar y subir otro
+                </button>
+              </div>
+
+              {filteredAuthList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 opacity-60">
+                  <Search className="w-12 h-12 text-gray-400 mb-3" />
+                  <p className="text-gray-500 font-medium">No se encontraron pacientes que coincidan con la búsqueda</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl bg-[#e6e7ee] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] p-2 max-h-[600px] overflow-y-auto">
+                  <table className="w-full text-left text-xs text-gray-600">
+                    <thead>
+                      <tr className="border-b border-gray-300 text-gray-500 font-bold uppercase text-[9px] tracking-wider sticky top-0 bg-[#e6e7ee] z-10">
+                        <th className="px-4 py-3">Documento</th>
+                        <th className="px-4 py-3">Paciente</th>
+                        <th className="px-4 py-3 text-center">N° Autorización</th>
+                        <th className="px-4 py-3">Servicio</th>
+                        <th className="px-4 py-3 text-center">Cant. Aut</th>
+                        <th className="px-4 py-3 text-center">Cant. Asis</th>
+                        <th className="px-4 py-3 text-center">Fecha Admisión</th>
+                        <th className="px-4 py-3 text-center">Teléfono</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAuthList.map((row, idx) => {
+                        const hasPhone = row.telefono && row.telefono !== '-';
+                        
+                        return (
+                          <tr key={`${row.documento}-${idx}`} className="border-b border-gray-200/60 last:border-0 hover:bg-[#d8d9e0] transition-colors">
+                            <td className="px-4 py-3">
+                              <button 
+                                onClick={() => handleCopyText(row.documento)}
+                                className="group/btn flex items-center gap-1.5 font-mono font-medium text-gray-700 bg-gray-200/50 hover:bg-gray-200 px-2 py-1 rounded text-left transition-colors relative"
+                                title="Copiar Documento"
+                              >
+                                {row.documento || '-'}
+                                <Copy className="w-3 h-3 text-gray-400 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                                {copiedDoc === row.documento && (
+                                  <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded shadow z-20 whitespace-nowrap animate-fade-in">
+                                    ¡Copiado!
+                                  </span>
+                                )}
+                              </button>
+                            </td>
+                            <td className="px-4 py-3 font-bold text-gray-700 uppercase">
+                              {row.paciente}
+                            </td>
+                            <td className="px-4 py-3 text-center font-mono text-gray-600 font-semibold">
+                              {row.autorizacion}
+                            </td>
+                            <td className="px-4 py-3 text-gray-600">
+                              {row.servicio}
+                            </td>
+                            <td className="px-4 py-3 text-center font-bold text-blue-600">
+                              {row.cantidadAutorizada}
+                            </td>
+                            <td className="px-4 py-3 text-center font-bold text-indigo-600">
+                              {row.cantidadAsistida}
+                            </td>
+                            <td className="px-4 py-3 text-center font-semibold text-gray-500 whitespace-nowrap">
+                              {row.fechaAdmision}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {hasPhone ? (
+                                <div className="flex items-center justify-center gap-2">
+                                  <a 
+                                    href={`tel:${row.telefono}`}
+                                    className="inline-flex items-center gap-1 bg-[#e6e7ee] text-green-600 hover:text-green-700 font-semibold px-2.5 py-1 rounded-lg shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_1px_1px_3px_#b8b9be,inset_-1px_-1px_3px_#ffffff] transition-all"
+                                    title="Llamar"
+                                  >
+                                    <Phone className="w-3.5 h-3.5" />
+                                    <span>{row.telefono}</span>
+                                  </a>
+                                  <a 
+                                    href={`https://wa.me/57${row.telefono.replace(/\s+/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1 text-green-500 bg-[#e6e7ee] hover:bg-green-50 rounded-lg shadow-[2px_2px_5px_#b8b9be,-2px_-2px_5px_#ffffff] hover:shadow-[inset_1px_1px_3px_#b8b9be,inset_-1px_-1px_3px_#ffffff] transition-all"
+                                    title="Escribir por WhatsApp"
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              ) : (
+                                <span className="text-gray-300 italic">No encontrado</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
