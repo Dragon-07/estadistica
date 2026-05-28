@@ -441,17 +441,9 @@ export default function Home() {
               {activeTab === 'referrals' && 'Gestión y aprobación del sistema de referidos'}
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsDisabledTreatmentsModalOpen(true)}
-              className="flex items-center gap-2 px-5 py-3.5 bg-[#e6e7ee] hover:bg-[#dcdde4] text-gray-700 rounded-2xl text-xs font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all transform active:scale-95 shrink-0 animate-fade-in"
-            >
-              Quitar no tratamientos
-            </button>
-            <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
-              <p className="text-gray-500 text-xs">Unidad Médica</p>
-              <p className="text-gray-700 font-semibold text-sm">Gerencia</p>
-            </div>
+          <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
+            <p className="text-gray-500 text-xs">Unidad Médica</p>
+            <p className="text-gray-700 font-semibold text-sm">Gerencia</p>
           </div>
         </div>
 
@@ -723,7 +715,7 @@ export default function Home() {
           <ReferralsAdmin />
         </div>
         <div className={activeTab === 'profitability' ? 'block' : 'hidden'}>
-          <ProfitabilityReport refreshTrigger={refreshTrigger} />
+          <ProfitabilityReport refreshTrigger={refreshTrigger} onOpenDisabledModal={() => setIsDisabledTreatmentsModalOpen(true)} />
         </div>
         </div>
       </main>

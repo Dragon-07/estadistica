@@ -129,7 +129,7 @@ function NeumorphicExplanationTooltip({ title, formula, text, children, position
 }
 
 
-export function ProfitabilityReport({ refreshTrigger }: { refreshTrigger?: number }) {
+export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { refreshTrigger?: number; onOpenDisabledModal?: () => void }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [appliedDateRange, setAppliedDateRange] = useState({ start: '', end: '' });
@@ -2443,7 +2443,7 @@ export function ProfitabilityReport({ refreshTrigger }: { refreshTrigger?: numbe
       )}
 
       {/* Nuevo Desplegable: Agregar Tratamientos Dinámicos con Buscador */}
-      <div className="flex justify-start px-2 mt-2 z-30">
+      <div className="flex justify-start items-center gap-4 px-2 mt-2 z-30">
         <div className="relative w-auto min-w-[250px]" ref={treatmentDropdownRef}>
           <button
             type="button"
@@ -2493,6 +2493,15 @@ export function ProfitabilityReport({ refreshTrigger }: { refreshTrigger?: numbe
             </div>
           )}
         </div>
+
+        {/* Botón Quitar no tratamientos */}
+        <button
+          type="button"
+          onClick={onOpenDisabledModal}
+          className="bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-red-600 hover:text-red-700 uppercase tracking-widest transition-all outline-none"
+        >
+          Quitar no tratamientos
+        </button>
       </div>
 
       {/* Rejilla de Servicios y Costos Consolidados (Al final para que baje al desplegar) */}
