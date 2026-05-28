@@ -8,6 +8,7 @@ import { BillingReport } from '@/features/reports/components/BillingReport';
 import { FollowUps } from '@/features/reports/components/FollowUps';
 import { ReferralsAdmin } from '@/features/reports/components/ReferralsAdmin';
 import { ProfitabilityReport } from '@/features/profitability/components/ProfitabilityReport';
+import { EntityValuesModal } from '@/features/reports/components/EntityValuesModal';
 import {
   LayoutDashboard,
   FileText,
@@ -44,6 +45,7 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | 'save' | null>(null);
+  const [isEntityModalOpen, setIsEntityModalOpen] = useState(false);
 
   // Estados para Borrar por Rango de Fecha
   const [showDateRangeModal, setShowDateRangeModal] = useState(false);
@@ -519,6 +521,19 @@ export default function Home() {
                     )}
                   </div>
                 ))}
+
+                {/* Botón Completar valores */}
+                <div className="flex flex-col gap-4">
+                  <button
+                    onClick={() => setIsEntityModalOpen(true)}
+                    className="flex items-center gap-4 px-8 py-5 rounded-3xl font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] bg-[#e6e7ee] text-gray-700 hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all duration-300 group min-w-[240px]"
+                  >
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center transition-transform bg-white shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] group-hover:scale-95">
+                      <TrendingUp className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <span className="text-sm tracking-wide">Completar valores</span>
+                  </button>
+                </div>
               </div>
 
               {/* Botones de Control de Base de Datos */}
@@ -701,6 +716,12 @@ export default function Home() {
         </div>
         </div>
       </main>
+
+      {/* Modal para Completar Valores de Entidades */}
+      <EntityValuesModal 
+        isOpen={isEntityModalOpen} 
+        onClose={() => setIsEntityModalOpen(false)} 
+      />
     </div>
   );
 }

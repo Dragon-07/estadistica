@@ -338,9 +338,6 @@ export function FollowUps() {
 
         setAuthPatients(updatedPatients);
         localStorage.setItem('auth_patients_data', JSON.stringify(updatedPatients));
-        
-        // Dar feedback al usuario
-        alert(`¡Base de datos cruzada con éxito! Se encontraron e inyectaron ${matchedCount} números telefónicos adicionales.`);
       } catch (err: any) {
         console.error(err);
         setExcelError(err.message || 'Error al procesar la base de datos de Excel.');
