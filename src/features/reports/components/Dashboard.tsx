@@ -270,25 +270,125 @@ export function Dashboard() {
         }
       }
 
-      const dataToExport = allExportRecords.map(r => {
-        const rowData: Record<string, any> = {};
+      // Columnas numéricas que se deben exportar como número puro
+      const NUMERIC_COLUMNS = new Set([
+        'Pagos Recibidos', 'Pagos Pendientes', 'Valor', 'Cantidad',
+        'IVA', 'TIPO DE IVA', 'Total Item',
+        'Valor Servicio (Particular o por convenio)',
+        'Facturado a la entidad del Paciente', 'Total final',
+      ]);
+
+      // Todas las columnas del esquema global
+      const ALL_COLUMNS = [
+        'M Tratante', 'Fecha Creación', 'Factura', 'Número Documento',
+        'Cliente', 'Fecha de Nacimiento', 'Género', 'EPS/Entidad Paciente', 'Pagos Recibidos', 'Pagos Pendientes',
+        'Medios Pago', 'Estado Factura', 'Dirección', 'Teléfono', 'Correo',
+        'Tipo Cliente', 'Código (CUP)', 'Concepto', 'Valor', 'Cantidad',
+        'IVA', 'TIPO DE IVA', 'Total Item', 'Fecha Anulación',
+        'Valor Servicio (Particular o por convenio)',
+        'Facturado a la entidad del Paciente', 'Total final',
+      ];
+
+      // Función de parseo numérico inteligente integrada
+      const smartParse = (raw: unknown): number => {
+        if (raw === undefined || raw === null || String(raw).trim() === '') return 0;
+        if (typeof raw === 'number') return raw;
+
+        let cleaned = String(raw).replace(/[$\s]/g, '');
         
-        GLOBAL_REPORT_COLUMNS.forEach(col => {
-          // Ignoramos la columna vacía usada como separador
-          if (col === '') return; 
-          
-          rowData[col] = r.extra_data?.[col] || '';
+        const hasComma = cleaned.includes(',');
+        const hasDot = cleaned.includes('.');
+        
+        if (hasComma && hasDot) {
+          const lastComma = cleaned.lastIndexOf(',');
+          const lastDot = cleaned.lastIndexOf('.');
+          if (lastComma > lastDot) {
+            cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+          } else {
+            cleaned = cleaned.replace(/,/g, '');
+          }
+        } else if (hasComma) {
+          const parts = cleaned.split(',');
+          if (parts.length === 2 && parts[1].length <= 2) {
+            cleaned = cleaned.replace(',', '.');
+          } else {
+            cleaned = cleaned.replace(/,/g, '');
+          }
+        } else if (hasDot) {
+          const parts = cleaned.split('.');
+          if (parts.length === 2 && parts[1].length <= 2) {
+            // Es decimal
+          } else {
+            cleaned = cleaned.replace(/\./g, '');
+          }
+        }
+        
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? 0 : num;
+      };
+
+      // Mapear de forma híbrida combinando extra_data y las columnas de la tabla principal
+      const detailRows = allExportRecords.map((r, i) => {
+        const row: Record<string, any> = { '#': i + 1 };
+
+        ALL_COLUMNS.forEach(col => {
+          let val = r.extra_data?.[col];
+
+          // Respaldo desde la tabla por si no está en extra_data
+          if (val === undefined || val === null || val === '') {
+            if (col === 'M Tratante') val = r.doctor_name;
+            else if (col === 'Fecha Creación') val = r.treatment_date;
+            else if (col === 'Factura') val = r.invoice_number;
+            else if (col === 'Número Documento') val = r.patient_doc;
+            else if (col === 'Cliente') val = r.patient_name;
+            else if (col === 'EPS/Entidad Paciente') val = r.entity_name;
+            else if (col === 'Concepto') val = r.treatment_name;
+          }
+
+          if (NUMERIC_COLUMNS.has(col)) {
+            row[col] = smartParse(val);
+          } else {
+            row[col] = val !== undefined && val !== null ? String(val) : '';
+          }
         });
-        
-        return rowData;
+
+        return row;
       });
 
-      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      // Agregar fila de TOTAL al final de la tabla
+      const totalsRow: Record<string, any> = { '#': 'TOTAL' };
+      ALL_COLUMNS.forEach(col => {
+        if (NUMERIC_COLUMNS.has(col)) {
+          totalsRow[col] = allExportRecords.reduce((acc, r) => {
+            let val = r.extra_data?.[col];
+            if (val === undefined || val === null || val === '') {
+              if (col === 'M Tratante') val = r.doctor_name;
+              else if (col === 'Fecha Creación') val = r.treatment_date;
+              else if (col === 'Factura') val = r.invoice_number;
+              else if (col === 'Número Documento') val = r.patient_doc;
+              else if (col === 'Cliente') val = r.patient_name;
+              else if (col === 'EPS/Entidad Paciente') val = r.entity_name;
+              else if (col === 'Concepto') val = r.treatment_name;
+            }
+            return acc + smartParse(val);
+          }, 0);
+        } else {
+          totalsRow[col] = '';
+        }
+      });
+      detailRows.push(totalsRow);
+
+      const wsDetails = XLSX.utils.json_to_sheet(detailRows);
+
+      // Ajustar el ancho de las columnas dinámicamente para que luzca perfecto
+      const colWidths = [{ wch: 6 }, ...ALL_COLUMNS.map(col => ({ wch: Math.max(col.length + 2, 14) }))];
+      wsDetails['!cols'] = colWidths;
+
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
+      XLSX.utils.book_append_sheet(wb, wsDetails, 'Detalle de Registros');
       
       const rangeStr = startDate && endDate ? `${startDate}_a_${endDate}` : 'Historico_Total';
-      XLSX.writeFile(wb, `Reporte_Todexo_${rangeStr}.xlsx`);
+      XLSX.writeFile(wb, `Reporte_Consolidado_${rangeStr}.xlsx`);
     } catch (err) {
       console.error(err);
       alert('Error exportando datos');
