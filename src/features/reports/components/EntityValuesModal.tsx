@@ -93,23 +93,9 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
       setSaving(true);
       setError(null);
 
-      // Encontrar nombres únicos para evitar colisiones UNIQUE en la base de datos
-      let counter = 1;
-      let defaultEntity = 'NUEVA ENTIDAD';
-      let defaultService = `NUEVO SERVICIO ${counter}`;
-
-      const checkExists = (ent: string, ser: string) => {
-        return values.some(v => v.entity_name === ent && v.service_name === ser);
-      };
-
-      while (checkExists(defaultEntity, defaultService)) {
-        counter++;
-        defaultService = `NUEVO SERVICIO ${counter}`;
-      }
-
       const record = {
-        entity_name: defaultEntity,
-        service_name: defaultService,
+        entity_name: 'NUEVA ENTIDAD',
+        service_name: 'NUEVO SERVICIO',
         copay: 0,
         entity_value: 0
       };
@@ -123,7 +109,7 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
 
       if (data && data.length > 0) {
         const newRecord = data[0];
-        // Agregar al estado local al principio o al final
+        // Agregar al estado local al principio de la tabla
         setValues(prev => [newRecord, ...prev]);
         setOriginalValues(prev => ({ ...prev, [newRecord.id!]: { ...newRecord } }));
         showSuccess('¡Fila en blanco creada! Edítala directamente en la tabla.');
@@ -223,12 +209,7 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
         .update({ [field]: targetVal })
         .eq('id', id);
 
-      if (dbError) {
-        if (dbError.code === '23505') {
-          throw new Error('Ya existe una tarifa para esta Entidad y Servicio.');
-        }
-        throw dbError;
-      }
+      if (dbError) throw dbError;
 
       // Actualizar el mapa de valores originales
       setOriginalValues(prev => ({
@@ -302,32 +283,32 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#e6e7ee]">
           
-          {/* Formulario simplificado: Solo botón para crear fila en blanco */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#e6e7ee] rounded-[2rem] p-6 shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]">
-            <div className="text-xs text-gray-400 font-semibold text-center sm:text-left">
-              Haz clic en el botón para agregar una nueva fila en blanco y edita sus valores directamente en la tabla inferior.
+          {/* Barra de Acciones: Buscador + Agregar Tarifa en Horizontal */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            
+            {/* Buscador */}
+            <div className="flex items-center px-4 py-3 bg-[#e6e7ee] rounded-2xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] flex-1 max-w-md">
+              <Search className="w-4 h-4 text-gray-400 mr-2 shrink-0" />
+              <input
+                type="text"
+                placeholder="Buscar por entidad o servicio..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent border-none text-xs text-gray-700 focus:ring-0 outline-none w-full font-medium"
+              />
             </div>
+
+            {/* Botón Agregar Tarifa como recuadro Neumórfico elegante */}
             <button 
               type="button"
               onClick={handleAddNewBlankRow}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold text-xs rounded-2xl shadow-[4px_4px_10px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.2)] hover:scale-[0.98] active:scale-[0.95] transition-all duration-200 shrink-0"
+              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#e6e7ee] text-blue-600 font-bold text-xs rounded-2xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] hover:scale-[0.99] active:scale-[0.96] transition-all duration-200 shrink-0"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Agregar Tarifa
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4 text-blue-500 shrink-0" />}
+              <span>Agregar Tarifa</span>
             </button>
-          </div>
 
-          {/* Buscador de Tabla */}
-          <div className="flex items-center px-4 py-2.5 bg-[#e6e7ee] rounded-2xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] max-w-md">
-            <Search className="w-4 h-4 text-gray-400 mr-2 shrink-0" />
-            <input
-              type="text"
-              placeholder="Buscar por entidad o servicio..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none text-xs text-gray-700 focus:ring-0 outline-none w-full"
-            />
           </div>
 
           {/* Tabla Neumórfica Directa */}
@@ -342,7 +323,7 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
               <p className="text-gray-400 font-medium text-sm">No se encontraron registros de tarifas</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-[2rem] bg-[#e6e7ee] shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] p-4 max-h-[380px] overflow-y-auto">
+            <div className="overflow-x-auto rounded-[2rem] bg-[#e6e7ee] shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] p-4 max-h-[460px] overflow-y-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="text-gray-400 font-bold uppercase text-[9px] tracking-wider sticky top-0 bg-[#e6e7ee] z-20">
