@@ -87,6 +87,41 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
     });
   }, [values, searchTerm]);
 
+  // Ejecutar el cruce de valores en lote en la base de datos
+  const handleCruceValores = async () => {
+    if (values.length === 0) {
+      setError('No hay tarifas configuradas para cruzar.');
+      return;
+    }
+
+    if (!confirm('¿Deseas comparar las tarifas con los registros médicos de la base de datos y completar los Pagos Pendientes automáticamente?')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      // Llamar al RPC en Supabase
+      const { data, error: rpcError } = await supabase.rpc('cruce_valores_pendientes');
+
+      if (rpcError) throw rpcError;
+
+      const result = data as { success: boolean; message: string; rows_updated?: number };
+
+      if (result.success) {
+        showSuccess(`¡Cruce completado con éxito! Se actualizaron ${result.rows_updated || 0} registros médicos.`);
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err: any) {
+      console.error('Error en cruce de valores:', err);
+      setError(err.message || 'Error al ejecutar el cruce en el servidor.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Añadir un nuevo registro en blanco
   const handleAddNewBlankRow = async () => {
     try {
@@ -283,7 +318,7 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#e6e7ee]">
           
-          {/* Barra de Acciones: Buscador + Agregar Tarifa en Horizontal */}
+          {/* Barra de Acciones: Buscador + Completar Valores + Agregar Tarifa en Horizontal */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             
             {/* Buscador */}
@@ -298,16 +333,30 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
               />
             </div>
 
-            {/* Botón Agregar Tarifa como recuadro Neumórfico elegante */}
-            <button 
-              type="button"
-              onClick={handleAddNewBlankRow}
-              disabled={saving}
-              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#e6e7ee] text-blue-600 font-bold text-xs rounded-2xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] hover:scale-[0.99] active:scale-[0.96] transition-all duration-200 shrink-0"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4 text-blue-500 shrink-0" />}
-              <span>Agregar Tarifa</span>
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Botón Completar Valores (Cruce de Base de Datos) */}
+              <button 
+                type="button"
+                onClick={handleCruceValores}
+                disabled={saving || loading}
+                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#e6e7ee] text-green-600 font-bold text-xs rounded-2xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] hover:scale-[0.99] active:scale-[0.96] transition-all duration-200"
+                title="Comparar y cruzar las tarifas con la base de datos de registros médicos para completar los Pagos Pendientes"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4 text-green-500 shrink-0" />}
+                <span>Completar valores</span>
+              </button>
+
+              {/* Botón Agregar Tarifa como recuadro Neumórfico elegante */}
+              <button 
+                type="button"
+                onClick={handleAddNewBlankRow}
+                disabled={saving}
+                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#e6e7ee] text-blue-600 font-bold text-xs rounded-2xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] hover:scale-[0.99] active:scale-[0.96] transition-all duration-200"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4 text-blue-500 shrink-0" />}
+                <span>Agregar Tarifa</span>
+              </button>
+            </div>
 
           </div>
 
