@@ -7,12 +7,10 @@ import {
   Search, 
   Plus, 
   Trash2, 
-  Save, 
   Loader2, 
   AlertCircle, 
   CheckCircle2, 
   DollarSign,
-  Briefcase,
   Activity
 } from 'lucide-react';
 
@@ -31,6 +29,8 @@ interface EntityValuesModalProps {
 
 export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
   const [values, setValues] = useState<EntityValue[]>([]);
+  // Clon para realizar seguimiento de los valores iniciales y evitar escrituras redundantes
+  const [originalValues, setOriginalValues] = useState<Record<string, EntityValue>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,9 +43,8 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
   const [newCopay, setNewCopay] = useState<string>('');
   const [newEntityValue, setNewEntityValue] = useState<string>('');
 
-  // Estado para la celda que se está editando en línea
-  const [editingCell, setEditingCell] = useState<{ id: string; field: 'copay' | 'entity_value' } | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
+  // Guardados en curso para feedback por celda/fila
+  const [pendingUpdates, setPendingUpdates] = useState<Record<string, boolean>>({});
 
   const supabase = createClient();
 
@@ -61,7 +60,14 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
         .order('service_name', { ascending: true });
 
       if (dbError) throw dbError;
+      
       setValues(data || []);
+      // Almacenar el estado original en un mapa para poder comparar
+      const originalMap: Record<string, EntityValue> = {};
+      data?.forEach(v => {
+        if (v.id) originalMap[v.id] = { ...v };
+      });
+      setOriginalValues(originalMap);
     } catch (err: any) {
       console.error('Error fetching entity values:', err);
       setError('No se pudieron cargar los valores. Revisa la conexión.');
@@ -122,7 +128,9 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
       }
 
       if (data && data.length > 0) {
-        setValues(prev => [...prev, data[0]].sort((a, b) => a.entity_name.localeCompare(b.entity_name)));
+        const newRecord = data[0];
+        setValues(prev => [...prev, newRecord].sort((a, b) => a.entity_name.localeCompare(b.entity_name)));
+        setOriginalValues(prev => ({ ...prev, [newRecord.id!]: { ...newRecord } }));
         setNewEntity('');
         setNewService('');
         setNewCopay('');
@@ -152,6 +160,11 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
       if (dbError) throw dbError;
 
       setValues(prev => prev.filter(v => v.id !== id));
+      setOriginalValues(prev => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
       showSuccess('Registro eliminado correctamente.');
     } catch (err: any) {
       setError('Error al eliminar el registro.');
@@ -160,35 +173,90 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
     }
   };
 
-  // Iniciar edición en línea
-  const startEditing = (id: string, field: 'copay' | 'entity_value', currentVal: number) => {
-    setEditingCell({ id, field });
-    setEditValue(String(currentVal));
+  // Actualización local temporal del input mientras se escribe
+  const handleLocalChange = (id: string, field: keyof EntityValue, val: string) => {
+    setValues(prev => prev.map(item => {
+      if (item.id === id) {
+        let parsedVal: any = val;
+        if (field === 'copay' || field === 'entity_value') {
+          // Dejar que el input maneje el string para escribir cómodamente números y decimales
+          parsedVal = val;
+        } else {
+          parsedVal = val.toUpperCase();
+        }
+        return { ...item, [field]: parsedVal };
+      }
+      return item;
+    }));
   };
 
-  // Guardar edición en línea
-  const saveInlineEdit = async (id: string, field: 'copay' | 'entity_value') => {
-    const valNum = parseFloat(editValue) || 0;
+  // Persistir cambios en Supabase en blur o enter
+  const handlePersistChange = async (id: string, field: keyof EntityValue) => {
+    const row = values.find(v => v.id === id);
+    if (!row) return;
+
+    let targetVal = row[field];
     
+    // Parsear números si corresponde
+    if (field === 'copay' || field === 'entity_value') {
+      targetVal = parseFloat(String(targetVal)) || 0;
+    }
+
+    const originalRow = originalValues[id];
+    const originalVal = originalRow ? originalRow[field] : undefined;
+
+    // Si el valor no cambió, no hacemos llamada a la base de datos
+    if (targetVal === originalVal) {
+      // Sincronizar el estado por si tenía decimales a medias
+      setValues(prev => prev.map(item => item.id === id ? { ...item, [field]: targetVal } : item));
+      return;
+    }
+
+    // Validación de campos obligatorios
+    if ((field === 'entity_name' || field === 'service_name') && !String(targetVal).trim()) {
+      setError('La Entidad y el Servicio son campos requeridos.');
+      // Revertir cambio local al valor original
+      setValues(prev => prev.map(item => item.id === id ? { ...item, [field]: originalVal } : item));
+      return;
+    }
+
     try {
       setError(null);
+      setPendingUpdates(prev => ({ ...prev, [`${id}-${field}`]: true }));
+
       const { error: dbError } = await supabase
         .from('entity_values')
-        .update({ [field]: valNum })
+        .update({ [field]: targetVal })
         .eq('id', id);
 
-      if (dbError) throw dbError;
-
-      setValues(prev => prev.map(item => {
-        if (item.id === id) {
-          return { ...item, [field]: valNum };
+      if (dbError) {
+        if (dbError.code === '23505') {
+          throw new Error('Ya existe una tarifa para esta Entidad y Servicio.');
         }
-        return item;
+        throw dbError;
+      }
+
+      // Actualizar el mapa de valores originales
+      setOriginalValues(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          [field]: targetVal
+        }
       }));
-      setEditingCell(null);
-      showSuccess('Valor actualizado.');
+      // Normalizar en el estado local
+      setValues(prev => prev.map(item => item.id === id ? { ...item, [field]: targetVal } : item));
+      showSuccess('Cambio guardado automáticamente.');
     } catch (err: any) {
-      setError('Error al actualizar el valor.');
+      setError(err.message || 'Error al guardar los cambios en la base de datos.');
+      // Revertir en el estado local al valor original
+      setValues(prev => prev.map(item => item.id === id ? { ...item, [field]: originalVal } : item));
+    } finally {
+      setPendingUpdates(prev => {
+        const copy = { ...prev };
+        delete copy[`${id}-${field}`];
+        return copy;
+      });
     }
   };
 
@@ -202,18 +270,18 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
   return (
     <div className="fixed inset-0 bg-black/40 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
       <div 
-        className="bg-[#e6e7ee] rounded-[2.5rem] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff] border border-white/20"
+        className="bg-[#e6e7ee] rounded-[2.5rem] w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff] border border-white/20"
         style={{ fontFamily: 'var(--font-manrope)' }}
       >
         {/* Header Modal */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-300/60 shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-gray-300/60 shrink-0 bg-[#e6e7ee]">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.35)]">
               <DollarSign className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">Completar Valores de Entidades</h2>
-              <p className="text-xs text-gray-400">Configura el Copago y el Valor que paga la entidad para cada servicio.</p>
+              <p className="text-xs text-gray-400 font-medium">Edita los campos directamente en la tabla. Los cambios se guardan automáticamente al presionar Enter o cambiar de celda.</p>
             </div>
           </div>
           <button 
@@ -232,16 +300,16 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
           </div>
         )}
         {success && (
-          <div className="mx-6 mt-4 p-3.5 rounded-2xl bg-green-50 border border-green-200 text-green-600 text-sm font-semibold flex items-center gap-2 animate-fade-in shrink-0">
-            <CheckCircle2 className="w-5 h-5 shrink-0" />
+          <div className="mx-6 mt-4 p-3.5 rounded-2xl bg-green-50 border border-green-200 text-green-600 text-xs font-bold flex items-center gap-2 animate-fade-in shrink-0">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-green-500" />
             <span>{success}</span>
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#e6e7ee]">
           
           {/* Formulario rápido para añadir registros */}
-          <form onSubmit={handleAddValue} className="bg-[#e6e7ee] rounded-3xl p-5 shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] space-y-4">
+          <form onSubmit={handleAddValue} className="bg-[#e6e7ee] rounded-[2rem] p-5 shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] space-y-4">
             <h3 className="text-sm font-bold text-gray-600 flex items-center gap-2">
               <Plus className="w-4 h-4 text-blue-500" />
               Configurar nueva combinación
@@ -250,62 +318,68 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Input Entidad */}
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 px-1">Entidad</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Entidad</label>
                 <input 
                   type="text" 
                   value={newEntity}
                   onChange={(e) => setNewEntity(e.target.value)}
                   placeholder="Ej. ECOPETROL"
-                  className="w-full px-4 py-2.5 text-sm rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-gray-400"
+                  className="w-full px-4 py-2.5 text-xs rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all uppercase font-semibold"
                 />
               </div>
 
               {/* Input Servicio */}
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 px-1">Servicio</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Servicio</label>
                 <input 
                   type="text" 
                   value={newService}
                   onChange={(e) => setNewService(e.target.value)}
                   placeholder="Ej. ACUPUNTURA"
-                  className="w-full px-4 py-2.5 text-sm rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-gray-400"
+                  className="w-full px-4 py-2.5 text-xs rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all uppercase font-semibold"
                 />
               </div>
 
               {/* Input Copago */}
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 px-1">Copago</label>
-                <input 
-                  type="number" 
-                  value={newCopay}
-                  onChange={(e) => setNewCopay(e.target.value)}
-                  placeholder="0.00"
-                  min="0"
-                  step="any"
-                  className="w-full px-4 py-2.5 text-sm rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-gray-400"
-                />
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Copago</label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-blue-500 font-bold text-xs pointer-events-none">$</span>
+                  <input 
+                    type="number" 
+                    value={newCopay}
+                    onChange={(e) => setNewCopay(e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="any"
+                    className="w-full pl-7 pr-4 py-2.5 text-xs rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-mono font-semibold"
+                  />
+                </div>
               </div>
 
               {/* Input Valor paga Entidad */}
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1 px-1">Valor paga Entidad</label>
-                <input 
-                  type="number" 
-                  value={newEntityValue}
-                  onChange={(e) => setNewEntityValue(e.target.value)}
-                  placeholder="0.00"
-                  min="0"
-                  step="any"
-                  className="w-full px-4 py-2.5 text-sm rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-gray-400"
-                />
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Valor paga Entidad</label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-blue-500 font-bold text-xs pointer-events-none">$</span>
+                  <input 
+                    type="number" 
+                    value={newEntityValue}
+                    onChange={(e) => setNewEntityValue(e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="any"
+                    className="w-full pl-7 pr-4 py-2.5 text-xs rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-mono font-semibold"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end pt-1">
               <button 
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold text-xs rounded-xl shadow-[3px_3px_8px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] transition-all disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold text-xs rounded-xl shadow-[3px_3px_8px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] transition-all disabled:opacity-50"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 Agregar Tarifa
@@ -321,11 +395,11 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
               placeholder="Buscar por entidad o servicio..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none text-sm text-gray-700 focus:ring-0 outline-none w-full"
+              className="bg-transparent border-none text-xs text-gray-700 focus:ring-0 outline-none w-full"
             />
           </div>
 
-          {/* Tabla de Resultados */}
+          {/* Tabla Neumórfica Directa */}
           {loading ? (
             <div className="py-12 flex flex-col justify-center items-center gap-3">
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -337,85 +411,117 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
               <p className="text-gray-400 font-medium text-sm">No se encontraron registros de tarifas</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl bg-[#e6e7ee] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] p-2 max-h-[350px] overflow-y-auto">
-              <table className="w-full text-left text-xs text-gray-600">
+            <div className="overflow-x-auto rounded-[2rem] bg-[#e6e7ee] shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] p-4 max-h-[380px] overflow-y-auto">
+              <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-300 text-gray-500 font-bold uppercase text-[9px] tracking-wider sticky top-0 bg-[#e6e7ee] z-10">
-                    <th className="px-4 py-3">Entidad</th>
-                    <th className="px-4 py-3">Servicio</th>
-                    <th className="px-4 py-3 text-right">Copago</th>
-                    <th className="px-4 py-3 text-right">Valor paga Entidad</th>
-                    <th className="px-4 py-3 text-center w-20">Acciones</th>
+                  <tr className="text-gray-400 font-bold uppercase text-[9px] tracking-wider sticky top-0 bg-[#e6e7ee] z-20">
+                    <th className="px-3 py-2 pb-3">Entidad</th>
+                    <th className="px-3 py-2 pb-3">Servicio</th>
+                    <th className="px-3 py-2 pb-3 text-center w-40">Copago</th>
+                    <th className="px-3 py-2 pb-3 text-center w-48">Valor paga Entidad</th>
+                    <th className="px-3 py-2 pb-3 text-center w-16">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredValues.map((row) => {
-                    const isEditingCopay = editingCell?.id === row.id && editingCell?.field === 'copay';
-                    const isEditingVal = editingCell?.id === row.id && editingCell?.field === 'entity_value';
+                    const isSavingCopay = pendingUpdates[`${row.id}-copay`];
+                    const isSavingValue = pendingUpdates[`${row.id}-entity_value`];
+                    const isSavingEntity = pendingUpdates[`${row.id}-entity_name`];
+                    const isSavingService = pendingUpdates[`${row.id}-service_name`];
 
                     return (
-                      <tr key={row.id} className="border-b border-gray-200/60 last:border-0 hover:bg-[#d8d9e0] transition-colors">
-                        <td className="px-4 py-3.5 font-bold text-gray-700 uppercase">
-                          {row.entity_name}
-                        </td>
-                        <td className="px-4 py-3.5 text-gray-600 uppercase">
-                          {row.service_name}
-                        </td>
+                      <tr key={row.id} className="hover:bg-[#dadbe2]/40 transition-colors">
                         
+                        {/* Celda Entidad */}
+                        <td className="px-2 py-2">
+                          <div className="relative flex items-center">
+                            <input 
+                              type="text"
+                              value={row.entity_name}
+                              onChange={(e) => handleLocalChange(row.id!, 'entity_name', e.target.value)}
+                              onBlur={() => handlePersistChange(row.id!, 'entity_name')}
+                              onKeyDown={(e) => e.key === 'Enter' && handlePersistChange(row.id!, 'entity_name')}
+                              className="px-4 py-3 w-full font-bold text-gray-700 uppercase rounded-2xl bg-[#e6e7ee] shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-xs transition-all"
+                            />
+                            {isSavingEntity && (
+                              <Loader2 className="absolute right-3 w-3 h-3 text-blue-500 animate-spin" />
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Celda Servicio */}
+                        <td className="px-2 py-2">
+                          <div className="relative flex items-center">
+                            <input 
+                              type="text"
+                              value={row.service_name}
+                              onChange={(e) => handleLocalChange(row.id!, 'service_name', e.target.value)}
+                              onBlur={() => handlePersistChange(row.id!, 'service_name')}
+                              onKeyDown={(e) => e.key === 'Enter' && handlePersistChange(row.id!, 'service_name')}
+                              className="px-4 py-3 w-full font-semibold text-gray-600 uppercase rounded-2xl bg-[#e6e7ee] shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-xs transition-all"
+                            />
+                            {isSavingService && (
+                              <Loader2 className="absolute right-3 w-3 h-3 text-blue-500 animate-spin" />
+                            )}
+                          </div>
+                        </td>
+
                         {/* Celda Copago */}
-                        <td className="px-4 py-3.5 text-right font-mono font-semibold text-gray-700">
-                          {isEditingCopay ? (
+                        <td className="px-2 py-2">
+                          <div className="relative flex items-center w-full">
+                            <span className="absolute left-4 text-blue-400/80 font-bold text-xs pointer-events-none">$</span>
                             <input 
                               type="number"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={() => saveInlineEdit(row.id!, 'copay')}
-                              onKeyDown={(e) => e.key === 'Enter' && saveInlineEdit(row.id!, 'copay')}
-                              autoFocus
-                              className="w-24 px-2 py-1 text-xs text-right rounded-md bg-white border border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              value={row.copay}
+                              onChange={(e) => handleLocalChange(row.id!, 'copay', e.target.value)}
+                              onBlur={() => handlePersistChange(row.id!, 'copay')}
+                              onKeyDown={(e) => e.key === 'Enter' && handlePersistChange(row.id!, 'copay')}
+                              step="any"
+                              min="0"
+                              className="pl-8 pr-8 py-3 w-full text-right font-mono font-bold text-blue-600 rounded-2xl bg-[#e6e7ee] shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-xs transition-all"
                             />
-                          ) : (
-                            <span 
-                              onClick={() => startEditing(row.id!, 'copay', row.copay)}
-                              className="cursor-pointer hover:bg-gray-200/60 px-2 py-1 rounded transition-colors"
-                              title="Hacer clic para editar"
-                            >
-                              ${row.copay.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          )}
+                            <div className="absolute right-3 flex items-center">
+                              {isSavingCopay ? (
+                                <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                              ) : (
+                                <span className="text-[10px] text-gray-400 font-bold font-mono">COP</span>
+                              )}
+                            </div>
+                          </div>
                         </td>
 
                         {/* Celda Valor paga Entidad */}
-                        <td className="px-4 py-3.5 text-right font-mono font-semibold text-blue-600">
-                          {isEditingVal ? (
+                        <td className="px-2 py-2">
+                          <div className="relative flex items-center w-full">
+                            <span className="absolute left-4 text-blue-500 font-bold text-xs pointer-events-none">$</span>
                             <input 
                               type="number"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={() => saveInlineEdit(row.id!, 'entity_value')}
-                              onKeyDown={(e) => e.key === 'Enter' && saveInlineEdit(row.id!, 'entity_value')}
-                              autoFocus
-                              className="w-24 px-2 py-1 text-xs text-right rounded-md bg-white border border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              value={row.entity_value}
+                              onChange={(e) => handleLocalChange(row.id!, 'entity_value', e.target.value)}
+                              onBlur={() => handlePersistChange(row.id!, 'entity_value')}
+                              onKeyDown={(e) => e.key === 'Enter' && handlePersistChange(row.id!, 'entity_value')}
+                              step="any"
+                              min="0"
+                              className="pl-8 pr-8 py-3 w-full text-right font-mono font-black text-blue-600 rounded-2xl bg-[#e6e7ee] shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-xs transition-all"
                             />
-                          ) : (
-                            <span 
-                              onClick={() => startEditing(row.id!, 'entity_value', row.entity_value)}
-                              className="cursor-pointer hover:bg-gray-200/60 px-2 py-1 rounded transition-colors"
-                              title="Hacer clic para editar"
-                            >
-                              ${row.entity_value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          )}
+                            <div className="absolute right-3 flex items-center">
+                              {isSavingValue ? (
+                                <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                              ) : (
+                                <span className="text-[10px] text-gray-400 font-bold font-mono">COP</span>
+                              )}
+                            </div>
+                          </div>
                         </td>
 
                         {/* Acciones */}
-                        <td className="px-4 py-3.5 text-center">
+                        <td className="px-3 py-2 text-center">
                           <button 
                             onClick={() => handleDelete(row.id!)}
-                            className="p-1.5 rounded-lg bg-[#e6e7ee] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] text-red-500 hover:text-red-700 hover:shadow-[inset_1px_1px_3px_#b8b9be,inset_-1px_-1px_3px_#ffffff] transition-all"
+                            className="p-3 rounded-2xl bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] text-red-500 hover:text-red-700 hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] transition-all"
                             title="Eliminar tarifa"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
                       </tr>
