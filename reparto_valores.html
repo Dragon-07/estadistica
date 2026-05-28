@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análisis de Reparto de Valores en Tratamientos - Holística</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #e6e7ee;
+      --text: #313b5e;
+      --text-muted: #6b7280;
+      --blue: #2563eb;
+      --blue-light: #3b82f6;
+      --green: #10b981;
+      --green-dark: #059669;
+      --shadow-dark: #b8b9be;
+      --shadow-light: #ffffff;
+      --font-title: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: all 0.3s ease-in-out;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      padding: 2rem;
+      border-radius: 2.5rem;
+      background: var(--bg);
+      box-shadow: 9px 9px 16px var(--shadow-dark), -9px -9px 16px var(--shadow-light);
+    }
+
+    .logo-container {
+      width: 70px;
+      height: 70px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(135deg, var(--blue-light), var(--blue));
+      border-radius: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+    }
+
+    .logo-container svg {
+      width: 35px;
+      height: 35px;
+      color: white;
+    }
+
+    h1 {
+      font-family: var(--font-title);
+      font-weight: 800;
+      font-size: 2.25rem;
+      color: #1e293b;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      font-weight: 500;
+    }
+
+    /* Bento Grid */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .bento-grid {
+        grid-template-columns: 2fr 1fr;
+      }
+      .col-span-2 {
+        grid-column: span 2;
+      }
+    }
+
+    .card {
+      background: var(--bg);
+      border-radius: 2.5rem;
+      padding: 2rem;
+      box-shadow: 9px 9px 16px var(--shadow-dark), -9px -9px 16px var(--shadow-light);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-title {
+      font-family: var(--font-title);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-title svg {
+      width: 24px;
+      height: 24px;
+      color: var(--blue-light);
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #475569;
+      margin-bottom: 1rem;
+    }
+
+    /* Equation Section */
+    .equation-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 2rem;
+      background: var(--bg);
+      border-radius: 2rem;
+      box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+      margin: 1.5rem 0;
+    }
+
+    .eq-block {
+      text-align: center;
+      padding: 1.25rem 2rem;
+      border-radius: 1.5rem;
+      font-family: var(--font-title);
+      font-size: 1.15rem;
+      font-weight: 700;
+      box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+    }
+
+    .eq-block.total-final {
+      background: linear-gradient(135deg, var(--blue-light), var(--blue));
+      color: white;
+      font-size: 1.4rem;
+      padding: 1.5rem 3rem;
+      border-radius: 2rem;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+    }
+
+    .eq-block.copago {
+      background: white;
+      color: var(--text);
+    }
+
+    .eq-block.entidad {
+      background: white;
+      color: var(--green-dark);
+      border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+
+    .eq-sign {
+      font-family: var(--font-title);
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    @media (min-width: 640px) {
+      .equation-flow {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
+
+    /* Variables dependientes */
+    .factor-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .factor-item {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      background: var(--bg);
+      padding: 1.25rem;
+      border-radius: 1.5rem;
+      box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+    }
+
+    .factor-icon {
+      width: 40px;
+      height: 40px;
+      background: white;
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
+      flex-shrink: 0;
+    }
+
+    .factor-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--blue-light);
+    }
+
+    .factor-title {
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 1rem;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+    }
+
+    .factor-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Diagrama interactivo */
+    .diagram-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .bar-wrapper {
+      background: var(--bg);
+      border-radius: 1.5rem;
+      padding: 1.25rem;
+      box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #475569;
+    }
+
+    .progress-bar {
+      height: 24px;
+      background: #dadbe2;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      box-shadow: inset 1px 1px 3px var(--shadow-dark);
+    }
+
+    .progress-segment {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .progress-segment.copago {
+      background: linear-gradient(90deg, #3b82f6, #2563eb);
+    }
+
+    .progress-segment.entidad {
+      background: linear-gradient(90deg, #10b981, #059669);
+    }
+
+    .progress-segment.particular {
+      background: linear-gradient(90deg, #6366f1, #4f46e5);
+      width: 100% !important;
+    }
+
+    .legend-container {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 0.25rem;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      margin-top: 1rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- HEADER -->
+    <header>
+      <div class="logo-container">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+      </div>
+      <h1>Reparto de Valores en Tratamientos</h1>
+      <p class="subtitle">Análisis financiero de copagos, cobros a entidades y consolidación de ingresos de Holística</p>
+    </header>
+
+    <!-- BENTO GRID -->
+    <div class="bento-grid">
+      
+      <!-- CARD 1: EXPLICACIÓN DEL REPARTO -->
+      <div class="card">
+        <div class="card-title">
+          <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 14.25l1.25 1.25L13.75 12m-6.75 6.75h10.5a2.25 2.25 0 002.25-2.25V7.5a2.25 2.25 0 00-2.25-2.25H7.012a2.25 2.25 0 00-2.25 2.25v8.25a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          ¿Cómo se reparten los valores?
+        </div>
+        <p>
+          En la facturación médica de Holística, el valor facturado final de un tratamiento o procedimiento no siempre es asumido en su totalidad por un solo actor. En la mayoría de los convenios con entidades de salud (EPS, medicinas prepagadas o ARL), el costo total se reparte de forma compartida entre el <strong>paciente</strong> y la <strong>entidad aseguradora</strong>.
+        </p>
+        <p>
+          Para cada servicio médico asistido, el sistema realiza la sumatoria matemática del aporte del paciente y de la tarifa convenida de la entidad para registrar el ingreso neto exacto.
+        </p>
+
+        <!-- Fórmula del Reparto -->
+        <div class="equation-container">
+          <div class="equation-flow">
+            <div class="eq-block copago">Total Item<br><span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">(Copago del Paciente)</span></div>
+            <div class="eq-sign">+</div>
+            <div class="eq-block entidad">Pagos Pendientes<br><span style="font-size: 0.8rem; font-weight: normal; color: var(--green-dark);">(Valor paga Entidad)</span></div>
+            <div class="eq-sign">=</div>
+            <div class="eq-block total-final">Total final<br><span style="font-size: 0.8rem; font-weight: normal; opacity: 0.8;">(Ingreso Neto Consolidado)</span></div>
+          </div>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-top: 1rem;">
+          *Nota: Este cálculo exacto de "Total final" es ejecutado en lote de forma automática por el sistema en Supabase al hacer clic en el botón verde "Completar valores".
+        </p>
+      </div>
+
+      <!-- CARD 2: FACTORES DE LOS QUE DEPENDE -->
+      <div class="card flex flex-col justify-between">
+        <div>
+          <div class="card-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5z" />
+            </svg>
+            ¿De qué depende el reparto?
+          </div>
+          <p>La proporción de la división del valor de cada tratamiento depende principalmente de tres factores clave de negocio:</p>
+        </div>
+
+        <ul class="factor-list">
+          <li class="factor-item">
+            <div class="factor-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12.75a1.5 1.5 0 0 1 1.5 1.5V21" />
+              </svg>
+            </div>
+            <div>
+              <div class="factor-title">Convenio y Tarifario de la Entidad</div>
+              <div class="factor-desc">Cada EPS (Colsanitas, Ecopetrol, Colmena, etc.) tiene un contrato con tarifas pactadas para cada servicio (CUP). Esto define el valor que paga la entidad.</div>
+            </div>
+          </li>
+
+          <li class="factor-item">
+            <div class="factor-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+              </svg>
+            </div>
+            <div>
+              <div class="factor-title">Tipo de Plan y Copago del Paciente</div>
+              <div class="factor-desc">Depende de la categoría salarial o plan prepagado del paciente. Define si paga una cuota moderadora o un copago porcentual en caja (Total Item).</div>
+            </div>
+          </li>
+
+          <li class="factor-item">
+            <div class="factor-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.97 5.97 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94-3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+              </svg>
+            </div>
+            <div>
+              <div class="factor-title">Modalidad de Atención Particular</div>
+              <div class="factor-desc">Si el paciente es particular (sin entidad), el 100% de la tarifa es asumido en caja. El Copago es igual al Total final y el valor de entidad es cero.</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- CARD 3: CASOS DE ESTUDIO VISUALES -->
+      <div class="card col-span-2">
+        <div class="card-title">
+          <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125z" />
+          </svg>
+          Ejemplos Prácticos de Distribución de Valores
+        </div>
+        <p>A continuación se detallan los tres escenarios principales de atención en la clínica y cómo se comporta el reparto financiero:</p>
+
+        <div class="diagram-container">
+          
+          <!-- Caso 1: Consulta General EPS -->
+          <div class="bar-wrapper">
+            <div class="bar-label">
+              <span>1. Consulta por EPS/Medicina Prepagada (Ej. Tarifa total $ 120.000)</span>
+              <span style="font-weight: 800; color: var(--blue);">Copago Bajo (Paciente: 12.5% | Entidad: 87.5%)</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-segment copago" style="width: 12.5%;" title="Copago Paciente">$ 15.000 (Copago)</div>
+              <div class="progress-segment entidad" style="width: 87.5%;" title="Valor Entidad">$ 105.000 (Pagos Pendientes)</div>
+            </div>
+          </div>
+
+          <!-- Caso 2: Convenio de Alto Costo o ARL -->
+          <div class="bar-wrapper">
+            <div class="bar-label">
+              <span>2. Convenio ARL / Exención de Copago (Ej. Tarifa total $ 90.000)</span>
+              <span style="font-weight: 800; color: var(--green);">Copago Cero (Paciente: 0% | Entidad: 100%)</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-segment entidad" style="width: 100%;" title="Valor Entidad">$ 90.000 (Pagos Pendientes)</div>
+            </div>
+          </div>
+
+          <!-- Caso 3: Paciente Particular -->
+          <div class="bar-wrapper">
+            <div class="bar-label">
+              <span>3. Tratamiento Particular (Ej. Tarifa total $ 150.000)</span>
+              <span style="font-weight: 800; color: #4f46e5;">Particular (Paciente: 100% | Entidad: 0%)</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-segment particular" title="Particular">$ 150.000 (Total Item)</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="legend-container">
+          <div><span class="legend-dot" style="background-color: var(--blue-light);"></span>Copago (Aporte Paciente en Caja - "Total Item")</div>
+          <div><span class="legend-dot" style="background-color: var(--green);"></span>Pagos Pendientes (Aporte EPS/Entidad - "Valor paga Entidad")</div>
+          <div><span class="legend-dot" style="background-color: #6366f1;"></span>Particular (100% Paciente)</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      Holística Unidad de Medicina Integral &copy; 2026. Todos los derechos reservados.
+    </footer>
+
+  </div>
+</body>
+</html>

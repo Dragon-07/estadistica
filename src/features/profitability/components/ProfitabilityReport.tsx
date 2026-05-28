@@ -129,7 +129,7 @@ function NeumorphicExplanationTooltip({ title, formula, text, children, position
 }
 
 
-export function ProfitabilityReport() {
+export function ProfitabilityReport({ refreshTrigger }: { refreshTrigger?: number }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [appliedDateRange, setAppliedDateRange] = useState({ start: '', end: '' });
@@ -138,6 +138,8 @@ export function ProfitabilityReport() {
   const [activeService, setActiveService] = useState<string | null>(null);
   const [weeklyHours, setWeeklyHours] = useState<number>(44);
   const [editingKw, setEditingKw] = useState<{ serviceName: string; id: string; value: string } | null>(null);
+  
+  const [disabledTreatments, setDisabledTreatments] = useState<Set<string>>(new Set());
   
   const [serviceRevenueStats, setServiceRevenueStats] = useState<Record<string, { count: number, revenue: number }>>({});
   const fetchedStats = useRef<Set<string>>(new Set());
@@ -410,6 +412,14 @@ export function ProfitabilityReport() {
         setAvailableTreatments(treatmentsData.map((d: any) => d.treatment_name));
       }
 
+      // Cargar tratamientos deshabilitados
+      const { data: disabledData } = await supabase
+        .from('disabled_treatments')
+        .select('treatment_name');
+      if (disabledData) {
+        setDisabledTreatments(new Set(disabledData.map((d: any) => d.treatment_name)));
+      }
+
       // Cargar fechas globales (min y max)
       const { data: minData } = await supabase
         .from('medical_records')
@@ -469,7 +479,7 @@ export function ProfitabilityReport() {
       }
     }
     loadData();
-  }, []);
+  }, [refreshTrigger]);
 
   // Carga de datos para el listado de distribución Plan C
   useEffect(() => {
@@ -488,11 +498,13 @@ export function ProfitabilityReport() {
         }
 
         if (data) {
-          const mapped = data.map((item: any) => ({
-            name: item.treatment_name || 'Desconocido',
-            count: smartParseNumber(item.sessions_count),
-            revenue: smartParseNumber(item.total_revenue)
-          }));
+          const mapped = data
+            .map((item: any) => ({
+              name: item.treatment_name || 'Desconocido',
+              count: smartParseNumber(item.sessions_count),
+              revenue: smartParseNumber(item.total_revenue)
+            }))
+            .filter((item: any) => !disabledTreatments.has(item.name));
           setDistributionData(mapped);
         }
       } catch (err) {
@@ -503,7 +515,7 @@ export function ProfitabilityReport() {
     }
 
     fetchDistributionData();
-  }, [appliedDateRange]);
+  }, [appliedDateRange, disabledTreatments]);
 
   // Efectos para persistencia
   useEffect(() => {
@@ -582,8 +594,8 @@ export function ProfitabilityReport() {
 
   // Filtrado y ordenación inteligente de tratamientos para el buscador del panel
   const filteredAndSortedTreatmentsForSearch = useMemo(() => {
-    // Filtramos los tratamientos que NO están actualmente en el panel
-    const unaddedTreatments = availableTreatments.filter(t => !activeDashboardTreatments.includes(t));
+    // Filtramos los tratamientos que NO están actualmente en el panel y no están deshabilitados
+    const unaddedTreatments = availableTreatments.filter(t => !activeDashboardTreatments.includes(t) && !disabledTreatments.has(t));
 
     if (!treatmentSearchQuery.trim()) {
       return unaddedTreatments;
@@ -609,7 +621,7 @@ export function ProfitabilityReport() {
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score || a.t.localeCompare(b.t))
       .map(item => item.t);
-  }, [availableTreatments, activeDashboardTreatments, treatmentSearchQuery]);
+  }, [availableTreatments, activeDashboardTreatments, treatmentSearchQuery, disabledTreatments]);
 
   // Cálculo de precios promedio por minuto por dependencia
   const dependencyPrices = useMemo(() => {

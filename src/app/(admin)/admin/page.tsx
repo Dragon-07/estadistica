@@ -9,6 +9,7 @@ import { FollowUps } from '@/features/reports/components/FollowUps';
 import { ReferralsAdmin } from '@/features/reports/components/ReferralsAdmin';
 import { ProfitabilityReport } from '@/features/profitability/components/ProfitabilityReport';
 import { EntityValuesModal } from '@/features/reports/components/EntityValuesModal';
+import { DisabledTreatmentsModal } from '@/features/reports/components/DisabledTreatmentsModal';
 import {
   LayoutDashboard,
   FileText,
@@ -46,6 +47,8 @@ export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | 'save' | null>(null);
   const [isEntityModalOpen, setIsEntityModalOpen] = useState(false);
+  const [isDisabledTreatmentsModalOpen, setIsDisabledTreatmentsModalOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Estados para Borrar por Rango de Fecha
   const [showDateRangeModal, setShowDateRangeModal] = useState(false);
@@ -438,9 +441,17 @@ export default function Home() {
               {activeTab === 'referrals' && 'Gestión y aprobación del sistema de referidos'}
             </p>
           </div>
-          <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
-            <p className="text-gray-500 text-xs">Unidad Médica</p>
-            <p className="text-gray-700 font-semibold text-sm">Gerencia</p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsDisabledTreatmentsModalOpen(true)}
+              className="flex items-center gap-2 px-5 py-3.5 bg-[#e6e7ee] hover:bg-[#dcdde4] text-gray-700 rounded-2xl text-xs font-bold shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all transform active:scale-95 shrink-0 animate-fade-in"
+            >
+              Quitar no tratamientos
+            </button>
+            <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
+              <p className="text-gray-500 text-xs">Unidad Médica</p>
+              <p className="text-gray-700 font-semibold text-sm">Gerencia</p>
+            </div>
           </div>
         </div>
 
@@ -712,7 +723,7 @@ export default function Home() {
           <ReferralsAdmin />
         </div>
         <div className={activeTab === 'profitability' ? 'block' : 'hidden'}>
-          <ProfitabilityReport />
+          <ProfitabilityReport refreshTrigger={refreshTrigger} />
         </div>
         </div>
       </main>
@@ -721,6 +732,13 @@ export default function Home() {
       <EntityValuesModal 
         isOpen={isEntityModalOpen} 
         onClose={() => setIsEntityModalOpen(false)} 
+      />
+
+      {/* Modal para Quitar no tratamientos */}
+      <DisabledTreatmentsModal 
+        isOpen={isDisabledTreatmentsModalOpen} 
+        onClose={() => setIsDisabledTreatmentsModalOpen(false)} 
+        onChanged={() => setRefreshTrigger(prev => prev + 1)}
       />
     </div>
   );
