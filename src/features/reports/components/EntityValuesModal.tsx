@@ -37,12 +37,6 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Formulario de inserción rápida
-  const [newEntity, setNewEntity] = useState('');
-  const [newService, setNewService] = useState('');
-  const [newCopay, setNewCopay] = useState<string>('');
-  const [newEntityValue, setNewEntityValue] = useState<string>('');
-
   // Guardados en curso para feedback por celda/fila
   const [pendingUpdates, setPendingUpdates] = useState<Record<string, boolean>>({});
 
@@ -93,26 +87,31 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
     });
   }, [values, searchTerm]);
 
-  // Añadir un nuevo registro
-  const handleAddValue = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newEntity.trim() || !newService.trim()) {
-      setError('Por favor, completa la Entidad y el Servicio.');
-      return;
-    }
-
+  // Añadir un nuevo registro en blanco
+  const handleAddNewBlankRow = async () => {
     try {
       setSaving(true);
       setError(null);
 
-      const copayNum = parseFloat(newCopay) || 0;
-      const entityValNum = parseFloat(newEntityValue) || 0;
+      // Encontrar nombres únicos para evitar colisiones UNIQUE en la base de datos
+      let counter = 1;
+      let defaultEntity = 'NUEVA ENTIDAD';
+      let defaultService = `NUEVO SERVICIO ${counter}`;
+
+      const checkExists = (ent: string, ser: string) => {
+        return values.some(v => v.entity_name === ent && v.service_name === ser);
+      };
+
+      while (checkExists(defaultEntity, defaultService)) {
+        counter++;
+        defaultService = `NUEVO SERVICIO ${counter}`;
+      }
 
       const record = {
-        entity_name: newEntity.trim().toUpperCase(),
-        service_name: newService.trim().toUpperCase(),
-        copay: copayNum,
-        entity_value: entityValNum
+        entity_name: defaultEntity,
+        service_name: defaultService,
+        copay: 0,
+        entity_value: 0
       };
 
       const { data, error: dbError } = await supabase
@@ -120,25 +119,20 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
         .insert([record])
         .select();
 
-      if (dbError) {
-        if (dbError.code === '23505') {
-          throw new Error('Ya existe una tarifa configurada para esta Entidad y Servicio.');
-        }
-        throw dbError;
-      }
+      if (dbError) throw dbError;
 
       if (data && data.length > 0) {
         const newRecord = data[0];
-        setValues(prev => [...prev, newRecord].sort((a, b) => a.entity_name.localeCompare(b.entity_name)));
+        // Agregar al estado local al principio o al final
+        setValues(prev => [newRecord, ...prev]);
         setOriginalValues(prev => ({ ...prev, [newRecord.id!]: { ...newRecord } }));
-        setNewEntity('');
-        setNewService('');
-        setNewCopay('');
-        setNewEntityValue('');
-        showSuccess('¡Registro agregado correctamente!');
+        showSuccess('¡Fila en blanco creada! Edítala directamente en la tabla.');
+        
+        // Limpiar el buscador para asegurar que la nueva fila sea visible
+        setSearchTerm('');
       }
     } catch (err: any) {
-      setError(err.message || 'Error al agregar el registro.');
+      setError('Error al crear una nueva fila de tarifas en el servidor.');
     } finally {
       setSaving(false);
     }
@@ -308,84 +302,21 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#e6e7ee]">
           
-          {/* Formulario rápido para añadir registros */}
-          <form onSubmit={handleAddValue} className="bg-[#e6e7ee] rounded-[2rem] p-5 shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] space-y-4">
-            <h3 className="text-sm font-bold text-gray-600 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-blue-500" />
-              Configurar nueva combinación
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Input Entidad */}
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Entidad</label>
-                <input 
-                  type="text" 
-                  value={newEntity}
-                  onChange={(e) => setNewEntity(e.target.value)}
-                  placeholder="Ej. ECOPETROL"
-                  className="w-full px-4 py-2.5 text-xs rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all uppercase font-semibold"
-                />
-              </div>
-
-              {/* Input Servicio */}
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Servicio</label>
-                <input 
-                  type="text" 
-                  value={newService}
-                  onChange={(e) => setNewService(e.target.value)}
-                  placeholder="Ej. ACUPUNTURA"
-                  className="w-full px-4 py-2.5 text-xs rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all uppercase font-semibold"
-                />
-              </div>
-
-              {/* Input Copago */}
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Copago</label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-3 text-blue-500 font-bold text-xs pointer-events-none">$</span>
-                  <input 
-                    type="number" 
-                    value={newCopay}
-                    onChange={(e) => setNewCopay(e.target.value)}
-                    placeholder="0.00"
-                    min="0"
-                    step="any"
-                    className="w-full pl-7 pr-4 py-2.5 text-xs rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-mono font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Input Valor paga Entidad */}
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Valor paga Entidad</label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-3 text-blue-500 font-bold text-xs pointer-events-none">$</span>
-                  <input 
-                    type="number" 
-                    value={newEntityValue}
-                    onChange={(e) => setNewEntityValue(e.target.value)}
-                    placeholder="0.00"
-                    min="0"
-                    step="any"
-                    className="w-full pl-7 pr-4 py-2.5 text-xs rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-mono font-semibold"
-                  />
-                </div>
-              </div>
+          {/* Formulario simplificado: Solo botón para crear fila en blanco */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#e6e7ee] rounded-[2rem] p-6 shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]">
+            <div className="text-xs text-gray-400 font-semibold text-center sm:text-left">
+              Haz clic en el botón para agregar una nueva fila en blanco y edita sus valores directamente en la tabla inferior.
             </div>
-
-            <div className="flex justify-end pt-1">
-              <button 
-                type="submit"
-                disabled={saving}
-                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold text-xs rounded-xl shadow-[3px_3px_8px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] transition-all disabled:opacity-50"
-              >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Agregar Tarifa
-              </button>
-            </div>
-          </form>
+            <button 
+              type="button"
+              onClick={handleAddNewBlankRow}
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold text-xs rounded-2xl shadow-[4px_4px_10px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.2)] hover:scale-[0.98] active:scale-[0.95] transition-all duration-200 shrink-0"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Agregar Tarifa
+            </button>
+          </div>
 
           {/* Buscador de Tabla */}
           <div className="flex items-center px-4 py-2.5 bg-[#e6e7ee] rounded-2xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] max-w-md">
