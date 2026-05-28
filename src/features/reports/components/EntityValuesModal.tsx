@@ -37,6 +37,9 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Modales personalizados de confirmación
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   // Guardados en curso para feedback por celda/fila
   const [pendingUpdates, setPendingUpdates] = useState<Record<string, boolean>>({});
 
@@ -87,17 +90,18 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
     });
   }, [values, searchTerm]);
 
-  // Ejecutar el cruce de valores en lote en la base de datos
-  const handleCruceValores = async () => {
+  // Abrir la confirmación personalizada
+  const handleCruceValoresClick = () => {
     if (values.length === 0) {
       setError('No hay tarifas configuradas para cruzar.');
       return;
     }
+    setShowConfirmModal(true);
+  };
 
-    if (!confirm('¿Deseas comparar las tarifas con los registros médicos de la base de datos y completar los Pagos Pendientes automáticamente?')) {
-      return;
-    }
-
+  // Ejecutar el cruce de valores en lote en la base de datos (tras confirmar)
+  const executeCruceValores = async () => {
+    setShowConfirmModal(false);
     try {
       setSaving(true);
       setError(null);
@@ -337,7 +341,7 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
               {/* Botón Completar Valores (Cruce de Base de Datos) */}
               <button 
                 type="button"
-                onClick={handleCruceValores}
+                onClick={handleCruceValoresClick}
                 disabled={saving || loading}
                 className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#e6e7ee] text-green-600 font-bold text-xs rounded-2xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] hover:scale-[0.99] active:scale-[0.96] transition-all duration-200"
                 title="Comparar y cruzar las tarifas con la base de datos de registros médicos para completar los Pagos Pendientes"
@@ -494,6 +498,41 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
           )}
         </div>
       </div>
+
+      {/* Modal de Confirmación Neumórfico Personalizado */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/40 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#e6e7ee] rounded-[2rem] max-w-md w-full p-6 shadow-[10px_10px_20px_#b8b9be,-10px_-10px_20px_#ffffff] border border-white/20 text-center space-y-6">
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-400 to-green-500 rounded-2xl flex items-center justify-center shadow-[0_4px_12px_rgba(34,197,94,0.3)]">
+              <Activity className="w-8 h-8 text-white" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-gray-800">Confirmar Cruce de Valores</h3>
+              <p className="text-xs text-gray-500 leading-relaxed px-2">
+                ¿Deseas comparar las tarifas configuradas con los registros médicos de la base de datos y completar los **Pagos Pendientes** y **Total final** automáticamente?
+              </p>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-3 bg-[#e6e7ee] text-gray-600 font-bold text-xs rounded-xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] active:scale-[0.98] transition-all duration-200"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={executeCruceValores}
+                className="flex-1 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-xs rounded-xl shadow-[3px_3px_8px_rgba(34,197,94,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] active:scale-[0.98] transition-all duration-200"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
