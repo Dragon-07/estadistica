@@ -225,13 +225,8 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
     return initialPersonal;
   });
   
-  const [adminData, setAdminData] = useState<AdminCost[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('profitability_admin');
-      return saved ? JSON.parse(saved) : initialAdminData;
-    }
-    return initialAdminData;
-  });
+  const [adminData, setAdminData] = useState<AdminCost[]>(initialAdminData);
+  const [isLoadingAdmin, setIsLoadingAdmin] = useState(false);
 
   // Estados para el Listado de Distribución (Plan C)
   const [distributionData, setDistributionData] = useState<any[]>([]);
@@ -560,10 +555,6 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
   useEffect(() => {
     localStorage.setItem('profitability_personal', JSON.stringify(personalData));
   }, [personalData]);
-
-  useEffect(() => {
-    localStorage.setItem('profitability_admin', JSON.stringify(adminData));
-  }, [adminData]);
 
   // Eliminados los efectos de localStorage para sincronización compartida
 
@@ -1038,7 +1029,29 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
     ));
   };
 
-  const handleAddAdmin = () => {
+  const handleSaveAdminToSupabase = async (cost: AdminCost) => {
+    try {
+      const supabaseClient = createClient();
+      const { error } = await supabaseClient
+        .from('admin_costs')
+        .upsert({
+          id: cost.id,
+          detail: cost.detail,
+          cost: cost.cost,
+          units: cost.units,
+          consumption: cost.consumption,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error al guardar costo administrativo en Supabase:', error);
+      }
+    } catch (err) {
+      console.error('Excepción al guardar costo administrativo en Supabase:', err);
+    }
+  };
+
+  const handleAddAdmin = async () => {
     const newItem: AdminCost = {
       id: Math.random().toString(36).substr(2, 9),
       detail: 'Nuevo Gasto',
@@ -1047,7 +1060,93 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
       consumption: 0
     };
     setAdminData([...adminData, newItem]);
+
+    try {
+      const supabaseClient = createClient();
+      const { error } = await supabaseClient.from('admin_costs').insert({
+        id: newItem.id,
+        detail: newItem.detail,
+        cost: newItem.cost,
+        units: newItem.units,
+        consumption: newItem.consumption
+      });
+      if (error) console.error('Error al insertar costo administrativo en Supabase:', error);
+    } catch (err) {
+      console.error('Excepción al insertar costo en Supabase:', err);
+    }
   };
+
+  const handleDeleteAdmin = async (id: string) => {
+    if (confirm('¿Estás seguro de que deseas eliminar este costo administrativo de la base de datos permanentemente?')) {
+      setAdminData(prev => prev.filter(item => item.id !== id));
+
+      try {
+        const supabaseClient = createClient();
+        const { error } = await supabaseClient.from('admin_costs').delete().eq('id', id);
+        if (error) console.error('Error al eliminar costo administrativo de Supabase:', error);
+      } catch (err) {
+        console.error('Excepción al eliminar costo de Supabase:', err);
+      }
+    }
+  };
+
+  // Cargar costos administrativos desde Supabase al montar el componente
+  useEffect(() => {
+    async function loadAdminCostsFromSupabase() {
+      setIsLoadingAdmin(true);
+      try {
+        const supabaseClient = createClient();
+        const { data, error } = await supabaseClient
+          .from('admin_costs')
+          .select('*')
+          .order('detail', { ascending: true });
+
+        if (error) {
+          console.error('Error al cargar costos administrativos de Supabase:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const mapped: AdminCost[] = data.map((d: any) => ({
+            id: d.id,
+            detail: d.detail,
+            cost: smartParseNumber(d.cost),
+            units: smartParseNumber(d.units),
+            consumption: smartParseNumber(d.consumption)
+          }));
+          setAdminData(mapped);
+        } else {
+          // Si la tabla está vacía en Supabase, intentamos sembrar desde el localStorage local
+          // que contiene sus datos actuales en localhost
+          const savedLocal = typeof window !== 'undefined' ? localStorage.getItem('profitability_admin') : null;
+          const seedData = savedLocal ? JSON.parse(savedLocal) : initialAdminData;
+          
+          console.log('Sembrando costos administrativos en Supabase desde localStorage/initialData...');
+          const { error: seedError } = await supabaseClient
+            .from('admin_costs')
+            .insert(seedData.map((d: any) => ({
+              id: d.id,
+              detail: d.detail,
+              cost: d.cost,
+              units: d.units,
+              consumption: d.consumption
+            })));
+          
+          if (seedError) {
+            console.error('Error al sembrar costos en Supabase:', seedError);
+          } else {
+            setAdminData(seedData);
+          }
+        }
+      } catch (err) {
+        console.error('Excepción al cargar costos administrativos de Supabase:', err);
+      } finally {
+        setIsLoadingAdmin(false);
+      }
+    }
+
+    loadAdminCostsFromSupabase();
+  }, []);
 
   const handleAddInsumoToService = (serviceName: string, insumoId: string) => {
     if (!insumoId) return;
@@ -2154,135 +2253,146 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
               </button>
             </div>
 
-            <div className="overflow-x-auto rounded-3xl">
-              <table className="w-full border-separate border-spacing-y-3">
-                <thead>
-                  <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                    <th className="px-6 py-4 text-left font-black">Detalle del Gasto</th>
-                    <th className="px-4 py-4 text-right font-black w-32">Costo total por mes</th>
-                    <th className="px-4 py-4 text-center font-black w-28">Unidades por mes</th>
-                    <th className="px-4 py-4 text-right pr-4 font-black w-32 bg-blue-500/5 rounded-t-xl border-t border-x border-blue-200/20 text-blue-700">Costo por período</th>
-                    <th className="px-4 py-4 text-center font-black w-28 bg-blue-500/5 rounded-t-xl border-t border-x border-blue-200/20 text-blue-650">Unidades por período</th>
-                    <th className="px-4 py-4 text-center font-black w-24">$ Unidad</th>
-                    <th className="px-4 py-4 text-center font-black w-24">Consumo</th>
-                    <th className="px-4 py-4 text-right pr-6 font-black w-36">$ a Distribuir</th>
-                    <th className="w-12"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminData.map((item) => {
-                    const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
-                    const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
-                    
-                    // Prorrateo temporal
-                    const costPeriod = item.cost * periodMonthFactor;
-                    const unitsPeriod = item.units * periodMonthFactor;
-                    const consumptionPeriod = isEnergia ? totalKwConsumidoTratamientos : item.consumption * periodMonthFactor;
-                    
-                    const displayedConsumption = isEnergia ? (unitsPeriod - totalKwConsumidoTratamientos) : consumptionPeriod;
-                    const toDistribute = isEnergia 
-                      ? (displayedConsumption * pricePerUnit) 
-                      : (unitsPeriod - consumptionPeriod) * pricePerUnit;
+            {isLoadingAdmin ? (
+              <div className="py-16 flex flex-col justify-center items-center gap-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className="text-xs text-gray-500 font-bold tracking-wide animate-pulse">Cargando costos administrativos de Supabase...</span>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-3xl">
+                <table className="w-full border-separate border-spacing-y-3">
+                  <thead>
+                    <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                      <th className="px-6 py-4 text-left font-black">Detalle del Gasto</th>
+                      <th className="px-4 py-4 text-right font-black w-32">Costo total por mes</th>
+                      <th className="px-4 py-4 text-center font-black w-28">Unidades por mes</th>
+                      <th className="px-4 py-4 text-right pr-4 font-black w-32 bg-blue-500/5 rounded-t-xl border-t border-x border-blue-200/20 text-blue-700">Costo por período</th>
+                      <th className="px-4 py-4 text-center font-black w-28 bg-blue-500/5 rounded-t-xl border-t border-x border-blue-200/20 text-blue-650">Unidades por período</th>
+                      <th className="px-4 py-4 text-center font-black w-24">$ Unidad</th>
+                      <th className="px-4 py-4 text-center font-black w-24">Consumo</th>
+                      <th className="px-4 py-4 text-right pr-6 font-black w-36">$ a Distribuir</th>
+                      <th className="w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminData.map((item) => {
+                      const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
+                      const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
+                      
+                      // Prorrateo temporal
+                      const costPeriod = item.cost * periodMonthFactor;
+                      const unitsPeriod = item.units * periodMonthFactor;
+                      const consumptionPeriod = isEnergia ? totalKwConsumidoTratamientos : item.consumption * periodMonthFactor;
+                      
+                      const displayedConsumption = isEnergia ? (unitsPeriod - totalKwConsumidoTratamientos) : consumptionPeriod;
+                      const toDistribute = isEnergia 
+                        ? (displayedConsumption * pricePerUnit) 
+                        : (unitsPeriod - consumptionPeriod) * pricePerUnit;
 
-                    return (
-                      <tr key={item.id} className="group">
-                        <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6 min-w-0">
-                          <NeumorphicTooltip text={item.detail}>
+                      return (
+                        <tr key={item.id} className="group">
+                          <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-l-xl p-2 pl-6 min-w-0">
+                            <NeumorphicTooltip text={item.detail}>
+                              <div className="relative group/input">
+                                <input
+                                  type="text"
+                                  value={item.detail}
+                                  onChange={(e) => handleUpdateAdmin(item.id, 'detail', e.target.value)}
+                                  onBlur={() => handleSaveAdminToSupabase(item)}
+                                  className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[10px] font-bold text-slate-700 truncate"
+                                />
+                                <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
+                              </div>
+                            </NeumorphicTooltip>
+                          </td>
+                          <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-26">
                             <div className="relative group/input">
                               <input
-                                type="text"
-                                value={item.detail}
-                                onChange={(e) => handleUpdateAdmin(item.id, 'detail', e.target.value)}
-                                className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-[10px] font-bold text-slate-700 truncate"
+                                type="number"
+                                value={item.cost}
+                                onChange={(e) => handleUpdateAdmin(item.id, 'cost', parseFloat(e.target.value) || 0)}
+                                onBlur={() => handleSaveAdminToSupabase(item)}
+                                className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600 tabular-nums"
                               />
                               <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
                             </div>
-                          </NeumorphicTooltip>
-                        </td>
-                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-right w-26">
-                          <div className="relative group/input">
-                            <input
-                              type="number"
-                              value={item.cost}
-                              onChange={(e) => handleUpdateAdmin(item.id, 'cost', parseFloat(e.target.value) || 0)}
-                              className="w-full bg-white/60 shadow-inner rounded-lg pl-2 pr-6 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-right text-[11px] font-black text-slate-600 tabular-nums"
-                            />
-                            <Edit3 className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-400 opacity-40 group-hover/input:opacity-100 transition-opacity" size={10} />
-                          </div>
-                        </td>
-                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
-                          <div className="relative group/input max-w-[90px] mx-auto">
-                            <input
-                              type="number"
-                              value={item.units}
-                              onChange={(e) => handleUpdateAdmin(item.id, 'units', parseFloat(e.target.value) || 0)}
-                              className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-center text-[11px] font-black text-slate-500"
-                            />
-                            <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 opacity-30" size={8} />
-                          </div>
-                        </td>
-                        <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] border-x border-blue-500/10 p-2 text-right w-32 font-black text-blue-700 tabular-nums text-xs">
-                          <NeumorphicExplanationTooltip
-                            title="Costo Prorrateado del Período"
-                            formula="Costo por mes × Factor de Período"
-                            text="Costo correspondiente al rango de fechas seleccionado en base a días hábiles."
-                          >
-                            <span>{formatCurrency(costPeriod)}</span>
-                          </NeumorphicExplanationTooltip>
-                        </td>
-                        <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] border-r border-blue-500/10 p-2 text-center w-28 font-black text-blue-600 tabular-nums text-xs">
-                          <NeumorphicExplanationTooltip
-                            title="Unidades Prorrateadas del Período"
-                            formula="Unidades por mes × Factor de Período"
-                            text="Unidades proporcionales correspondientes al rango de fechas seleccionado en base a días hábiles."
-                          >
-                            <span>
-                              {unitsPeriod.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
-                            </span>
-                          </NeumorphicExplanationTooltip>
-                        </td>
-                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
-                          {pricePerUnit.toFixed(2)}
-                        </td>
-                        <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
-                          {isEnergia ? (
-                            <NeumorphicExplanationTooltip
-                              title="Energía Restante a Distribuir (Kw)"
-                              formula="Unidades Kw Período - Consumo Tratamientos"
-                              text="Calculado automáticamente: Kw proporcionales del período menos el consumo total de Kw acumulado por todos los tratamientos en el período."
-                            >
-                              <div className="max-w-[80px] mx-auto bg-emerald-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1.5 border border-emerald-200/30 text-center text-[11px] font-black text-emerald-600 tabular-nums">
-                                {Number(displayedConsumption.toFixed(2))}
-                              </div>
-                            </NeumorphicExplanationTooltip>
-                          ) : (
-                            <div className="relative group/input max-w-[80px] mx-auto">
+                          </td>
+                          <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
+                            <div className="relative group/input max-w-[90px] mx-auto">
                               <input
                                 type="number"
-                                value={item.consumption}
-                                onChange={(e) => handleUpdateAdmin(item.id, 'consumption', parseFloat(e.target.value) || 0)}
-                                className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-center text-[11px] font-black text-orange-600"
+                                value={item.units}
+                                onChange={(e) => handleUpdateAdmin(item.id, 'units', parseFloat(e.target.value) || 0)}
+                                onBlur={() => handleSaveAdminToSupabase(item)}
+                                className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-center text-[11px] font-black text-slate-500"
                               />
                               <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 opacity-30" size={8} />
                             </div>
-                          )}
-                        </td>
-                        <td className="p-2 text-right pr-6 w-36">
-                          <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-blue-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-blue-600 inline-block min-w-[100px] tabular-nums">
-                             {formatCurrency(toDistribute)}
-                          </div>
-                        </td>
-                        <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
-                          <button onClick={() => handleDeleteAdmin(item.id)} className="text-slate-300 hover:text-red-500 transition-colors">
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          </td>
+                          <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] border-x border-blue-500/10 p-2 text-right w-32 font-black text-blue-700 tabular-nums text-xs">
+                            <NeumorphicExplanationTooltip
+                              title="Costo Prorrateado del Período"
+                              formula="Costo por mes × Factor de Período"
+                              text="Costo correspondiente al rango de fechas seleccionado en base a días hábiles."
+                            >
+                              <span>{formatCurrency(costPeriod)}</span>
+                            </NeumorphicExplanationTooltip>
+                          </td>
+                          <td className="bg-blue-500/5 shadow-[inset_1px_1px_3px_rgba(59,130,246,0.05)] border-r border-blue-500/10 p-2 text-center w-28 font-black text-blue-600 tabular-nums text-xs">
+                            <NeumorphicExplanationTooltip
+                              title="Unidades Prorrateadas del Período"
+                              formula="Unidades por mes × Factor de Período"
+                              text="Unidades proporcionales correspondientes al rango de fechas seleccionado en base a días hábiles."
+                            >
+                              <span>
+                                {unitsPeriod.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                              </span>
+                            </NeumorphicExplanationTooltip>
+                          </td>
+                          <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center text-[11px] font-black text-blue-500/70">
+                            {pricePerUnit.toFixed(2)}
+                          </td>
+                          <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
+                            {isEnergia ? (
+                              <NeumorphicExplanationTooltip
+                                title="Energía Restante a Distribuir (Kw)"
+                                formula="Unidades Kw Período - Consumo Tratamientos"
+                                text="Calculado automáticamente: Kw proporcionales del período menos el consumo total de Kw acumulado por todos los tratamientos en el período."
+                              >
+                                <div className="max-w-[80px] mx-auto bg-emerald-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1.5 border border-emerald-200/30 text-center text-[11px] font-black text-emerald-600 tabular-nums">
+                                  {Number(displayedConsumption.toFixed(2))}
+                                </div>
+                              </NeumorphicExplanationTooltip>
+                            ) : (
+                              <div className="relative group/input max-w-[80px] mx-auto">
+                                <input
+                                  type="number"
+                                  value={item.consumption}
+                                  onChange={(e) => handleUpdateAdmin(item.id, 'consumption', parseFloat(e.target.value) || 0)}
+                                  onBlur={() => handleSaveAdminToSupabase(item)}
+                                  className="w-full bg-white/60 shadow-inner rounded-lg px-2 py-1.5 border border-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all text-center text-[11px] font-black text-orange-600"
+                                />
+                                <Edit3 className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 opacity-30" size={8} />
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-2 text-right pr-6 w-36">
+                            <div className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] border border-blue-200/50 px-3 py-2 rounded-xl text-[12px] font-black text-blue-600 inline-block min-w-[100px] tabular-nums">
+                               {formatCurrency(toDistribute)}
+                            </div>
+                          </td>
+                          <td className="bg-[#e6e7ee] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] rounded-r-xl p-2 text-center">
+                            <button onClick={() => handleDeleteAdmin(item.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             <div className="mt-4 p-3 px-6 rounded-2xl bg-[#e6e7ee] shadow-[6px_6px_15px_#b8b9be,-6px_-6px_15px_#ffffff] flex items-center justify-between border border-white/50">
               <div className="flex items-center gap-3">
