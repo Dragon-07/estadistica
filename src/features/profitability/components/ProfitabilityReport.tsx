@@ -1277,9 +1277,6 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
     saveToSupabase(serviceName, serviceStaffTimes[serviceName], serviceInsumos[serviceName], newItems);
   };
 
-  const handleDeleteAdmin = (id: string) => {
-    setAdminData(prev => prev.filter(item => item.id !== id));
-  };
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
