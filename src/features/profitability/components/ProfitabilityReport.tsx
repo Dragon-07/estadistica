@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, Fragment, useRef } from 'react';
-import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock, Edit3, ArrowUpDown } from 'lucide-react';
+import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock, Edit3, ArrowUpDown, Download, Upload } from 'lucide-react';
 import { createClient } from '@/shared/lib/supabase/client';
 import initialInsumos from '../data/insumos-data.json';
 import initialPersonal from '../data/personal-data.json';
@@ -206,13 +206,8 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
     return daysToCount / 26;
   }, [appliedDateRange, globalDateRange]);
 
-  const [insumos, setInsumos] = useState<Insumo[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('profitability_insumos');
-      return saved ? JSON.parse(saved) : initialInsumos;
-    }
-    return initialInsumos;
-  });
+  const [insumos, setInsumos] = useState<Insumo[]>(initialInsumos);
+  const [isLoadingInsumos, setIsLoadingInsumos] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showInsumoDropdown, setShowInsumoDropdown] = useState(false);
   const [insumoSearchQuery, setInsumoSearchQuery] = useState('');
@@ -560,9 +555,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
   }, [appliedDateRange, disabledTreatments]);
 
   // Efectos para persistencia
-  useEffect(() => {
-    localStorage.setItem('profitability_insumos', JSON.stringify(insumos));
-  }, [insumos]);
+  // La lista maestra de insumos se gestiona en Supabase (tabla supplies)
 
   useEffect(() => {
     localStorage.setItem('profitability_personal', JSON.stringify(personalData));
@@ -826,19 +819,180 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
     ));
   };
 
-  const handleAddInsumo = () => {
+  const handleSaveInsumoToSupabase = async (insumo: Insumo) => {
+    try {
+      const supabaseClient = createClient();
+      const { error } = await supabaseClient
+        .from('supplies')
+        .upsert({
+          id: insumo.id,
+          detalle: insumo.detalle,
+          medida: insumo.medida,
+          valor: insumo.valor,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error al guardar insumo en Supabase:', error);
+      }
+    } catch (err) {
+      console.error('Excepción al guardar insumo en Supabase:', err);
+    }
+  };
+
+  const handleAddInsumo = async () => {
     const newInsumo: Insumo = {
       id: Math.random().toString(36).substr(2, 9),
       detalle: 'Nuevo Insumo',
-      medida: '1',
+      medida: 'UNIDAD',
       valor: 0
     };
+    
     setInsumos([newInsumo, ...insumos]);
+
+    try {
+      const supabaseClient = createClient();
+      const { error } = await supabaseClient.from('supplies').insert({
+        id: newInsumo.id,
+        detalle: newInsumo.detalle,
+        medida: newInsumo.medida,
+        valor: newInsumo.valor
+      });
+      if (error) console.error('Error al insertar insumo en Supabase:', error);
+    } catch (err) {
+      console.error('Excepción al insertar insumo en Supabase:', err);
+    }
   };
 
-  const handleDeleteInsumo = (id: string) => {
-    setInsumos(prev => prev.filter(item => item.id !== id));
+  const handleDeleteInsumo = async (id: string) => {
+    if (confirm('¿Estás seguro de que deseas eliminar este insumo de la base de datos permanentemente?')) {
+      setInsumos(prev => prev.filter(item => item.id !== id));
+
+      try {
+        const supabaseClient = createClient();
+        const { error } = await supabaseClient.from('supplies').delete().eq('id', id);
+        if (error) console.error('Error al eliminar insumo de Supabase:', error);
+      } catch (err) {
+        console.error('Excepción al eliminar insumo de Supabase:', err);
+      }
+    }
   };
+
+  const handleExportInsumos = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(insumos, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href",     dataStr);
+    downloadAnchor.setAttribute("download", `insumos_holistica_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleImportInsumos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (Array.isArray(parsed) && parsed.every(item => item.id && item.detalle && item.medida && item.valor !== undefined)) {
+          if (confirm(`¿Estás seguro de que deseas importar ${parsed.length} insumos? Esto reemplazará tu lista actual en la base de datos.`)) {
+            setInsumos(parsed);
+            
+            const supabaseClient = createClient();
+            setIsSyncing(true);
+            
+            // Limpiar la tabla en Supabase
+            const { error: deleteError } = await supabaseClient
+              .from('supplies')
+              .delete()
+              .neq('id', 'placeholder_no_exist');
+              
+            if (deleteError) {
+              console.error('Error al vaciar tabla de insumos:', deleteError);
+            }
+            
+            // Insertar la nueva lista de insumos
+            const { error: insertError } = await supabaseClient.from('supplies').insert(
+              parsed.map(ins => ({
+                id: ins.id,
+                detalle: ins.detalle,
+                medida: ins.medida,
+                valor: ins.valor
+              }))
+            );
+
+            setIsSyncing(false);
+
+            if (insertError) {
+              alert('Error al guardar la importación en Supabase: ' + insertError.message);
+            } else {
+              alert('¡Insumos importados y sincronizados con Supabase exitosamente!');
+            }
+          }
+        } else {
+          alert('El archivo no tiene el formato de insumos válido. Asegúrate de usar un archivo exportado previamente.');
+        }
+      } catch (err) {
+        alert('Error al leer el archivo JSON.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Limpiar el input
+  };
+
+  // Cargar insumos desde Supabase al montar el componente
+  useEffect(() => {
+    async function loadInsumosFromSupabase() {
+      setIsLoadingInsumos(true);
+      try {
+        const supabaseClient = createClient();
+        const { data, error } = await supabaseClient
+          .from('supplies')
+          .select('*')
+          .order('detalle', { ascending: true });
+
+        if (error) {
+          console.error('Error al cargar insumos de Supabase:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const mapped: Insumo[] = data.map((d: any) => ({
+            id: d.id,
+            detalle: d.detalle,
+            medida: d.medida || 'UNIDAD',
+            valor: smartParseNumber(d.valor)
+          }));
+          setInsumos(mapped);
+        } else {
+          // Si la base de datos está vacía, sembramos los insumos iniciales
+          console.log('Sembrando insumos iniciales en Supabase...');
+          const { error: seedError } = await supabaseClient
+            .from('supplies')
+            .insert(initialInsumos.map(ins => ({
+              id: ins.id,
+              detalle: ins.detalle,
+              medida: ins.medida,
+              valor: ins.valor
+            })));
+          
+          if (seedError) {
+            console.error('Error al sembrar insumos en Supabase:', seedError);
+          } else {
+            setInsumos(initialInsumos);
+          }
+        }
+      } catch (err) {
+        console.error('Excepción al cargar insumos de Supabase:', err);
+      } finally {
+        setIsLoadingInsumos(false);
+      }
+    }
+
+    loadInsumosFromSupabase();
+  }, []);
 
   const handleUpdateWorker = (depName: string, workerId: string, field: keyof Worker, value: string | number) => {
     setPersonalData(prev => prev.map(dep => {
@@ -1146,8 +1300,8 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
       {activeCategory === 'insumos' && (
         <div className="bg-[#e6e7ee] p-6 rounded-[2.5rem] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] animate-in slide-in-from-top-4 duration-300">
           <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="relative flex-1 max-w-md">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="relative flex-1 min-w-[240px] max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
@@ -1157,69 +1311,109 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#e6e7ee] text-slate-700 text-sm shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none"
                 />
               </div>
-              <button 
-                onClick={handleAddInsumo}
-                className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-xl shadow-[4px_4px_8px_rgba(59,130,246,0.3)] hover:shadow-none active:scale-95 transition-all font-bold text-xs"
-              >
-                <Plus size={16} />
-                Agregar Insumo
-              </button>
+              
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Input de archivo oculto para importar */}
+                <input
+                  type="file"
+                  id="import-insumos-file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={handleImportInsumos}
+                />
+                
+                <button 
+                  onClick={handleExportInsumos}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#e6e7ee] text-gray-700 rounded-xl shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] active:scale-95 transition-all font-bold text-xs"
+                  title="Exportar insumos a un archivo JSON"
+                >
+                  <Download size={16} className="text-blue-500" />
+                  Exportar
+                </button>
+                
+                <label 
+                  htmlFor="import-insumos-file"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#e6e7ee] text-gray-700 rounded-xl shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] active:scale-95 transition-all font-bold text-xs cursor-pointer"
+                  title="Importar insumos desde un archivo JSON"
+                >
+                  <Upload size={16} className="text-green-500" />
+                  Importar
+                </label>
+
+                <button 
+                  onClick={handleAddInsumo}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-xl shadow-[4px_4px_8px_rgba(59,130,246,0.3)] hover:shadow-none active:scale-95 transition-all font-bold text-xs"
+                >
+                  <Plus size={16} />
+                  Agregar Insumo
+                </button>
+              </div>
             </div>
 
-            <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-              <table className="w-full text-left border-separate border-spacing-y-2">
-                <thead>
-                  <tr className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] px-4">
-                    <th className="pb-2 pl-6">DETALLE DEL INSUMO</th>
-                    <th className="pb-2 w-20 text-center"></th>
-                    <th className="pb-2 w-40 text-right pr-6">VALOR UNT</th>
-                    <th className="pb-2 w-14 text-center"></th>
-                  </tr>
-                </thead>
-                <tbody className="w-full">
-                  {filteredInsumos.map((insumo) => (
-                    <tr key={insumo.id} className="group transition-all w-full flex items-center gap-2 mb-2">
-                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-l-2xl p-2.5 pl-6 group-hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-shadow flex-1 min-w-0">
-                        <div className="w-full min-w-0">
-                          <NeumorphicTooltip text={insumo.detalle}>
-                            <input
-                              type="text"
-                              value={insumo.detalle}
-                              onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
-                              className="w-full bg-transparent border-none focus:outline-none text-[10.5px] font-bold text-slate-700 placeholder-slate-400 truncate"
-                            />
-                          </NeumorphicTooltip>
-                        </div>
-                      </td>
-                      <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 flex items-center justify-center group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow w-24 shrink-0">
-                        <input
-                          type="text"
-                          value={insumo.medida}
-                          onChange={(e) => handleUpdateInsumo(insumo.id, 'medida', e.target.value)}
-                          className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-bold text-slate-500"
-                        />
-                      </td>
-                      <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 flex items-center justify-end pr-6 group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow w-40 shrink-0">
-                        <div className="flex items-center justify-end gap-1.5 w-full">
-                          <span className="text-[11px] text-blue-500/50 font-black">$</span>
-                          <input
-                            type="number"
-                            value={insumo.valor}
-                            onChange={(e) => handleUpdateInsumo(insumo.id, 'valor', parseFloat(e.target.value))}
-                            className="w-20 bg-transparent border-none focus:outline-none text-right text-[12px] font-black text-blue-600 tabular-nums"
-                          />
-                        </div>
-                      </td>
-                      <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-r-2xl p-2.5 flex items-center justify-center w-14 shrink-0 group-hover:shadow-[inset_-2px_2px_5px_#b8b9be,inset_2px_-2px_5px_#ffffff] transition-shadow">
-                        <button onClick={() => handleDeleteInsumo(insumo.id)} className="text-slate-400 hover:text-red-500 transition-all hover:scale-110 active:scale-90 p-1">
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
+            {isLoadingInsumos ? (
+              <div className="py-16 flex flex-col justify-center items-center gap-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className="text-xs text-gray-500 font-bold tracking-wide animate-pulse">Cargando insumos de Supabase...</span>
+              </div>
+            ) : (
+              <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                <table className="w-full text-left border-separate border-spacing-y-2">
+                  <thead>
+                    <tr className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] px-4">
+                      <th className="pb-2 pl-6">DETALLE DEL INSUMO</th>
+                      <th className="pb-2 w-20 text-center"></th>
+                      <th className="pb-2 w-40 text-right pr-6">VALOR UNT</th>
+                      <th className="pb-2 w-14 text-center"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="w-full">
+                    {filteredInsumos.map((insumo) => (
+                      <tr key={insumo.id} className="group transition-all w-full flex items-center gap-2 mb-2">
+                        <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-l-2xl p-2.5 pl-6 group-hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-shadow flex-1 min-w-0">
+                          <div className="w-full min-w-0">
+                            <NeumorphicTooltip text={insumo.detalle}>
+                              <input
+                                type="text"
+                                value={insumo.detalle}
+                                onChange={(e) => handleUpdateInsumo(insumo.id, 'detalle', e.target.value)}
+                                onBlur={() => handleSaveInsumoToSupabase(insumo)}
+                                className="w-full bg-transparent border-none focus:outline-none text-[10.5px] font-bold text-slate-700 placeholder-slate-400 truncate"
+                              />
+                            </NeumorphicTooltip>
+                          </div>
+                        </td>
+                        <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 flex items-center justify-center group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow w-24 shrink-0">
+                          <input
+                            type="text"
+                            value={insumo.medida}
+                            onChange={(e) => handleUpdateInsumo(insumo.id, 'medida', e.target.value)}
+                            onBlur={() => handleSaveInsumoToSupabase(insumo)}
+                            className="w-full bg-transparent border-none focus:outline-none text-center text-[11px] font-bold text-slate-500"
+                          />
+                        </td>
+                        <td className="bg-[#e6e7ee] shadow-[0_4px_8px_#b8b9be,0_-4px_8px_#ffffff] p-2.5 flex items-center justify-end pr-6 group-hover:shadow-[inset_0_2px_4px_#b8b9be,inset_0_-2px_4px_#ffffff] transition-shadow w-40 shrink-0">
+                          <div className="flex items-center justify-end gap-1.5 w-full">
+                            <span className="text-[11px] text-blue-500/50 font-black">$</span>
+                            <input
+                              type="number"
+                              value={insumo.valor}
+                              onChange={(e) => handleUpdateInsumo(insumo.id, 'valor', parseFloat(e.target.value))}
+                              onBlur={() => handleSaveInsumoToSupabase(insumo)}
+                              className="w-20 bg-transparent border-none focus:outline-none text-right text-[12px] font-black text-blue-600 tabular-nums"
+                            />
+                          </div>
+                        </td>
+                        <td className="bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] rounded-r-2xl p-2.5 flex items-center justify-center w-14 shrink-0 group-hover:shadow-[inset_-2px_2px_5px_#b8b9be,inset_2px_-2px_5px_#ffffff] transition-shadow">
+                          <button onClick={() => handleDeleteInsumo(insumo.id)} className="text-slate-400 hover:text-red-500 transition-all hover:scale-110 active:scale-90 p-1">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
