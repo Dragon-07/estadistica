@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Prorrateo: Plan A vs. Plan C - Holística</title>
+  
+  <!-- Tailwind CSS 3.4.0 -->
+  <script src="https://cdn.tailwindcss.com/"></script>
+  
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js para visualización -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            outfit: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              850: '#1e293b',
+              950: '#0f172a',
+            },
+            indigo: {
+              650: '#4f46e5',
+              750: '#3730a3',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+    }
+    .neon-shadow {
+      box-shadow: 0 10px 30px -10px rgba(79, 70, 229, 0.15);
+    }
+    .neumorphic-input {
+      background: #f1f5f9;
+      box-shadow: inset 2px 2px 5px #cbd5e1, inset -2px -2px 5px #ffffff;
+      border: none;
+      outline: none;
+      transition: all 0.3s;
+    }
+    .neumorphic-input:focus {
+      box-shadow: inset 1px 1px 3px #cbd5e1, inset -1px -1px 3px #ffffff, 0 0 0 2px rgba(79, 70, 229, 0.2);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e0e7ff]/30 min-h-screen text-slate-800 font-sans antialiased">
+
+  <!-- HEADER -->
+  <header class="max-w-7xl mx-auto px-4 pt-8">
+    <div class="glass-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl shadow-indigo-100/30 border border-white relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6">
+      <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-300/10 rounded-full blur-3xl"></div>
+      <div class="absolute -left-20 -bottom-20 w-64 h-64 bg-purple-300/10 rounded-full blur-3xl"></div>
+      
+      <div class="flex items-center gap-5 relative z-10 w-full lg:w-auto">
+        <div class="w-14 h-14 bg-gradient-to-tr from-blue-500 via-indigo-650 to-purple-650 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 flex-shrink-0 animate-pulse">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+          </svg>
+        </div>
+        <div>
+          <span class="bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-indigo-200">
+            Laboratorio de Inteligencia de Negocio • Holística
+          </span>
+          <h1 class="text-2xl sm:text-3xl font-black font-outfit tracking-tight text-slate-900 mt-1">Simulador Prorrateo Clínico: Plan A vs. Plan C</h1>
+          <p class="text-slate-500 font-semibold text-xs mt-0.5">Analizador interactivo para evaluar la distribución de costos ociosos y fijos</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4 w-full lg:w-auto justify-end relative z-10 shrink-0">
+        <div class="bg-white/90 border border-slate-200/80 px-5 py-3 rounded-2xl shadow-sm text-right min-w-[220px]">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Total a Distribuiir (Imagen)</p>
+          <div class="flex items-center justify-end gap-1 mt-1">
+            <span class="text-xs font-bold text-slate-400">$</span>
+            <input type="number" id="global-cost" value="170125624" oninput="runSimulation()" class="bg-transparent border-none focus:ring-0 text-lg font-black text-indigo-700 p-0 m-0 w-36 text-right font-mono outline-none">
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO -->
+  <main class="max-w-7xl mx-auto px-4 mt-8 grid grid-cols-1 xl:grid-cols-3 gap-8">
+    
+    <!-- COLUMNA IZQUIERDA Y CENTRAL: TABLAS Y CONFIGURACIÓN -->
+    <div class="xl:col-span-2 flex flex-col gap-8">
+      
+      <!-- EXPLICACIÓN RÁPIDA COMPARATIVA -->
+      <div class="glass-card p-6 sm:p-8 rounded-[2.25rem] shadow-lg border border-white relative overflow-hidden">
+        <h2 class="text-lg font-black font-outfit text-slate-900 mb-3 flex items-center gap-2">
+          <span class="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-indigo-650 rounded-full inline-block"></span>
+          Comparativa Estratégica de Prorrateo
+        </h2>
+        <p class="text-slate-650 text-xs leading-relaxed mb-6 font-medium">
+          La distribución de costos indirectos impacta directamente en el margen neto de rentabilidad de cada tratamiento. Este simulador te permite ver las consecuencias de aplicar el **Plan A** (proporcional únicamente a los ingresos brutos) frente al **Plan C** (ponderado mixto: 50% volumen y 50% ingresos financieros).
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Tarjeta Plan A -->
+          <div class="p-5 rounded-2xl border border-purple-100 bg-purple-50/20 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-black text-purple-700 bg-purple-100 px-3 py-1 rounded-full uppercase tracking-wider">Plan A</span>
+                <span class="text-[9px] font-bold text-slate-400">Prorrateo por Ingreso</span>
+              </div>
+              <h3 class="font-bold text-slate-800 text-xs mb-2">Asignación 100% por Capacidad Financiera</h3>
+              <p class="text-[11px] text-slate-500 leading-relaxed font-semibold">
+                Distribuye el costo total en base a la participación porcentual en los ingresos de la clínica. Los servicios costosos o premium cargan con casi la totalidad del costo fijo, mientras que los de bajo costo apenas aportan.
+              </p>
+            </div>
+            <div class="mt-4 font-mono text-[9px] bg-purple-55 p-2 rounded-xl text-purple-800 font-bold border border-purple-100/30">
+              Fórmula: CostoAsig = CostoTotal &times; (IngresosServicio / IngresosTotales)
+            </div>
+          </div>
+
+          <!-- Tarjeta Plan C -->
+          <div class="p-5 rounded-2xl border border-indigo-100 bg-indigo-50/20 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-black text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full uppercase tracking-wider">Plan C (Actual)</span>
+                <span class="text-[9px] font-bold text-slate-400">Prorrateo Mixto 50/50</span>
+              </div>
+              <h3 class="font-bold text-slate-800 text-xs mb-2">Ponderado Equitativo Operativo-Financiero</h3>
+              <p class="text-[11px] text-slate-500 leading-relaxed font-semibold">
+                Reparte 50% por volumen de atenciones clínicas (sesiones) y 50% por los ingresos que se captan. Ofrece un balance justo al proteger a los servicios premium de verse sobrecargados y exigir a los de alta ocupación amortizar su tiempo.
+              </p>
+            </div>
+            <div class="mt-4 font-mono text-[9px] bg-indigo-55 p-2 rounded-xl text-indigo-800 font-bold border border-indigo-100/30">
+              Fórmula: CostoAsig = 0.5 &times; (IngresoAsig) + 0.5 &times; (SesionesAsig)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIMULADOR DINÁMICO E INPUTS DE TRATAMIENTOS -->
+      <div class="glass-card p-6 sm:p-8 rounded-[2.25rem] shadow-lg border border-white">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+          <div>
+            <h2 class="text-lg font-black font-outfit text-slate-900 flex items-center gap-2">
+              <span class="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-indigo-650 rounded-full inline-block"></span>
+              Paso 1: Configurar Tratamientos Clínicos
+            </h2>
+            <p class="text-slate-450 text-[10.5px] font-semibold mt-0.5">
+              Activa/desactiva tratamientos o modifica sus valores individuales. Los cálculos se recalculan dinámicamente:
+            </p>
+          </div>
+          
+          <button 
+            onclick="resetDefaults()" 
+            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all self-start sm:self-auto"
+          >
+            Reestablecer Valores
+          </button>
+        </div>
+
+        <!-- Buscador Neumórfico -->
+        <div class="flex items-center px-4 py-3 bg-[#e6e7ee] rounded-2xl shadow-[inset_3px_3px_6px_#cbd5e1,inset_-3px_-3px_6px_#ffffff] max-w-sm mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            id="search-treatments"
+            placeholder="Buscar por tratamiento..."
+            oninput="filterTreatments(this.value)"
+            class="bg-transparent border-none text-xs text-gray-700 focus:ring-0 outline-none w-full font-medium"
+          />
+        </div>
+
+        <!-- TABLA DE EDICIÓN NEUMÓRFICA -->
+        <div class="overflow-x-auto rounded-3xl border border-slate-100 shadow-inner bg-slate-50/50 p-4 max-h-[500px] overflow-y-auto custom-scrollbar">
+          <table class="w-full text-left text-xs min-w-[700px] border-collapse">
+            <thead>
+              <tr class="text-[9.5px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200/80 pb-3 sticky top-0 bg-[#f8fafc] z-10">
+                <th class="px-3 py-2">Tratamiento</th>
+                <th class="px-3 py-2 text-center w-28">Estado</th>
+                <th class="px-3 py-2 text-center w-36">Sesiones</th>
+                <th class="px-3 py-2 text-right w-44">Ingresos Brutos ($)</th>
+                <th class="px-3 py-2 text-center w-24">% Sesiones</th>
+                <th class="px-3 py-2 text-right w-24">% Ingresos</th>
+              </tr>
+            </thead>
+            <tbody id="treatment-list-body" class="font-semibold text-slate-650">
+              <!-- Inyectado por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- COMPARADOR DE RESULTADOS LADO A LADO -->
+      <div class="glass-card p-6 sm:p-8 rounded-[2.25rem] shadow-lg border border-white">
+        <h2 class="text-lg font-black font-outfit text-slate-900 mb-2 flex items-center gap-2">
+          <span class="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-indigo-650 rounded-full inline-block"></span>
+          Paso 2: Análisis Comparativo Lado a Lado
+        </h2>
+        <p class="text-slate-450 text-[10.5px] font-semibold mb-6">
+          Resultados de asignación y costo unitario por sesión. Se calculan automáticamente sobre la suma de los tratamientos activos:
+        </p>
+
+        <!-- TABLA DE RESULTADOS COMPARATIVOS -->
+        <div class="overflow-x-auto rounded-3xl border border-slate-100 shadow-inner bg-slate-50/50 p-4 max-h-[500px] overflow-y-auto custom-scrollbar">
+          <table class="w-full text-left text-xs min-w-[800px] border-collapse">
+            <thead>
+              <tr class="text-[9.5px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200/80 sticky top-0 bg-[#f8fafc] z-10">
+                <th class="px-3 py-2">Tratamiento</th>
+                <th class="px-3 py-2 text-right bg-purple-50/40 text-purple-700 font-black">Plan A</th>
+                <th class="px-3 py-2 text-right bg-purple-50/40 text-purple-600 font-bold border-r border-purple-100">Costo/Ses. A</th>
+                <th class="px-3 py-2 text-right bg-indigo-50/40 text-indigo-700 font-black">Plan C (Mixto)</th>
+                <th class="px-3 py-2 text-right bg-indigo-50/40 text-indigo-600 font-bold border-r border-indigo-100">Costo/Ses. C</th>
+                <th class="px-3 py-2 text-right">Diferencia (C - A)</th>
+                <th class="px-3 py-2 text-center font-bold">Plan Conveniente</th>
+              </tr>
+            </thead>
+            <tbody id="result-list-body" class="font-semibold text-slate-650">
+              <!-- Inyectado por JS -->
+            </tbody>
+            <tfoot class="sticky bottom-0 bg-[#f8fafc] z-10 border-t-2 border-slate-200">
+              <tr id="result-list-total" class="font-black text-slate-800 bg-slate-100/50">
+                <!-- Totales inyectados por JS -->
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COLUMNA DERECHA: VEREDICTO Y GRÁFICOS -->
+    <div class="lg:col-span-1 flex flex-col gap-8">
+      
+      <!-- CARTA DE TOTALES GLOBALES SIMULADOS -->
+      <div class="glass-card p-6 rounded-[2.25rem] shadow-lg border border-white space-y-4">
+        <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Totales Clínicos Activos</h3>
+        
+        <div class="grid grid-cols-2 gap-3 text-center">
+          <div class="p-3 bg-white/70 border border-slate-200/60 rounded-2xl shadow-sm">
+            <span class="text-[8.5px] font-black text-slate-400 uppercase tracking-widest block leading-none">Sesiones Totales</span>
+            <span id="stat-active-sessions" class="text-lg font-black text-slate-800 font-mono tracking-tight block mt-1.5">0</span>
+          </div>
+          <div class="p-3 bg-white/70 border border-slate-200/60 rounded-2xl shadow-sm">
+            <span class="text-[8.5px] font-black text-slate-400 uppercase tracking-widest block leading-none">Ingresos Totales</span>
+            <span id="stat-active-revenue" class="text-sm font-black text-slate-800 font-mono tracking-tight block mt-2.5">0</span>
+          </div>
+        </div>
+
+        <div class="p-4 bg-indigo-950 text-white rounded-2xl shadow-md border border-indigo-900">
+          <span class="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-1">Costo Fijo Unitario Promedio</span>
+          <p id="stat-active-avg-cost" class="text-xl font-black font-mono">$0</p>
+          <span class="text-[10px] text-slate-350 block mt-1.5 leading-snug font-medium">Por sesión asistida global (costo total repartido entre las sesiones activas).</span>
+        </div>
+      </div>
+
+      <!-- GRÁFICO DINÁMICO DE BARRAS -->
+      <div class="glass-card p-6 rounded-[2.25rem] shadow-lg border border-white flex flex-col justify-between">
+        <div>
+          <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight mb-1">Visualización Comparativa</h3>
+          <p class="text-slate-400 text-[10px] leading-relaxed mb-4 font-semibold">Costos fijos asignados bajo cada plan para los top tratamientos seleccionados:</p>
+          
+          <div class="h-[240px] w-full relative mb-4">
+            <canvas id="simulationChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- VEREDICTO DE NEGOCIO INTELIGENTE -->
+      <div class="glass-card p-6 rounded-[2.25rem] shadow-lg border border-white space-y-4">
+        <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          Veredicto del Analista Financiero
+        </h3>
+        
+        <div id="verdict-container" class="space-y-3">
+          <!-- Inyectado por JS dinámicamente según configuración -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- PIE DE PÁGINA -->
+  <footer class="max-w-7xl mx-auto px-4 mt-12 text-center text-xs text-slate-400 font-bold pb-16">
+    <p>Simulador Dinámico de Rentabilidad Clínica • Holística Unidad de Medicina Integral &copy; 2026</p>
+  </footer>
+
+  <script>
+    // Listado real, completo y exacto de los 46 tratamientos extraídos de la base de datos
+    const initialTreatments = [
+      { id: "1", name: "ACUPUNTURA", count: 3267, revenue: 175512773, enabled: true },
+      { id: "2", name: "MEDICAMENTO HOMEOPATICO UNISISTA", count: 778, revenue: 57386000, enabled: true },
+      { id: "3", name: "ACUPUNTURA PAQUETE X 5 SESIONES", count: 134, revenue: 48780000, enabled: true },
+      { id: "4", name: "CONSULTA", count: 417, revenue: 40543256, enabled: true },
+      { id: "5", name: "TERAPIA NEURAL SUPERFICIAL", count: 657, revenue: 40050361, enabled: true },
+      { id: "6", name: "OXIGENACION HIPERBARICA", count: 162, revenue: 24450000, enabled: true },
+      { id: "7", name: "SUERO DE VITAMINA C", count: 80, revenue: 14225500, enabled: true },
+      { id: "8", name: "ARTHREXAN KIT DOLOR FCO X 60 CAPS + GEL", count: 154, revenue: 13882200, enabled: true },
+      { id: "9", name: "SUERO DE OZONO ENDOVENOSO", count: 106, revenue: 13005500, enabled: true },
+      { id: "10", name: "CONSULTA DE PRIMERA VEZ POR ESPECIALISTA EN MEDICINA ALTERNATIVA (MEDICINA TRADICIONAL CHINA)", count: 129, revenue: 12218600, enabled: true },
+      { id: "11", name: "CONTROL", count: 109, revenue: 10729500, enabled: true },
+      { id: "12", name: "SUERO DE OLIGOELEMENTOS", count: 52, revenue: 9662000, enabled: true },
+      { id: "13", name: "SUERO DTX PAQUETE X 3 SESIONES", count: 17, revenue: 8382500, enabled: true },
+      { id: "14", name: "SUERO DE OLIGOELEMENTOS PAQUETE X 3 SESIONES", count: 10, revenue: 5571000, enabled: true },
+      { id: "15", name: "OTROS PROCED.MDES.", count: 1788, revenue: 5364000, enabled: true }, // Elemento que se excluye
+      { id: "16", name: "SUERO VITAMINA C PAQUETE X 3 SESIONES", count: 7, revenue: 4378800, enabled: true },
+      { id: "17", name: "SUERO DTX", count: 24, revenue: 4290000, enabled: true },
+      { id: "18", name: "SUERO OZONO PAQUETE X 5 SESIONES", count: 5, revenue: 4250000, enabled: true },
+      { id: "19", name: "RECESS X 60 CAPS", count: 36, revenue: 4032000, enabled: true },
+      { id: "20", name: "OXIGENACION HIPERBARICA PAQUETE X 3 SESIONES", count: 8, revenue: 3510000, enabled: true },
+      { id: "21", name: "PLASMA RODILLA", count: 8, revenue: 3008100, enabled: true },
+      { id: "22", name: "BALON FIBER POLVO", count: 21, revenue: 2953500, enabled: true },
+      { id: "23", name: "NEBULIZACION", count: 42, revenue: 2146960, enabled: true },
+      { id: "24", name: "OZONOTERAPIA INTRAMUSCULAR", count: 16, revenue: 1978140, enabled: true },
+      { id: "25", name: "PLASMA HOMBRO", count: 5, revenue: 1969000, enabled: true },
+      { id: "26", name: "PLASMA FACIAL", count: 5, revenue: 1911000, enabled: true },
+      { id: "27", name: "SUERO REVITALIZADOR", count: 11, revenue: 1905000, enabled: true },
+      { id: "28", name: "SUERO OZONO PAQUETE X 3 SESIONES", count: 3, revenue: 1759500, enabled: true },
+      { id: "29", name: "LENTIBIOT - LENTINULA EDODES POLVO X 100 G", count: 35, revenue: 1641607, enabled: true },
+      { id: "30", name: "PROMOCION DIA DE LA MUJER", count: 3, revenue: 1031100, enabled: true },
+      { id: "31", name: "SALES DE SHUSSLER GOTAS X 30 ML", count: 16, revenue: 1022000, enabled: true },
+      { id: "32", name: "BIOMAGNET X 30 CAPS", count: 13, revenue: 993401, enabled: true },
+      { id: "33", name: "OZONOTERAPIA BOTA", count: 7, revenue: 882800, enabled: true },
+      { id: "34", name: "ACEITE OZONIZADO FCO X 30 ML", count: 14, revenue: 672000, enabled: true },
+      { id: "35", name: "VITA BIOSA FRESA FCO X 1000 ML", count: 6, revenue: 629997, enabled: true },
+      { id: "36", name: "VITA BIOSA NARANJA FCO X 1000 ML", count: 6, revenue: 629997, enabled: true },
+      { id: "37", name: "AMEBACOL CAPSULAS X 24", count: 14, revenue: 553700, enabled: true },
+      { id: "38", name: "OXIVENACION", count: 1, revenue: 528335, enabled: true },
+      { id: "39", name: "WE HE4L INSOMNIO GOTAS X 30 ML", count: 3, revenue: 482678, enabled: true },
+      { id: "40", name: "GANOPLUS - GANODERMA FCO X 120 CAPS", count: 5, revenue: 447197, enabled: true },
+      { id: "41", name: "PLASMA", count: 1, revenue: 390000, enabled: true },
+      { id: "42", name: "WE HE4L DOLOR GOTAS X 30 ML GOTAS X 30 ML", count: 2, revenue: 316288, enabled: true },
+      { id: "43", name: "TERAPIA NEURAL SUPERFICIAL PAQUETE X 3 SESIONES", count: 1, revenue: 255000, enabled: true },
+      { id: "44", name: "SUERO DE DOLOR", count: 1, revenue: 230000, enabled: true },
+      { id: "45", name: "MESOTERAPIA FACIAL", count: 1, revenue: 210000, enabled: true },
+      { id: "46", name: "CAMPOS MAGNETICOS", count: 2, revenue: 130000, enabled: true }
+    ];
+
+    let currentTreatments = JSON.parse(JSON.stringify(initialTreatments));
+    let simulationChartInstance = null;
+    let textSearchFilter = "";
+
+    // Formateadores
+    function formatCurrency(val) {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0
+      }).format(val);
+    }
+
+    function formatPct(val) {
+      return val.toFixed(4) + '%';
+    }
+
+    // Dibujar la lista de configuración
+    function renderConfigurationTable() {
+      const tbody = document.getElementById('treatment-list-body');
+      tbody.innerHTML = '';
+
+      // Calcular totales de activos para porcentajes en tiempo real
+      const activeTreatments = currentTreatments.filter(t => t.enabled);
+      const totalSessions = activeTreatments.reduce((acc, t) => acc + t.count, 0) || 1;
+      const totalRevenue = activeTreatments.reduce((acc, t) => acc + t.revenue, 0) || 1;
+
+      currentTreatments.forEach((item) => {
+        // Filtrar por texto si corresponde
+        if (textSearchFilter && !item.name.toLowerCase().includes(textSearchFilter.toLowerCase())) {
+          return;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = `border-b border-slate-200/60 hover:bg-slate-100/30 transition-colors ${item.enabled ? '' : 'opacity-50 bg-slate-100/40'}`;
+        tr.innerHTML = `
+          <td class="px-3 py-3">
+            <span class="font-bold text-slate-800 uppercase block tracking-tight truncate max-w-[280px]" title="${item.name}">${item.name}</span>
+            <span class="text-[9px] text-slate-400 font-semibold block uppercase mt-0.5">ID: ${item.id}</span>
+          </td>
+          <td class="px-3 py-3 text-center">
+            <!-- Switch neumórfico -->
+            <button
+              onclick="toggleTreatment('${item.id}')"
+              class="relative inline-flex h-5 w-10 items-center rounded-full transition-all duration-350 outline-none ${
+                item.enabled ? 'bg-green-500 shadow-[0_2px_6px_rgba(34,197,94,0.3)]' : 'bg-slate-300'
+              }"
+            >
+              <span class="inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-300 ${
+                item.enabled ? 'translate-x-6' : 'translate-x-1'
+              }"></span>
+            </button>
+          </td>
+          <td class="px-3 py-3 text-center">
+            <input 
+              type="number" 
+              value="${item.count}" 
+              oninput="updateValue('${item.id}', 'count', this.value)" 
+              disabled="${!item.enabled}"
+              class="neumorphic-input w-20 text-center px-2 py-1 rounded-lg text-xs font-bold text-slate-700 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+          </td>
+          <td class="px-3 py-3 text-right">
+            <div class="flex items-center justify-end gap-1">
+              <span class="text-slate-400 font-bold font-mono text-[10px]">$</span>
+              <input 
+                type="number" 
+                value="${item.revenue}" 
+                oninput="updateValue('${item.id}', 'revenue', this.value)" 
+                disabled="${!item.enabled}"
+                class="neumorphic-input w-28 text-right px-2 py-1 rounded-lg text-xs font-bold text-slate-700 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+            </div>
+          </td>
+          <td class="px-3 py-3 text-center text-blue-600 font-bold font-mono text-[10px] tabular-nums">
+            ${item.enabled ? formatPct((item.count / totalSessions) * 100) : '-'}
+          </td>
+          <td class="px-3 py-3 text-right text-purple-600 font-bold font-mono text-[10px] tabular-nums">
+            ${item.enabled ? formatPct((item.revenue / totalRevenue) * 100) : '-'}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Toggle de activación
+    function toggleTreatment(id) {
+      const treatment = currentTreatments.find(t => t.id === id);
+      if (treatment) {
+        treatment.enabled = !treatment.enabled;
+        runSimulation(false); // Mantener estado de scroll al renderizar
+        renderConfigurationTable();
+      }
+    }
+
+    // Edición de valores
+    function updateValue(id, field, value) {
+      const treatment = currentTreatments.find(t => t.id === id);
+      if (treatment) {
+        treatment[field] = parseFloat(value) || 0;
+        runSimulation(false); // Correr sin re-renderizar tabla de config para no perder el foco
+      }
+    }
+
+    // Buscar / Filtrar tratamientos
+    function filterTreatments(query) {
+      textSearchFilter = query;
+      renderConfigurationTable();
+    }
+
+    // Restablecer
+    function resetDefaults() {
+      currentTreatments = JSON.parse(JSON.stringify(initialTreatments));
+      document.getElementById('global-cost').value = 170125624;
+      document.getElementById('search-treatments').value = "";
+      textSearchFilter = "";
+      runSimulation();
+    }
+
+    // Simulación Matemática
+    function runSimulation(redrawConfig = true) {
+      if (redrawConfig) {
+        renderConfigurationTable();
+      }
+
+      const costTotal = parseFloat(document.getElementById('global-cost').value) || 0;
+
+      // Calcular totales de tratamientos activos
+      const activeTreatments = currentTreatments.filter(t => t.enabled);
+      const totalSessions = activeTreatments.reduce((acc, t) => acc + t.count, 0) || 1;
+      const totalRevenue = activeTreatments.reduce((acc, t) => acc + t.revenue, 0) || 1;
+
+      // Actualizar KPI
+      document.getElementById('stat-active-sessions').innerText = totalSessions.toLocaleString('es-CO');
+      document.getElementById('stat-active-revenue').innerText = formatCurrency(totalRevenue);
+      document.getElementById('stat-active-avg-cost').innerText = formatCurrency(totalSessions > 0 ? costTotal / totalSessions : 0);
+
+      // Tabla de Resultados Lado a Lado
+      const resultBody = document.getElementById('result-list-body');
+      resultBody.innerHTML = '';
+
+      let sumAllocA = 0;
+      let sumAllocC = 0;
+
+      const chartLabels = [];
+      const chartDataA = [];
+      const chartDataC = [];
+
+      activeTreatments.forEach((item) => {
+        const pctCount = item.count / totalSessions;
+        const pctRevenue = item.revenue / totalRevenue;
+
+        // Plan A: Ingresos
+        const allocA = costTotal * pctRevenue;
+        const costPerSessionA = item.count > 0 ? (allocA / item.count) : 0;
+
+        // Plan C: Mixto 50/50
+        const allocVol = costTotal * 0.5 * pctCount;
+        const allocRev = costTotal * 0.5 * pctRevenue;
+        const allocC = allocVol + allocRev;
+        const costPerSessionC = item.count > 0 ? (allocC / item.count) : 0;
+
+        const difference = allocC - allocA;
+        sumAllocA += allocA;
+        sumAllocC += allocC;
+
+        // Datos para gráfico (agrupamos los primeros 5 en detalle)
+        if (chartLabels.length < 5) {
+          chartLabels.push(item.name.substring(0, 18) + "...");
+          chartDataA.push(Math.round(allocA));
+          chartDataC.push(Math.round(allocC));
+        }
+
+        // Favorable para el servicio
+        const winnerText = allocA < allocC ? 'Plan A' : 'Plan C';
+        const winnerClass = allocA < allocC ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200';
+
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-200/60 hover:bg-slate-100/30 transition-colors";
+        tr.innerHTML = `
+          <td class="px-3 py-3.5">
+            <span class="font-bold text-slate-800 uppercase block tracking-tight truncate max-w-[220px]" title="${item.name}">${item.name}</span>
+          </td>
+          <td class="px-3 py-3.5 text-right bg-purple-50/10 text-slate-700 font-semibold font-mono tabular-nums">${formatCurrency(allocA)}</td>
+          <td class="px-3 py-3.5 text-right bg-purple-50/10 text-purple-600 font-bold font-mono border-r border-purple-100/50 tabular-nums">${formatCurrency(costPerSessionA)}</td>
+          <td class="px-3 py-3.5 text-right bg-indigo-50/10 text-slate-700 font-semibold font-mono tabular-nums">${formatCurrency(allocC)}</td>
+          <td class="px-3 py-3.5 text-right bg-indigo-50/10 text-indigo-600 font-bold font-mono border-r border-indigo-100/50 tabular-nums">${formatCurrency(costPerSessionC)}</td>
+          <td class="px-3 py-3.5 text-right font-mono font-bold tabular-nums ${difference > 0 ? 'text-green-600' : difference < 0 ? 'text-red-500' : 'text-slate-500'}">
+            ${difference > 0 ? '+' : ''}${formatCurrency(difference)}
+          </td>
+          <td class="px-3 py-3.5 text-center">
+            <span class="border rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${winnerClass}">
+              ${winnerText}
+            </span>
+          </td>
+        `;
+        resultBody.appendChild(tr);
+      });
+
+      // Pie con totales de activos
+      const footerRow = document.getElementById('result-list-total');
+      footerRow.innerHTML = `
+        <td class="px-3 py-3">TOTALES ACTIVO</td>
+        <td class="px-3 py-3 text-right text-purple-700 font-black font-mono tabular-nums">${formatCurrency(sumAllocA)}</td>
+        <td class="px-3 py-3 border-r border-purple-100">-</td>
+        <td class="px-3 py-3 text-right text-indigo-700 font-black font-mono tabular-nums">${formatCurrency(sumAllocC)}</td>
+        <td class="px-3 py-3 border-r border-indigo-100">-</td>
+        <td class="px-3 py-3 text-right font-mono font-black text-slate-800 tabular-nums">${formatCurrency(sumAllocC - sumAllocA)}</td>
+        <td class="px-3 py-3 text-center">-</td>
+      `;
+
+      updateChart(chartLabels, chartDataA, chartDataC);
+      updateVerdict(costTotal, totalSessions, totalRevenue, activeTreatments);
+    }
+
+    // Inicializar el gráfico Chart.js
+    function initChart() {
+      const ctx = document.getElementById('simulationChart').getContext('2d');
+      simulationChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Plan A (Solo Ingresos)',
+              data: [],
+              backgroundColor: 'rgba(168, 85, 247, 0.75)',  // Purple
+              borderColor: 'rgb(168, 85, 247)',
+              borderWidth: 1,
+              borderRadius: 8
+            },
+            {
+              label: 'Plan C (Ponderado Mixto)',
+              data: [],
+              backgroundColor: 'rgba(79, 70, 229, 0.9)',   // Indigo focus
+              borderColor: 'rgb(79, 70, 229)',
+              borderWidth: 1,
+              borderRadius: 8
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { font: { size: 9, weight: 'bold' }, boxWidth: 12 }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return '$' + new Intl.NumberFormat('es-CO', { notation: "compact", compactDisplay: "short" }).format(value);
+                },
+                font: { size: 9, weight: 'bold' }
+              },
+              grid: { color: 'rgba(241, 245, 249, 0.5)' }
+            },
+            x: {
+              ticks: { font: { size: 9, weight: 'bold' } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    // Actualizar gráfico
+    function updateChart(labels, dataA, dataC) {
+      if (simulationChartInstance) {
+        simulationChartInstance.data.labels = labels;
+        simulationChartInstance.data.datasets[0].data = dataA;
+        simulationChartInstance.data.datasets[1].data = dataC;
+        simulationChartInstance.update();
+      }
+    }
+
+    // Veredicto Financiero Automatizado
+    function updateVerdict(costTotal, totalSessions, totalRevenue, activeTreatments) {
+      const container = document.getElementById('verdict-container');
+      container.innerHTML = '';
+
+      if (activeTreatments.length === 0) {
+        container.innerHTML = `
+          <div class="p-4 bg-amber-50 border border-amber-200 text-amber-600 rounded-2xl text-xs font-semibold">
+            Activa al menos un tratamiento para generar el análisis financiero.
+          </div>
+        `;
+        return;
+      }
+
+      // Comprobar si "Otros Procedimientos" está activado
+      const otherProced = activeTreatments.find(t => t.name === "OTROS PROCED.MDES.");
+      const isOtherProcedActive = otherProced ? otherProced.enabled : false;
+
+      let verdictText = "";
+      let verdictBadgeClass = "";
+      let verdictTitle = "";
+
+      if (isOtherProcedActive && otherProced.count > 1000 && otherProced.revenue < 10000000) {
+        verdictTitle = "Plan C Recomendado (Con Medicamentos)";
+        verdictBadgeClass = "bg-red-100 text-red-700 border-red-200";
+        verdictText = `
+          Actualmente tienes activo el concepto de <strong>${otherProced.name}</strong> con <strong>${otherProced.count} sesiones</strong> y apenas <strong>${formatCurrency(otherProced.revenue)} en facturación</strong>.<br><br>
+          • <strong>Consecuencia del Plan A</strong>: Este ítem apenas absorbería un 1.21% de los costos fijos ($${formatCurrency(costTotal * (otherProced.revenue / totalRevenue))}), lo que es matemáticamente cómodo para él, pero **sobrecarga y penaliza a Acupuntura y Homeopatía** que deben amortizar casi el 60% de los costos de la clínica.<br><br>
+          • <strong>Veredicto</strong>: Mientras mantengas activos estos conceptos no-tratamientos, el **Plan C** es necesario para evitar inflar artificialmente el margen de insumos y no arruinar las especialidades premium.
+        `;
+      } else {
+        verdictTitle = "Plan A Altamente Sugerido (Tratamientos Depurados)";
+        verdictBadgeClass = "bg-green-100 text-green-700 border-green-200";
+        verdictText = `
+          <strong>¡Con los tratamientos depurados (habiendo excluido medicamentos y servicios con volumen desbalanceado y bajo ingreso)!</strong>, el escenario es ideal para migrar al **Plan A**:<br><br>
+          • <strong>Transparencia</strong>: Los tratamientos asumen costos de forma 100% proporcional a su capacidad de facturación real. Esto elimina el sesgo de ociosidad.<br><br>
+          • <strong>Alivio a Acupuntura</strong>: Al desactivar conceptos masivos pero de baja facturación, la carga de ociosidad se reduce significativamente y el costo por sesión disminuye de forma considerable.<br><br>
+          • <strong>Veredicto</strong>: El **Plan A** es la mejor opción estratégica una vez completada la exclusión de medicamentos.
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="border rounded-2xl p-4 space-y-3 bg-white/60">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-slate-800">Análisis Financiero</span>
+            <span class="border rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${verdictBadgeClass}">
+              ${verdictTitle}
+            </span>
+          </div>
+          <p class="text-xs text-slate-650 leading-relaxed">
+            ${verdictText}
+          </p>
+        </div>
+        
+        <div class="p-4 bg-indigo-50 border border-indigo-150 rounded-2xl text-[10.5px] text-indigo-850 font-semibold leading-relaxed">
+          <span class="text-indigo-650 font-black">💡 Sugerencia Interactiva:</span>
+          Haz clic en el switch verde de <strong>OTROS PROCED.MDES.</strong> (en el Paso 1) para desactivarlo. Observa cómo cambian los costos por sesión y el veredicto en tiempo real.
+        </div>
+      `;
+    }
+
+    // Inicialización
+    window.onload = function() {
+      initChart();
+      runSimulation();
+    };
+  </script>
+</body>
+</html>
