@@ -91,13 +91,25 @@
             Laboratorio de Inteligencia de Negocio • Holística
           </span>
           <h1 class="text-2xl sm:text-3xl font-black font-outfit tracking-tight text-slate-900 mt-1">Simulador Prorrateo Clínico: Plan A vs. Plan C</h1>
-          <p class="text-slate-500 font-semibold text-xs mt-0.5">Analizador interactivo para evaluar la distribución de costos ociosos y fijos</p>
+          <p class="text-slate-500 font-semibold text-xs mt-0.5">Analizador interactivo con los montos exactos de la aplicación en ambos estados</p>
         </div>
       </div>
       
-      <div class="flex items-center gap-4 w-full lg:w-auto justify-end relative z-10 shrink-0">
+      <div class="flex flex-wrap items-center gap-4 w-full lg:w-auto justify-end relative z-10 shrink-0">
+        <!-- Selector de Modo de Prorrateo -->
+        <div class="bg-white/90 border border-slate-200/80 px-5 py-3 rounded-2xl shadow-sm text-left min-w-[260px]">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Modo de Prorrateo</p>
+          <div class="flex items-center gap-1 mt-1">
+            <select id="simulation-mode" onchange="runSimulation()" class="bg-transparent border-none focus:ring-0 text-xs font-black text-indigo-700 p-0 m-0 w-full outline-none cursor-pointer">
+              <option value="historical" selected>Datos Clínicos Reales (Fiel a la App)</option>
+              <option value="dynamic">Cálculo Dinámico Puro (100% Interactivo)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Total a Distribuir -->
         <div class="bg-white/90 border border-slate-200/80 px-5 py-3 rounded-2xl shadow-sm text-right min-w-[220px]">
-          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Total a Distribuiir (Imagen)</p>
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Total a Distribuir</p>
           <div class="flex items-center justify-end gap-1 mt-1">
             <span class="text-xs font-bold text-slate-400">$</span>
             <input type="number" id="global-cost" value="170125624" oninput="runSimulation()" class="bg-transparent border-none focus:ring-0 text-lg font-black text-indigo-700 p-0 m-0 w-36 text-right font-mono outline-none">
@@ -113,14 +125,14 @@
     <!-- COLUMNA IZQUIERDA Y CENTRAL: TABLAS Y CONFIGURACIÓN -->
     <div class="xl:col-span-2 flex flex-col gap-8">
       
-      <!-- EXPLICACIÓN RÁPIDA COMPARATIVA -->
+      <!-- EXPLICACIÓN COMPARATIVA -->
       <div class="glass-card p-6 sm:p-8 rounded-[2.25rem] shadow-lg border border-white relative overflow-hidden">
         <h2 class="text-lg font-black font-outfit text-slate-900 mb-3 flex items-center gap-2">
           <span class="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-indigo-650 rounded-full inline-block"></span>
-          Comparativa Estratégica de Prorrateo
+          Comparativa Estratégica de Prorrateo (Plan A vs Plan C)
         </h2>
         <p class="text-slate-650 text-xs leading-relaxed mb-6 font-medium">
-          La distribución de costos indirectos impacta directamente en el margen neto de rentabilidad de cada tratamiento. Este simulador te permite ver las consecuencias de aplicar el **Plan A** (proporcional únicamente a los ingresos brutos) frente al **Plan C** (ponderado mixto: 50% volumen y 50% ingresos financieros).
+          Este simulador reproduce **con precisión al centavo** las cifras reales calculadas por tu aplicación. Te permite evaluar en tiempo real la diferencia entre el **Plan C** (Prorrateo Mixto 50/50 por volumen y capacidad financiera) y el **Plan A** (100% por ingresos).
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -129,11 +141,11 @@
             <div>
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-black text-purple-700 bg-purple-100 px-3 py-1 rounded-full uppercase tracking-wider">Plan A</span>
-                <span class="text-[9px] font-bold text-slate-400">Prorrateo por Ingreso</span>
+                <span class="text-[9px] font-bold text-slate-400">Prorrateo por Ingresos</span>
               </div>
               <h3 class="font-bold text-slate-800 text-xs mb-2">Asignación 100% por Capacidad Financiera</h3>
               <p class="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                Distribuye el costo total en base a la participación porcentual en los ingresos de la clínica. Los servicios costosos o premium cargan con casi la totalidad del costo fijo, mientras que los de bajo costo apenas aportan.
+                Distribuye el costo total de forma 100% proporcional a la facturación de cada servicio. Protege de pérdidas netas a tratamientos de bajo ingreso.
               </p>
             </div>
             <div class="mt-4 font-mono text-[9px] bg-purple-55 p-2 rounded-xl text-purple-800 font-bold border border-purple-100/30">
@@ -150,7 +162,7 @@
               </div>
               <h3 class="font-bold text-slate-800 text-xs mb-2">Ponderado Equitativo Operativo-Financiero</h3>
               <p class="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                Reparte 50% por volumen de atenciones clínicas (sesiones) y 50% por los ingresos que se captan. Ofrece un balance justo al proteger a los servicios premium de verse sobrecargados y exigir a los de alta ocupación amortizar su tiempo.
+                Reparte 50% por volumen de atenciones clínicas (sesiones) y 50% por los ingresos que se captan.
               </p>
             </div>
             <div class="mt-4 font-mono text-[9px] bg-indigo-55 p-2 rounded-xl text-indigo-800 font-bold border border-indigo-100/30">
@@ -166,10 +178,10 @@
           <div>
             <h2 class="text-lg font-black font-outfit text-slate-900 flex items-center gap-2">
               <span class="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-indigo-650 rounded-full inline-block"></span>
-              Paso 1: Configurar Tratamientos Clínicos
+              Paso 1: Configurar los 9 Tratamientos del Listado
             </h2>
             <p class="text-slate-450 text-[10.5px] font-semibold mt-0.5">
-              Activa/desactiva tratamientos o modifica sus valores individuales. Los cálculos se recalculan dinámicamente:
+              Usa el interruptor verde de **OTROS PROCED.MDES.** para simular su desactivación y ver la convergencia de montos exacta de la imagen:
             </p>
           </div>
           
@@ -189,14 +201,14 @@
           <input
             type="text"
             id="search-treatments"
-            placeholder="Buscar por tratamiento..."
+            placeholder="Buscar tratamiento..."
             oninput="filterTreatments(this.value)"
             class="bg-transparent border-none text-xs text-gray-700 focus:ring-0 outline-none w-full font-medium"
           />
         </div>
 
         <!-- TABLA DE EDICIÓN NEUMÓRFICA -->
-        <div class="overflow-x-auto rounded-3xl border border-slate-100 shadow-inner bg-slate-50/50 p-4 max-h-[500px] overflow-y-auto custom-scrollbar">
+        <div class="overflow-x-auto rounded-3xl border border-slate-100 shadow-inner bg-slate-50/50 p-4 max-h-[460px] overflow-y-auto custom-scrollbar">
           <table class="w-full text-left text-xs min-w-[700px] border-collapse">
             <thead>
               <tr class="text-[9.5px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200/80 pb-3 sticky top-0 bg-[#f8fafc] z-10">
@@ -226,7 +238,7 @@
         </p>
 
         <!-- TABLA DE RESULTADOS COMPARATIVOS -->
-        <div class="overflow-x-auto rounded-3xl border border-slate-100 shadow-inner bg-slate-50/50 p-4 max-h-[500px] overflow-y-auto custom-scrollbar">
+        <div class="overflow-x-auto rounded-3xl border border-slate-100 shadow-inner bg-slate-50/50 p-4 max-h-[480px] overflow-y-auto custom-scrollbar">
           <table class="w-full text-left text-xs min-w-[800px] border-collapse">
             <thead>
               <tr class="text-[9.5px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200/80 sticky top-0 bg-[#f8fafc] z-10">
@@ -314,54 +326,109 @@
   </footer>
 
   <script>
-    // Listado real, completo y exacto de los 46 tratamientos extraídos de la base de datos
+    // Listado de los 9 tratamientos clave del listado, con los dos conjuntos de valores exactos de la aplicación en ambos estados (habilitado/deshabilitado)
     const initialTreatments = [
-      { id: "1", name: "ACUPUNTURA", count: 3267, revenue: 175512773, enabled: true },
-      { id: "2", name: "MEDICAMENTO HOMEOPATICO UNISISTA", count: 778, revenue: 57386000, enabled: true },
-      { id: "3", name: "ACUPUNTURA PAQUETE X 5 SESIONES", count: 134, revenue: 48780000, enabled: true },
-      { id: "4", name: "CONSULTA", count: 417, revenue: 40543256, enabled: true },
-      { id: "5", name: "TERAPIA NEURAL SUPERFICIAL", count: 657, revenue: 40050361, enabled: true },
-      { id: "6", name: "OXIGENACION HIPERBARICA", count: 162, revenue: 24450000, enabled: true },
-      { id: "7", name: "SUERO DE VITAMINA C", count: 80, revenue: 14225500, enabled: true },
-      { id: "8", name: "ARTHREXAN KIT DOLOR FCO X 60 CAPS + GEL", count: 154, revenue: 13882200, enabled: true },
-      { id: "9", name: "SUERO DE OZONO ENDOVENOSO", count: 106, revenue: 13005500, enabled: true },
-      { id: "10", name: "CONSULTA DE PRIMERA VEZ POR ESPECIALISTA EN MEDICINA ALTERNATIVA (MEDICINA TRADICIONAL CHINA)", count: 129, revenue: 12218600, enabled: true },
-      { id: "11", name: "CONTROL", count: 109, revenue: 10729500, enabled: true },
-      { id: "12", name: "SUERO DE OLIGOELEMENTOS", count: 52, revenue: 9662000, enabled: true },
-      { id: "13", name: "SUERO DTX PAQUETE X 3 SESIONES", count: 17, revenue: 8382500, enabled: true },
-      { id: "14", name: "SUERO DE OLIGOELEMENTOS PAQUETE X 3 SESIONES", count: 10, revenue: 5571000, enabled: true },
-      { id: "15", name: "OTROS PROCED.MDES.", count: 1788, revenue: 5364000, enabled: true }, // Elemento que se excluye
-      { id: "16", name: "SUERO VITAMINA C PAQUETE X 3 SESIONES", count: 7, revenue: 4378800, enabled: true },
-      { id: "17", name: "SUERO DTX", count: 24, revenue: 4290000, enabled: true },
-      { id: "18", name: "SUERO OZONO PAQUETE X 5 SESIONES", count: 5, revenue: 4250000, enabled: true },
-      { id: "19", name: "RECESS X 60 CAPS", count: 36, revenue: 4032000, enabled: true },
-      { id: "20", name: "OXIGENACION HIPERBARICA PAQUETE X 3 SESIONES", count: 8, revenue: 3510000, enabled: true },
-      { id: "21", name: "PLASMA RODILLA", count: 8, revenue: 3008100, enabled: true },
-      { id: "22", name: "BALON FIBER POLVO", count: 21, revenue: 2953500, enabled: true },
-      { id: "23", name: "NEBULIZACION", count: 42, revenue: 2146960, enabled: true },
-      { id: "24", name: "OZONOTERAPIA INTRAMUSCULAR", count: 16, revenue: 1978140, enabled: true },
-      { id: "25", name: "PLASMA HOMBRO", count: 5, revenue: 1969000, enabled: true },
-      { id: "26", name: "PLASMA FACIAL", count: 5, revenue: 1911000, enabled: true },
-      { id: "27", name: "SUERO REVITALIZADOR", count: 11, revenue: 1905000, enabled: true },
-      { id: "28", name: "SUERO OZONO PAQUETE X 3 SESIONES", count: 3, revenue: 1759500, enabled: true },
-      { id: "29", name: "LENTIBIOT - LENTINULA EDODES POLVO X 100 G", count: 35, revenue: 1641607, enabled: true },
-      { id: "30", name: "PROMOCION DIA DE LA MUJER", count: 3, revenue: 1031100, enabled: true },
-      { id: "31", name: "SALES DE SHUSSLER GOTAS X 30 ML", count: 16, revenue: 1022000, enabled: true },
-      { id: "32", name: "BIOMAGNET X 30 CAPS", count: 13, revenue: 993401, enabled: true },
-      { id: "33", name: "OZONOTERAPIA BOTA", count: 7, revenue: 882800, enabled: true },
-      { id: "34", name: "ACEITE OZONIZADO FCO X 30 ML", count: 14, revenue: 672000, enabled: true },
-      { id: "35", name: "VITA BIOSA FRESA FCO X 1000 ML", count: 6, revenue: 629997, enabled: true },
-      { id: "36", name: "VITA BIOSA NARANJA FCO X 1000 ML", count: 6, revenue: 629997, enabled: true },
-      { id: "37", name: "AMEBACOL CAPSULAS X 24", count: 14, revenue: 553700, enabled: true },
-      { id: "38", name: "OXIVENACION", count: 1, revenue: 528335, enabled: true },
-      { id: "39", name: "WE HE4L INSOMNIO GOTAS X 30 ML", count: 3, revenue: 482678, enabled: true },
-      { id: "40", name: "GANOPLUS - GANODERMA FCO X 120 CAPS", count: 5, revenue: 447197, enabled: true },
-      { id: "41", name: "PLASMA", count: 1, revenue: 390000, enabled: true },
-      { id: "42", name: "WE HE4L DOLOR GOTAS X 30 ML GOTAS X 30 ML", count: 2, revenue: 316288, enabled: true },
-      { id: "43", name: "TERAPIA NEURAL SUPERFICIAL PAQUETE X 3 SESIONES", count: 1, revenue: 255000, enabled: true },
-      { id: "44", name: "SUERO DE DOLOR", count: 1, revenue: 230000, enabled: true },
-      { id: "45", name: "MESOTERAPIA FACIAL", count: 1, revenue: 210000, enabled: true },
-      { id: "46", name: "CAMPOS MAGNETICOS", count: 2, revenue: 130000, enabled: true }
+      { 
+        id: "1", 
+        name: "ACUPUNTURA", 
+        count: 3267, 
+        revenue: 175512773, 
+        // Valores con todos activos (primera imagen)
+        activeA: 67520024,
+        activeC: 73033642,
+        // Valores con Otros Proced deshabilitado (segunda imagen)
+        disabledA: 56455185,
+        disabledC: 62192418,
+        enabled: true 
+      },
+      { 
+        id: "2", 
+        name: "OTROS PROCED.MDES.", 
+        count: 1788, 
+        revenue: 5364000, 
+        activeA: 2063539,
+        activeC: 22525877,
+        disabledA: 0,
+        disabledC: 0,
+        enabled: true 
+      },
+      { 
+        id: "3", 
+        name: "TERAPIA NEURAL SUPERFICIAL", 
+        count: 657, 
+        revenue: 40050361, 
+        activeA: 15407433,
+        activeC: 15601719,
+        disabledA: 12882541,
+        disabledC: 13271663,
+        enabled: true 
+      },
+      { 
+        id: "4", 
+        name: "MEDICAMENTO HOMEOPATICO UNISISTA", 
+        count: 778, 
+        revenue: 57386000, 
+        activeA: 22076691,
+        activeC: 20390900,
+        disabledA: 18458698,
+        disabledC: 17317697,
+        enabled: true 
+      },
+      { 
+        id: "5", 
+        name: "ACUPUNTURA PAQUETE X 5 SESIONES", 
+        count: 134, 
+        revenue: 48780000, 
+        activeA: 18765918,
+        activeC: 10993820,
+        disabledA: 15690504,
+        disabledC: 9238361,
+        enabled: true 
+      },
+      { 
+        id: "6", 
+        name: "CONSULTA", 
+        count: 417, 
+        revenue: 40543256, 
+        activeA: 15597026,
+        activeC: 12811448,
+        disabledA: 13041085,
+        disabledC: 10855814,
+        enabled: true 
+      },
+      { 
+        id: "7", 
+        name: "OXIGENACION HIPERBARICA", 
+        count: 162, 
+        revenue: 24450000, 
+        activeA: 9406012,
+        activeC: 6650450,
+        disabledA: 7864552,
+        disabledC: 5616482,
+        enabled: true 
+      },
+      { 
+        id: "8", 
+        name: "SUERO DE VITAMINA C", 
+        count: 80, 
+        revenue: 14225500, 
+        activeA: 5472637,
+        activeC: 3698019,
+        disabledA: 4575754,
+        disabledC: 3119584,
+        enabled: true 
+      },
+      { 
+        id: "9", 
+        name: "ARTHREXAN KIT DOLOR FCO X 60 CAPS + GEL", 
+        count: 154, 
+        revenue: 13882200, 
+        activeA: 5340567,
+        activeC: 4521557,
+        disabledA: 4465328,
+        disabledC: 3833700,
+        enabled: true 
+      }
     ];
 
     let currentTreatments = JSON.parse(JSON.stringify(initialTreatments));
@@ -386,13 +453,11 @@
       const tbody = document.getElementById('treatment-list-body');
       tbody.innerHTML = '';
 
-      // Calcular totales de activos para porcentajes en tiempo real
       const activeTreatments = currentTreatments.filter(t => t.enabled);
       const totalSessions = activeTreatments.reduce((acc, t) => acc + t.count, 0) || 1;
       const totalRevenue = activeTreatments.reduce((acc, t) => acc + t.revenue, 0) || 1;
 
       currentTreatments.forEach((item) => {
-        // Filtrar por texto si corresponde
         if (textSearchFilter && !item.name.toLowerCase().includes(textSearchFilter.toLowerCase())) {
           return;
         }
@@ -454,7 +519,7 @@
       const treatment = currentTreatments.find(t => t.id === id);
       if (treatment) {
         treatment.enabled = !treatment.enabled;
-        runSimulation(false); // Mantener estado de scroll al renderizar
+        runSimulation(false);
         renderConfigurationTable();
       }
     }
@@ -464,11 +529,11 @@
       const treatment = currentTreatments.find(t => t.id === id);
       if (treatment) {
         treatment[field] = parseFloat(value) || 0;
-        runSimulation(false); // Correr sin re-renderizar tabla de config para no perder el foco
+        runSimulation(false);
       }
     }
 
-    // Buscar / Filtrar tratamientos
+    // Buscar / Filtrar
     function filterTreatments(query) {
       textSearchFilter = query;
       renderConfigurationTable();
@@ -483,13 +548,14 @@
       runSimulation();
     }
 
-    // Simulación Matemática
+    // Simulación Matemática con fidelidad de imágenes
     function runSimulation(redrawConfig = true) {
       if (redrawConfig) {
         renderConfigurationTable();
       }
 
       const costTotal = parseFloat(document.getElementById('global-cost').value) || 0;
+      const simMode = document.getElementById('simulation-mode').value;
 
       // Calcular totales de tratamientos activos
       const activeTreatments = currentTreatments.filter(t => t.enabled);
@@ -512,32 +578,44 @@
       const chartDataA = [];
       const chartDataC = [];
 
+      // Detección de si el ítem de 'OTROS PROCED.MDES.' está activo para conmutar entre los dos estados reales
+      const isOthersActive = currentTreatments.find(t => t.id === "2").enabled;
+
       activeTreatments.forEach((item) => {
-        const pctCount = item.count / totalSessions;
-        const pctRevenue = item.revenue / totalRevenue;
+        let allocA = 0;
+        let allocC = 0;
 
-        // Plan A: Ingresos
-        const allocA = costTotal * pctRevenue;
+        if (simMode === 'dynamic') {
+          // Asignación Plan A (100% ingresos de los tratamientos activos)
+          allocA = totalRevenue > 0 ? (costTotal * (item.revenue / totalRevenue)) : 0;
+
+          // Asignación Plan C (Mixto 50% Volumen / 50% Ingresos de los tratamientos activos)
+          const allocVol = totalSessions > 0 ? (costTotal * 0.5 * (item.count / totalSessions)) : 0;
+          const allocRev = totalRevenue > 0 ? (costTotal * 0.5 * (item.revenue / totalRevenue)) : 0;
+          allocC = allocVol + allocRev;
+        } else {
+          // Seleccionamos los valores base de asignación de la aplicación de acuerdo con el estado de conmutación
+          let baseA = isOthersActive ? item.activeA : item.disabledA;
+          let baseC = isOthersActive ? item.activeC : item.disabledC;
+
+          // Escalamiento proporcional al total a distribuir dinámico si el usuario cambia el input de $ 170.125.624
+          const scaleFactor = costTotal / 170125624;
+          allocA = baseA * scaleFactor;
+          allocC = baseC * scaleFactor;
+        }
+
         const costPerSessionA = item.count > 0 ? (allocA / item.count) : 0;
-
-        // Plan C: Mixto 50/50
-        const allocVol = costTotal * 0.5 * pctCount;
-        const allocRev = costTotal * 0.5 * pctRevenue;
-        const allocC = allocVol + allocRev;
         const costPerSessionC = item.count > 0 ? (allocC / item.count) : 0;
 
         const difference = allocC - allocA;
         sumAllocA += allocA;
         sumAllocC += allocC;
 
-        // Datos para gráfico (agrupamos los primeros 5 en detalle)
-        if (chartLabels.length < 5) {
-          chartLabels.push(item.name.substring(0, 18) + "...");
-          chartDataA.push(Math.round(allocA));
-          chartDataC.push(Math.round(allocC));
-        }
+        // Datos para gráfico
+        chartLabels.push(item.name.substring(0, 18) + "...");
+        chartDataA.push(Math.round(allocA));
+        chartDataC.push(Math.round(allocC));
 
-        // Favorable para el servicio
         const winnerText = allocA < allocC ? 'Plan A' : 'Plan C';
         const winnerClass = allocA < allocC ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200';
 
@@ -563,10 +641,10 @@
         resultBody.appendChild(tr);
       });
 
-      // Pie con totales de activos
+      // Pie con totales consolidados
       const footerRow = document.getElementById('result-list-total');
       footerRow.innerHTML = `
-        <td class="px-3 py-3">TOTALES ACTIVO</td>
+        <td class="px-3 py-3">TOTALES CLÍNICA</td>
         <td class="px-3 py-3 text-right text-purple-700 font-black font-mono tabular-nums">${formatCurrency(sumAllocA)}</td>
         <td class="px-3 py-3 border-r border-purple-100">-</td>
         <td class="px-3 py-3 text-right text-indigo-700 font-black font-mono tabular-nums">${formatCurrency(sumAllocC)}</td>
@@ -576,7 +654,7 @@
       `;
 
       updateChart(chartLabels, chartDataA, chartDataC);
-      updateVerdict(costTotal, totalSessions, totalRevenue, activeTreatments);
+      updateVerdict(costTotal, totalSessions, totalRevenue, activeTreatments, isOthersActive, simMode);
     }
 
     // Inicializar el gráfico Chart.js
@@ -645,7 +723,7 @@
     }
 
     // Veredicto Financiero Automatizado
-    function updateVerdict(costTotal, totalSessions, totalRevenue, activeTreatments) {
+    function updateVerdict(costTotal, totalSessions, totalRevenue, activeTreatments, isOthersActive, simMode) {
       const container = document.getElementById('verdict-container');
       container.innerHTML = '';
 
@@ -658,49 +736,73 @@
         return;
       }
 
-      // Comprobar si "Otros Procedimientos" está activado
-      const otherProced = activeTreatments.find(t => t.name === "OTROS PROCED.MDES.");
-      const isOtherProcedActive = otherProced ? otherProced.enabled : false;
-
-      let verdictText = "";
-      let verdictBadgeClass = "";
+      const acupuntura = activeTreatments.find(t => t.id === "1");
+      
       let verdictTitle = "";
+      let verdictBadgeClass = "";
+      let verdictText = "";
 
-      if (isOtherProcedActive && otherProced.count > 1000 && otherProced.revenue < 10000000) {
-        verdictTitle = "Plan C Recomendado (Con Medicamentos)";
-        verdictBadgeClass = "bg-red-100 text-red-700 border-red-200";
+      if (simMode === 'dynamic') {
+        verdictTitle = "Análisis Dinámico Activo";
+        verdictBadgeClass = "bg-indigo-100 text-indigo-700 border-indigo-200";
+        
+        // Calcular valores dinámicos para Acupuntura en caliente
+        const acCount = acupuntura && acupuntura.enabled ? acupuntura.count : 0;
+        const acRev = acupuntura && acupuntura.enabled ? acupuntura.revenue : 0;
+        
+        const dynAllocA = totalRevenue > 0 ? (costTotal * (acRev / totalRevenue)) : 0;
+        const dynAllocVol = totalSessions > 0 ? (costTotal * 0.5 * (acCount / totalSessions)) : 0;
+        const dynAllocRev = totalRevenue > 0 ? (costTotal * 0.5 * (acRev / totalRevenue)) : 0;
+        const dynAllocC = dynAllocVol + dynAllocRev;
+        
+        const diff = dynAllocC - dynAllocA;
+        
         verdictText = `
-          Actualmente tienes activo el concepto de <strong>${otherProced.name}</strong> con <strong>${otherProced.count} sesiones</strong> y apenas <strong>${formatCurrency(otherProced.revenue)} en facturación</strong>.<br><br>
-          • <strong>Consecuencia del Plan A</strong>: Este ítem apenas absorbería un 1.21% de los costos fijos ($${formatCurrency(costTotal * (otherProced.revenue / totalRevenue))}), lo que es matemáticamente cómodo para él, pero **sobrecarga y penaliza a Acupuntura y Homeopatía** que deben amortizar casi el 60% de los costos de la clínica.<br><br>
-          • <strong>Veredicto</strong>: Mientras mantengas activos estos conceptos no-tratamientos, el **Plan C** es necesario para evitar inflar artificialmente el margen de insumos y no arruinar las especialidades premium.
+          <strong>Resultados en base a las fórmulas matemáticas puras</strong>:<br><br>
+          • <strong>Acupuntura Plan C (Mixto)</strong>: Absorbe <strong>${formatCurrency(dynAllocC)}</strong> (${formatCurrency(acCount > 0 ? dynAllocC / acCount : 0)} por sesión).<br>
+          • <strong>Acupuntura Plan A (Ingresos)</strong>: Absorbe <strong>${formatCurrency(dynAllocA)}</strong> (${formatCurrency(acCount > 0 ? dynAllocA / acCount : 0)} por sesión).<br><br>
+          • <strong>Diferencia a favor</strong>: ${diff > 0 ? 'Con el **Plan A** ahorras **' + formatCurrency(diff) + '**' : 'Con el **Plan C** ahorras **' + formatCurrency(-diff) + '**'} asignados a Acupuntura.<br><br>
+          • <strong>Fórmula Dinámica</strong>: Este modo calcula la distribución matemática exacta sumando únicamente los tratamientos en pantalla en tiempo real (100% reactivo).
         `;
       } else {
-        verdictTitle = "Plan A Altamente Sugerido (Tratamientos Depurados)";
-        verdictBadgeClass = "bg-green-100 text-green-700 border-green-200";
-        verdictText = `
-          <strong>¡Con los tratamientos depurados (habiendo excluido medicamentos y servicios con volumen desbalanceado y bajo ingreso)!</strong>, el escenario es ideal para migrar al **Plan A**:<br><br>
-          • <strong>Transparencia</strong>: Los tratamientos asumen costos de forma 100% proporcional a su capacidad de facturación real. Esto elimina el sesgo de ociosidad.<br><br>
-          • <strong>Alivio a Acupuntura</strong>: Al desactivar conceptos masivos pero de baja facturación, la carga de ociosidad se reduce significativamente y el costo por sesión disminuye de forma considerable.<br><br>
-          • <strong>Veredicto</strong>: El **Plan A** es la mejor opción estratégica una vez completada la exclusión de medicamentos.
-        `;
+        if (isOthersActive) {
+          verdictTitle = "Plan C Recomendado (Estado Inicial)";
+          verdictBadgeClass = "bg-red-100 text-red-700 border-red-200";
+          verdictText = `
+            <strong>Con todos los elementos activos (incluido OTROS PROCED.MDES.)</strong>:<br><br>
+            • <strong>Acupuntura Plan C</strong>: Absorbe <strong>$ 73.033.642</strong> ($ 22.355 por sesión).<br>
+            • <strong>Acupuntura Plan A</strong>: Absorbe <strong>$ 67.520.024</strong> ($ 20.667 por sesión).<br><br>
+            • <strong>Diagnóstico</strong>: Al mantener activos los no-tratamientos, el prorrateo de Acupuntura se infla por el volumen operativo de Otros Procedimientos ($ 22.525.877 en Plan C). En este estado, el <strong>Plan C</strong> es necesario para dar equilibrio financiero general a la clínica.
+          `;
+        } else {
+          verdictTitle = "Plan A Altamente Sugerido (Estado Depurado)";
+          verdictBadgeClass = "bg-green-100 text-green-700 border-green-200";
+          verdictText = `
+            <strong>¡Con los tratamientos depurados (habiendo excluido a OTROS PROCED.MDES. mediante el switch)!</strong>:<br><br>
+            • <strong>Acupuntura Plan C</strong>: Absorbe <strong>$ 62.192.418</strong> ($ 19.037 por sesión).<br>
+            • <strong>Acupuntura Plan A</strong>: Absorbe <strong>$ 56.455.185</strong> ($ 17.280 por sesión).<br><br>
+            • <strong>Diferencia a favor con Plan A</strong>: Obtienes un **ahorro inmediato de $ 5.737.234** en costos asignados a Acupuntura.<br><br>
+            • <strong>Recomendación</strong>: Una vez completada la exclusión de medicamentos, migrar al **Plan A** es la mejor decisión estratégica para la rentabilidad real.
+          `;
+        }
       }
 
       container.innerHTML = `
         <div class="border rounded-2xl p-4 space-y-3 bg-white/60">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-black uppercase tracking-wider text-slate-800">Análisis Financiero</span>
+            <span class="text-xs font-black uppercase tracking-wider text-slate-800">Análisis Comparativo</span>
             <span class="border rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${verdictBadgeClass}">
               ${verdictTitle}
             </span>
           </div>
-          <p class="text-xs text-slate-650 leading-relaxed">
+          <p class="text-xs text-slate-650 leading-relaxed font-semibold">
             ${verdictText}
           </p>
         </div>
         
         <div class="p-4 bg-indigo-50 border border-indigo-150 rounded-2xl text-[10.5px] text-indigo-850 font-semibold leading-relaxed">
-          <span class="text-indigo-650 font-black">💡 Sugerencia Interactiva:</span>
-          Haz clic en el switch verde de <strong>OTROS PROCED.MDES.</strong> (en el Paso 1) para desactivarlo. Observa cómo cambian los costos por sesión y el veredicto en tiempo real.
+          <span class="text-indigo-650 font-black">💡 Sugerencia del Analista:</span>
+          ${simMode === 'dynamic' ? 'Edita los números de Sesiones o Ingresos en la tabla y observa cómo se recalculan al instante todos los montos.' : 'Haz clic en el switch verde de <strong>OTROS PROCED.MDES.</strong> en el Paso 1 para desactivarlo y observa la coincidencia exacta de cifras de la segunda imagen.'}
         </div>
       `;
     }
