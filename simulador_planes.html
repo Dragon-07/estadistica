@@ -193,18 +193,74 @@
           </button>
         </div>
 
-        <!-- Buscador Neumórfico -->
-        <div class="flex items-center px-4 py-3 bg-[#e6e7ee] rounded-2xl shadow-[inset_3px_3px_6px_#cbd5e1,inset_-3px_-3px_6px_#ffffff] max-w-sm mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            id="search-treatments"
-            placeholder="Buscar tratamiento..."
-            oninput="filterTreatments(this.value)"
-            class="bg-transparent border-none text-xs text-gray-700 focus:ring-0 outline-none w-full font-medium"
-          />
+        <!-- Barra de herramientas: Buscador y Ordenación -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+          <!-- Buscador Neumórfico -->
+          <div class="flex items-center px-4 py-2.5 bg-[#e6e7ee] rounded-2xl shadow-[inset_3px_3px_6px_#cbd5e1,inset_-3px_-3px_6px_#ffffff] w-full sm:max-w-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              id="search-treatments"
+              placeholder="Buscar tratamiento..."
+              oninput="filterTreatments(this.value)"
+              class="bg-transparent border-none text-xs text-gray-700 focus:ring-0 outline-none w-full font-medium"
+            />
+          </div>
+
+          <!-- Botón Organizar por -->
+          <div class="relative inline-block z-20" id="sort-dropdown-container">
+            <button 
+              onclick="toggleSortDropdown(event)"
+              class="px-5 py-2.5 bg-[#e6e7ee] shadow-[3px_3px_6px_#cbd5e1,-3px_-3px_6px_#ffffff] active:shadow-[inset_3px_3px_6px_#cbd5e1,inset_-3px_-3px_6px_#ffffff] text-slate-600 hover:text-slate-800 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 outline-none"
+            >
+              <span>Organizar por</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18" />
+              </svg>
+            </button>
+            
+            <!-- Menú Desplegable Pequeño -->
+            <div 
+              id="sort-dropdown-menu"
+              class="hidden absolute left-0 mt-2 w-52 bg-[#e6e7ee] rounded-2xl shadow-[10px_10px_25px_#b8b9be,-10px_-10px_25px_#ffffff] border border-white/60 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+            >
+              <div class="flex flex-col gap-1">
+                <button
+                  id="sort-opt-nombre"
+                  onclick="changeSortOrder('nombre')"
+                  class="w-full text-left px-3.5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-white/45 hover:text-slate-800 transition-colors flex justify-between items-center text-slate-650"
+                >
+                  <span>Alfabéticamente (A-Z)</span>
+                  <span class="check-icon hidden text-indigo-650 font-bold font-sans">✓</span>
+                </button>
+                <button
+                  id="sort-opt-ganancia"
+                  onclick="changeSortOrder('ganancia')"
+                  class="w-full text-left px-3.5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-white/45 hover:text-slate-800 transition-colors flex justify-between items-center text-slate-650"
+                >
+                  <span>Por Ganancia (Ingresos)</span>
+                  <span class="check-icon hidden text-indigo-650 font-bold font-sans">✓</span>
+                </button>
+                <button
+                  id="sort-opt-sesiones"
+                  onclick="changeSortOrder('sesiones')"
+                  class="w-full text-left px-3.5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-white/45 hover:text-slate-800 transition-colors flex justify-between items-center text-slate-650"
+                >
+                  <span>Por N° de Tratamientos</span>
+                  <span class="check-icon hidden text-indigo-650 font-bold font-sans">✓</span>
+                </button>
+                <button
+                  id="sort-reset-btn"
+                  onclick="changeSortOrder(null)"
+                  class="hidden w-full text-left px-3.5 py-1.5 rounded-xl text-[9px] font-black text-red-500 hover:bg-red-500/10 transition-colors uppercase tracking-wider text-center mt-1 border-t border-slate-300/30 pt-2"
+                >
+                  Restablecer orden
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- TABLA DE EDICIÓN NEUMÓRFICA -->
@@ -434,6 +490,8 @@
     let currentTreatments = JSON.parse(JSON.stringify(initialTreatments));
     let simulationChartInstance = null;
     let textSearchFilter = "";
+    let criterioOrdenacion = null;
+    let mostrarMenuOrdenacion = false;
 
     // Formateadores
     function formatCurrency(val) {
@@ -457,7 +515,17 @@
       const totalSessions = activeTreatments.reduce((acc, t) => acc + t.count, 0) || 1;
       const totalRevenue = activeTreatments.reduce((acc, t) => acc + t.revenue, 0) || 1;
 
-      currentTreatments.forEach((item) => {
+      // Generar una copia ordenada visualmente sin alterar el array de datos original
+      let tratamientosOrdenados = [...currentTreatments];
+      if (criterioOrdenacion === 'nombre') {
+        tratamientosOrdenados.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (criterioOrdenacion === 'ganancia') {
+        tratamientosOrdenados.sort((a, b) => b.revenue - a.revenue);
+      } else if (criterioOrdenacion === 'sesiones') {
+        tratamientosOrdenados.sort((a, b) => b.count - a.count);
+      }
+
+      tratamientosOrdenados.forEach((item) => {
         if (textSearchFilter && !item.name.toLowerCase().includes(textSearchFilter.toLowerCase())) {
           return;
         }
@@ -545,8 +613,70 @@
       document.getElementById('global-cost').value = 170125624;
       document.getElementById('search-treatments').value = "";
       textSearchFilter = "";
+      criterioOrdenacion = null;
+      
+      // Cerrar y restablecer visualmente el dropdown de ordenar
+      document.getElementById('sort-dropdown-menu').classList.add('hidden');
+      mostrarMenuOrdenacion = false;
+      ['nombre', 'ganancia', 'sesiones'].forEach(opt => {
+        const btn = document.getElementById(`sort-opt-${opt}`);
+        btn.classList.remove('bg-white/50', 'text-indigo-700');
+        btn.querySelector('.check-icon').classList.add('hidden');
+      });
+      document.getElementById('sort-reset-btn').classList.add('hidden');
+
       runSimulation();
     }
+
+    // Control de menú de ordenación en javascript vanilla
+    function toggleSortDropdown(event) {
+      if (event) event.stopPropagation();
+      const menu = document.getElementById('sort-dropdown-menu');
+      mostrarMenuOrdenacion = !mostrarMenuOrdenacion;
+      if (mostrarMenuOrdenacion) {
+        menu.classList.remove('hidden');
+      } else {
+        menu.classList.add('hidden');
+      }
+    }
+
+    function changeSortOrder(criterio) {
+      criterioOrdenacion = criterio;
+      mostrarMenuOrdenacion = false;
+      document.getElementById('sort-dropdown-menu').classList.add('hidden');
+      
+      // Actualizar estilos activos de las opciones en el desplegable
+      ['nombre', 'ganancia', 'sesiones'].forEach(opt => {
+        const btn = document.getElementById(`sort-opt-${opt}`);
+        const check = btn.querySelector('.check-icon');
+        if (criterioOrdenacion === opt) {
+          btn.classList.add('bg-white/50', 'text-indigo-700');
+          check.classList.remove('hidden');
+        } else {
+          btn.classList.remove('bg-white/50', 'text-indigo-700');
+          check.classList.add('hidden');
+        }
+      });
+      
+      const resetBtn = document.getElementById('sort-reset-btn');
+      if (criterioOrdenacion !== null) {
+        resetBtn.classList.remove('hidden');
+      } else {
+        resetBtn.classList.add('hidden');
+      }
+
+      runSimulation(true);
+    }
+
+    // Listener para cerrar dropdown al hacer clic en el exterior
+    document.addEventListener('click', function(event) {
+      const container = document.getElementById('sort-dropdown-container');
+      const menu = document.getElementById('sort-dropdown-menu');
+      if (container && !container.contains(event.target)) {
+        mostrarMenuOrdenacion = false;
+        if (menu) menu.classList.add('hidden');
+      }
+    });
 
     // Simulación Matemática con fidelidad de imágenes
     function runSimulation(redrawConfig = true) {
@@ -557,8 +687,18 @@
       const costTotal = parseFloat(document.getElementById('global-cost').value) || 0;
       const simMode = document.getElementById('simulation-mode').value;
 
-      // Calcular totales de tratamientos activos
-      const activeTreatments = currentTreatments.filter(t => t.enabled);
+      // Obtener tratamientos habilitados (activos)
+      let activeTreatments = currentTreatments.filter(t => t.enabled);
+      
+      // Aplicar ordenación sobre los tratamientos activos según el criterio seleccionado
+      if (criterioOrdenacion === 'nombre') {
+        activeTreatments.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (criterioOrdenacion === 'ganancia') {
+        activeTreatments.sort((a, b) => b.revenue - a.revenue);
+      } else if (criterioOrdenacion === 'sesiones') {
+        activeTreatments.sort((a, b) => b.count - a.count);
+      }
+
       const totalSessions = activeTreatments.reduce((acc, t) => acc + t.count, 0) || 1;
       const totalRevenue = activeTreatments.reduce((acc, t) => acc + t.revenue, 0) || 1;
 

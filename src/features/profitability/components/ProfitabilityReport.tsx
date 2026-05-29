@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, Fragment, useRef } from 'react';
-import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock, Edit3 } from 'lucide-react';
+import { Calendar, Check, Package, Users, Briefcase, DollarSign, Search, Plus, Trash2, Save, X, UserPlus, Clock, Edit3, ArrowUpDown } from 'lucide-react';
 import { createClient } from '@/shared/lib/supabase/client';
 import initialInsumos from '../data/insumos-data.json';
 import initialPersonal from '../data/personal-data.json';
@@ -144,6 +144,8 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
   const [serviceRevenueStats, setServiceRevenueStats] = useState<Record<string, { count: number, revenue: number }>>({});
   const fetchedStats = useRef<Set<string>>(new Set());
 
+
+
   const handleApplyPeriod = () => {
     setAppliedDateRange({ start: startDate, end: endDate });
     fetchedStats.current.clear();
@@ -253,6 +255,46 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
   // Estados dinámicos para los tratamientos
   const [availableTreatments, setAvailableTreatments] = useState<string[]>([]);
   const [activeDashboardTreatments, setActiveDashboardTreatments] = useState<string[]>(['acupuntura', 'TERAPIA NEURAL', 'SUERO VITAMINA C']);
+
+  // Estados para organizar/ordenar tratamientos en el panel (legibles y descriptivos en español)
+  const [criterioOrdenacion, setCriterioOrdenacion] = useState<'nombre' | 'ganancia' | 'sesiones' | null>(null);
+  const [mostrarMenuOrdenacion, setMostrarMenuOrdenacion] = useState(false);
+  const referenciaMenuOrdenacion = useRef<HTMLDivElement>(null);
+
+  // Cerrar desplegable de ordenamiento al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (referenciaMenuOrdenacion.current && !referenciaMenuOrdenacion.current.contains(event.target as Node)) {
+        setMostrarMenuOrdenacion(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const tratamientosActivosOrdenados = useMemo(() => {
+    const list = [...activeDashboardTreatments];
+    if (criterioOrdenacion === 'nombre') {
+      return list.sort((a, b) => a.localeCompare(b));
+    }
+    if (criterioOrdenacion === 'ganancia') {
+      return list.sort((a, b) => {
+        const revA = serviceRevenueStats[a]?.revenue || 0;
+        const revB = serviceRevenueStats[b]?.revenue || 0;
+        return revB - revA;
+      });
+    }
+    if (criterioOrdenacion === 'sesiones') {
+      return list.sort((a, b) => {
+        const countA = serviceRevenueStats[a]?.count || 0;
+        const countB = serviceRevenueStats[b]?.count || 0;
+        return countB - countA;
+      });
+    }
+    return list;
+  }, [activeDashboardTreatments, criterioOrdenacion, serviceRevenueStats]);
 
   useEffect(() => {
     async function loadServiceStats() {
@@ -2353,7 +2395,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
 
             {/* Matriz de Energía Acumulada (Kw) */}
             {(() => {
-              if (activeDashboardTreatments.length === 0) return null;
+              if (tratamientosActivosOrdenados.length === 0) return null;
 
               return (
                 <div className="mt-8 pt-6 border-t border-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -2366,7 +2408,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
                       <thead>
                         <tr>
                           <th className="py-2.5 px-3 font-black text-emerald-700 uppercase text-[10px] tracking-widest w-40 bg-emerald-500/10 rounded-tl-2xl border-b-2 border-r-2 border-white/50">Consumo Acumulado</th>
-                          {activeDashboardTreatments.map((t) => (
+                          {tratamientosActivosOrdenados.map((t) => (
                             <th key={t} className="py-2.5 px-3 font-black text-emerald-700 uppercase text-[10px] tracking-widest text-center bg-emerald-500/10 border-b-2 border-white/50 border-r-2 border-white/50">
                               {t}
                             </th>
@@ -2382,7 +2424,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
                           <td className="py-2 px-3 font-black text-slate-600 bg-emerald-500/10 border-r-2 border-white/50 border-b-2 border-white/50 uppercase text-[10px] tracking-tight">
                             Kw por Sesión
                           </td>
-                          {activeDashboardTreatments.map((t) => {
+                          {tratamientosActivosOrdenados.map((t) => {
                             const energiaRow = (serviceAdminCosts[t] || []).find(r => r.id === 'energia' || r.adminId === '1');
                             const kw = energiaRow ? (energiaRow.kw || 0) : 0;
                             return (
@@ -2399,7 +2441,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
                           <td className="py-2 px-3 font-black text-slate-600 bg-emerald-500/10 border-r-2 border-white/50 border-b-2 border-white/50 uppercase text-[10px] tracking-tight">
                             N° de Sesiones
                           </td>
-                          {activeDashboardTreatments.map((t) => {
+                          {tratamientosActivosOrdenados.map((t) => {
                             const count = serviceRevenueStats[t]?.count || 0;
                             return (
                               <td key={t} className="py-2 px-3 text-center font-bold text-slate-600 border-b border-white/50 border-r border-slate-300/20 text-[11px] tabular-nums">
@@ -2408,7 +2450,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
                             );
                           })}
                           <td className="py-2 px-3 text-center font-black text-emerald-800 bg-emerald-500/10 border-b-2 border-white/50 text-[11px] tabular-nums">
-                            {activeDashboardTreatments.reduce((acc, t) => acc + (serviceRevenueStats[t]?.count || 0), 0)}
+                            {tratamientosActivosOrdenados.reduce((acc, t) => acc + (serviceRevenueStats[t]?.count || 0), 0)}
                           </td>
                         </tr>
 
@@ -2417,7 +2459,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
                           <td className="py-2 px-3 font-black text-emerald-700 bg-emerald-500/10 border-r-2 border-white/50 rounded-bl-2xl uppercase text-[10px] tracking-tight">
                             Consumo Total (Kw)
                           </td>
-                          {activeDashboardTreatments.map((t) => {
+                          {tratamientosActivosOrdenados.map((t) => {
                             const energiaRow = (serviceAdminCosts[t] || []).find(r => r.id === 'energia' || r.adminId === '1');
                             const kw = energiaRow ? (energiaRow.kw || 0) : 0;
                             const count = serviceRevenueStats[t]?.count || 0;
@@ -2502,11 +2544,90 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
         >
           Quitar no tratamientos
         </button>
+
+        {/* Botón y Desplegable Organizar por */}
+        <div className="relative" ref={referenciaMenuOrdenacion}>
+          <button
+            type="button"
+            onClick={() => setMostrarMenuOrdenacion(!mostrarMenuOrdenacion)}
+            className="bg-[#e6e7ee] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:shadow-[inset_4px_4px_10px_#b8b9be,inset_-4px_-4px_10px_#ffffff] px-6 py-2.5 rounded-xl text-[10px] font-black text-slate-650 hover:text-slate-800 uppercase tracking-widest transition-all outline-none flex items-center gap-2"
+          >
+            <span>Organizar por</span>
+            <ArrowUpDown size={12} className="text-slate-500 shrink-0" />
+          </button>
+
+          {mostrarMenuOrdenacion && (
+            <div className="absolute left-0 mt-2 w-56 bg-[#e6e7ee] rounded-2xl shadow-[10px_10px_30px_#b8b9be,-10px_-10px_30px_#ffffff] border border-white/60 p-2 z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCriterioOrdenacion('nombre');
+                    setMostrarMenuOrdenacion(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors flex justify-between items-center ${
+                    criterioOrdenacion === 'nombre'
+                      ? 'bg-blue-500/10 text-blue-600'
+                      : 'text-slate-650 hover:bg-white/40 hover:text-slate-800'
+                  }`}
+                >
+                  <span>Alfabéticamente (A-Z)</span>
+                  {criterioOrdenacion === 'nombre' && <Check size={10} className="text-blue-600" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCriterioOrdenacion('ganancia');
+                    setMostrarMenuOrdenacion(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors flex justify-between items-center ${
+                    criterioOrdenacion === 'ganancia'
+                      ? 'bg-blue-500/10 text-blue-600'
+                      : 'text-slate-650 hover:bg-white/40 hover:text-slate-800'
+                  }`}
+                >
+                  <span>Por Ganancia (Ingresos)</span>
+                  {criterioOrdenacion === 'ganancia' && <Check size={10} className="text-blue-600" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCriterioOrdenacion('sesiones');
+                    setMostrarMenuOrdenacion(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors flex justify-between items-center ${
+                    criterioOrdenacion === 'sesiones'
+                      ? 'bg-blue-500/10 text-blue-600'
+                      : 'text-slate-650 hover:bg-white/40 hover:text-slate-800'
+                  }`}
+                >
+                  <span>Por N° de Tratamientos</span>
+                  {criterioOrdenacion === 'sesiones' && <Check size={10} className="text-blue-600" />}
+                </button>
+
+                {criterioOrdenacion !== null && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCriterioOrdenacion(null);
+                      setMostrarMenuOrdenacion(false);
+                    }}
+                    className="w-full text-left px-4 py-2 rounded-xl text-[9px] font-black text-red-500 hover:bg-red-500/10 transition-colors uppercase tracking-wider text-center mt-1 border-t border-slate-300/30 pt-2"
+                  >
+                    Restablecer orden
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Rejilla de Servicios y Costos Consolidados (Al final para que baje al desplegar) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2 pb-4">
-        {activeDashboardTreatments.map((serviceName, idx) => {
+        {tratamientosActivosOrdenados.map((serviceName, idx) => {
           const serviceItems = serviceInsumos[serviceName] || [];
           const itemsList = serviceItems.filter(item => item.insumoId !== 'multiplier');
           const multiplierItem = serviceItems.find(item => item.insumoId === 'multiplier');
