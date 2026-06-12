@@ -663,7 +663,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
 
   // Cálculo de tarifa por Kw de la clínica
   const precioPorKw = useMemo(() => {
-    const energiaAdmin = adminData.find(a => a.id === '1' || a.detail.toUpperCase().includes('ENERGÍA'));
+    const energiaAdmin = adminData.find(a => a.id === '1' || a.detail.toUpperCase().includes('ENERGÍA') || a.detail.toUpperCase().includes('ENERGIA'));
     return energiaAdmin && energiaAdmin.units > 0 ? energiaAdmin.cost / energiaAdmin.units : 0;
   }, [adminData]);
 
@@ -764,7 +764,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
   const totalAdminToDistribute = useMemo(() => {
     return adminData.reduce((acc, item) => {
       const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
-      const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
+      const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA') || item.detail.toUpperCase().includes('ENERGIA');
       if (isEnergia) {
         const unitsPeriod = item.units * periodMonthFactor;
         const displayedCons = unitsPeriod - totalKwConsumidoTratamientos;
@@ -2274,7 +2274,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
                   <tbody>
                     {adminData.map((item) => {
                       const pricePerUnit = item.units > 0 ? item.cost / item.units : 0;
-                      const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA');
+                      const isEnergia = item.id === '1' || item.detail.toUpperCase().includes('ENERGÍA') || item.detail.toUpperCase().includes('ENERGIA');
                       
                       // Prorrateo temporal
                       const costPeriod = item.cost * periodMonthFactor;
@@ -2352,12 +2352,12 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
                           <td className="bg-[#e6e7ee] shadow-[0_3px_6px_#b8b9be,0_-3px_6px_#ffffff] p-2 text-center">
                             {isEnergia ? (
                               <NeumorphicExplanationTooltip
-                                title="Energía Restante a Distribuir (Kw)"
-                                formula="Unidades Kw Período - Consumo Tratamientos"
-                                text="Calculado automáticamente: Kw proporcionales del período menos el consumo total de Kw acumulado por todos los tratamientos en el período."
+                                title="Consumo de Energía por Tratamientos (Kw)"
+                                formula="Suma de (Kw de Tratamiento × Sesiones)"
+                                text="El consumo total de energía acumulado por todos los tratamientos realizados en el período."
                               >
                                 <div className="max-w-[80px] mx-auto bg-emerald-50/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] rounded-lg px-2 py-1.5 border border-emerald-200/30 text-center text-[11px] font-black text-emerald-600 tabular-nums">
-                                  {Number(displayedConsumption.toFixed(2))}
+                                  {Number(totalKwConsumidoTratamientos.toFixed(2))}
                                 </div>
                               </NeumorphicExplanationTooltip>
                             ) : (
