@@ -18,6 +18,7 @@ import {
   Download,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { GLOBAL_REPORT_COLUMNS } from '@/features/data-parser/reportes';
 
 /* ─────────────────────────────────────────────
    Tipos internos
@@ -485,17 +486,6 @@ export function BillingReport() {
       'Facturado a la entidad del Paciente', 'Total final',
     ]);
 
-    // Todas las columnas del esquema global
-    const ALL_COLUMNS = [
-      'M Tratante', 'Fecha Creación', 'Factura', 'Número Documento',
-      'Cliente', 'Fecha de Nacimiento', 'Género', 'EPS/Entidad Paciente', 'Pagos Recibidos', 'Pagos Pendientes',
-      'Medios Pago', 'Estado Factura', 'Dirección', 'Teléfono', 'Correo',
-      'Tipo Cliente', 'Código (CUP)', 'Concepto', 'Valor', 'Cantidad',
-      'IVA', 'TIPO DE IVA', 'Total Item', 'Fecha Anulación',
-      'Valor Servicio (Particular o por convenio)',
-      'Facturado a la entidad del Paciente', 'Total final',
-    ];
-
     // 1. Hoja de Resumen por Entidad
     const summaryRows: Record<string, unknown>[] = revenueByEntity.map((e, i) => ({
       '#': i + 1,
@@ -515,42 +505,40 @@ export function BillingReport() {
 
     const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
 
-    // 2. Hoja de Detalle Completo - TODAS las columnas como están guardadas
-    const detailRows: Record<string, unknown>[] = allRecords.map((r, i) => {
-      const row: Record<string, unknown> = { '#': i + 1 };
+    // 2. Hoja de Detalle Completo - Estructura exacta de base de datos (matriz de matrices)
+    const detailRows: any[][] = [];
+    
+    // Añadir encabezado tal cual la base de datos
+    detailRows.push(GLOBAL_REPORT_COLUMNS);
 
-      ALL_COLUMNS.forEach((col) => {
-        if (!r.extra_data) {
-          row[col] = '';
-          return;
-        }
-        const rawVal = r.extra_data[col];
-
-        if (NUMERIC_COLUMNS.has(col)) {
-          row[col] = smartParseNumber(rawVal);
+    // Añadir registros en orden secuencial exacto
+    allRecords.forEach((r) => {
+      const rowData: any[] = [];
+      GLOBAL_REPORT_COLUMNS.forEach((col) => {
+        if (col === '') {
+          rowData.push('');
         } else {
-          row[col] = rawVal !== undefined && rawVal !== null ? String(rawVal) : '';
+          const rawVal = r.extra_data?.[col];
+          if (rawVal !== undefined && rawVal !== null) {
+            if (NUMERIC_COLUMNS.has(col)) {
+              rowData.push(smartParseNumber(rawVal));
+            } else {
+              rowData.push(String(rawVal));
+            }
+          } else {
+            rowData.push('');
+          }
         }
       });
-
-      return row;
+      detailRows.push(rowData);
     });
 
-    // Fila de totales
-    const totalsRow: Record<string, unknown> = { '#': 'TOTAL' };
-    ALL_COLUMNS.forEach((col) => {
-      if (NUMERIC_COLUMNS.has(col)) {
-        totalsRow[col] = allRecords.reduce((acc, r) => acc + smartParseNumber(r.extra_data?.[col]), 0);
-      } else {
-        totalsRow[col] = '';
-      }
-    });
-    detailRows.push(totalsRow);
+    const wsDetails = XLSX.utils.aoa_to_sheet(detailRows);
 
-    const wsDetails = XLSX.utils.json_to_sheet(detailRows);
-
-    // Ajustar anchos de columnas
-    const colWidths = [{ wch: 5 }, ...ALL_COLUMNS.map((col) => ({ wch: Math.max(col.length + 2, 14) }))];
+    // Ajustar anchos de columnas basándose en los nombres de la base de datos
+    const colWidths = GLOBAL_REPORT_COLUMNS.map((col) => ({ 
+      wch: col === '' ? 5 : Math.max(col.length + 2, 14) 
+    }));
     wsDetails['!cols'] = colWidths;
 
     const wb = XLSX.utils.book_new();
@@ -562,6 +550,7 @@ export function BillingReport() {
     const entityPart = entityFilters.length > 0 ? `_${entityFilters.length}Entidades` : '';
     XLSX.writeFile(wb, `Reporte_Ingresos_${rangePart}${entityPart}.xlsx`);
   };
+
 
   /* ── Render loading ── */
   if (loading) {

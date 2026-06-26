@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automatización de WhatsApp para Pacientes - Holística</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --surface: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --blue: #2563eb;
+      --blue-light: #3b82f6;
+      --green: #10b981;
+      --green-dark: #059669;
+      --purple: #8b5cf6;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.05);
+      --shadow-card: 9px 9px 16px #d1d5db, -9px -9px 16px #ffffff;
+      --font-title: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Header */
+    header {
+      background: var(--surface);
+      padding: 2.5rem;
+      border-radius: 2rem;
+      box-shadow: var(--shadow-soft);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+    }
+
+    .logo-container {
+      width: 65px;
+      height: 65px;
+      margin: 0 auto 1rem;
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      border-radius: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(18, 140, 126, 0.25);
+    }
+
+    .logo-container svg {
+      width: 35px;
+      height: 35px;
+      fill: white;
+    }
+
+    h1 {
+      font-family: var(--font-title);
+      font-weight: 800;
+      font-size: 2.25rem;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      font-weight: 500;
+    }
+
+    /* Grid layout */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 3fr 2fr;
+      }
+
+      .col-span-2 {
+        grid-column: span 2;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border-radius: 2rem;
+      padding: 2rem;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .card-title {
+      font-family: var(--font-title);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-title svg {
+      width: 24px;
+      height: 24px;
+      color: var(--green);
+    }
+
+    /* Badges & Tags */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-success {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--green-dark);
+    }
+
+    .badge-warning {
+      background: rgba(234, 179, 8, 0.1);
+      color: #a16207;
+    }
+
+    .badge-info {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--blue);
+    }
+
+    .badge-purple {
+      background: rgba(139, 92, 246, 0.1);
+      color: var(--purple);
+    }
+
+    /* Factibilidad Score */
+    .factibilidad-meter {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      background: rgba(16, 185, 129, 0.04);
+      border: 1px dashed rgba(16, 185, 129, 0.3);
+      padding: 1.5rem;
+      border-radius: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .score-circle {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--green-dark));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-title);
+      font-weight: 800;
+      font-size: 1.5rem;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+    }
+
+    .factibilidad-text h3 {
+      font-family: var(--font-title);
+      font-size: 1.15rem;
+      color: var(--green-dark);
+      margin-bottom: 0.25rem;
+    }
+
+    .factibilidad-text p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Comparison Options */
+    .option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .option-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      background: #fafafa;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .option-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+      border-color: #cbd5e1;
+    }
+
+    .option-card.selected {
+      background: #f0fdf4;
+      border-color: var(--green);
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.08);
+    }
+
+    .option-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .option-name {
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #0f172a;
+    }
+
+    .option-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .option-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #475569;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 0.75rem;
+    }
+
+    .option-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .option-meta-item svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Interactive Calculator */
+    .calc-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .input-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #475569;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .input-range {
+      width: 100%;
+      height: 6px;
+      background: #cbd5e1;
+      border-radius: 9999px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .input-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--green);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      border: 2px solid white;
+    }
+
+    .input-number {
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.75rem;
+      border: 1px solid #cbd5e1;
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 1rem;
+      width: 100px;
+      text-align: right;
+    }
+
+    .calc-summary {
+      background: #f8fafc;
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+      margin-top: 1rem;
+    }
+
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px dashed #e2e8f0;
+      font-size: 0.9rem;
+    }
+
+    .calc-row:last-child {
+      border-bottom: none;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #0f172a;
+      padding-top: 1rem;
+    }
+
+    /* Learning path / Configuration */
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 1rem;
+      position: relative;
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      background: var(--blue-light);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .step-content {
+      background: #fafafa;
+      padding: 1rem 1.25rem;
+      border-radius: 1rem;
+      width: 100%;
+      border: 1px solid #e2e8f0;
+    }
+
+    .step-title {
+      font-family: var(--font-title);
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+      color: #0f172a;
+    }
+
+    .step-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Custom Recommendation Banner */
+    .banner {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: white;
+      padding: 2.5rem;
+      border-radius: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .banner::after {
+      content: '✓';
+      position: absolute;
+      right: -20px;
+      bottom: -40px;
+      font-size: 15rem;
+      color: rgba(255, 255, 255, 0.03);
+      font-family: var(--font-title);
+      font-weight: 800;
+    }
+
+    .banner-title {
+      font-family: var(--font-title);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--green);
+    }
+
+    .banner p {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      margin-bottom: 1.5rem;
+      max-width: 800px;
+    }
+
+    .roadmap-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 0.5rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.85rem;
+      margin-right: 0.75rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+
+    .roadmap-badge span {
+      color: var(--green);
+      font-weight: 800;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    /* Comparison Table style */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    th,
+    td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-family: var(--font-title);
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    tr:hover {
+      background-color: #f8fafc;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <header>
+      <div class="logo-container">
+        <!-- WhatsApp Icon SVG -->
+        <svg viewBox="0 0 448 512">
+          <path
+            d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L3 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+        </svg>
+      </div>
+      <h1>Viabilidad de Automatización con WhatsApp</h1>
+      <p class="subtitle">Análisis técnico, estratégico y financiero para felicitar pacientes y recordar fin de
+        tratamientos en Holística</p>
+    </header>
+
+    <!-- MAIN BODY GRID -->
+    <div class="grid">
+
+      <!-- LEFT COLUMN: CONTEXT AND OPTIONS -->
+      <div class="flex flex-col gap-8" style="display: flex; flex-direction: column; gap: 2rem;">
+
+        <!-- FACTIBILIDAD INTRO -->
+        <div class="card">
+          <div class="card-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Análisis de Factibilidad
+          </div>
+
+          <div class="factibilidad-meter">
+            <div class="score-circle">9.5</div>
+            <div class="factibilidad-text">
+              <h3>Factibilidad Muy Alta</h3>
+              <p>El envío de mensajes automatizados por WhatsApp es 100% viable. Holística ya cuenta con la información
+                clave en su base de datos: nombres, números de celular válidos y fechas clave (cumpleaños y estados de
+                tratamientos).</p>
+            </div>
+          </div>
+
+          <p style="margin-bottom: 1rem;">
+            Automatizar el contacto tiene un impacto directo en el negocio: incrementa la <strong>fidelización</strong>
+            en cumpleaños con beneficios especiales (ej. "¡Tienes un 15% de descuento en tu próximo chequeo!") y
+            <strong>mejora la adherencia terapéutica</strong> al recordarles terminar paquetes de tratamiento (evitando
+            que queden inconclusos y asegurando los ingresos proyectados).
+          </p>
+
+          <p>
+            Existen tres caminos (rutas) de implementación que varían en automatización, costo y complejidad técnica.
+          </p>
+        </div>
+
+        <!-- THE 3 PATHWAYS (OPTIONS) -->
+        <div class="card">
+          <div class="card-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Rutas de Implementación Comparadas
+          </div>
+
+          <div class="option-list">
+
+            <!-- OPCION 1 -->
+            <div class="option-card selected" id="opt-1" onclick="selectOption(1)">
+              <div class="option-header">
+                <span class="option-name">Opción A: Semi-automática en 1 Clic (wa.me)</span>
+                <span class="badge badge-success">Costo $0</span>
+              </div>
+              <p class="option-desc">
+                Se agrega un botón de "WhatsApp" en la pantalla de "Seguimientos" al lado de cada paciente. Al darle
+                clic, abre WhatsApp Web en el navegador con el mensaje redactado y el número del paciente listo. Solo
+                debes darle "Enviar".
+              </p>
+              <div class="option-meta">
+                <span class="option-meta-item">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                      d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Esfuerzo: Muy Bajo (10 min de desarrollo)
+                </span>
+                <span class="option-meta-item">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Riesgo de Bloqueo: Nulo (0%)
+                </span>
+              </div>
+            </div>
+
+            <!-- OPCION 2 -->
+            <div class="option-card" id="opt-2" onclick="selectOption(2)">
+              <div class="option-header">
+                <span class="option-name">Opción B: Bot por Extensión o API no Oficial</span>
+                <span class="badge badge-warning">Costo Bajo</span>
+              </div>
+              <p class="option-desc">
+                Usa una extensión de Chrome (como WA Web Plus) o una librería (Node.js con whatsapp-web.js) conectada a
+                un servidor local. Se conecta leyendo un código QR. Envía los mensajes automáticamente en segundo plano.
+              </p>
+              <div class="option-meta">
+                <span class="option-meta-item">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                      d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Esfuerzo: Medio (Requiere script o software)
+                </span>
+                <span class="option-meta-item" style="color: var(--red);">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Riesgo de Bloqueo: Alto (Meta detecta automatización)
+                </span>
+              </div>
+            </div>
+
+            <!-- OPCION 3 -->
+            <div class="option-card" id="opt-3" onclick="selectOption(3)">
+              <div class="option-header">
+                <span class="option-name">Opción C: API Oficial WhatsApp Cloud (Meta)</span>
+                <span class="badge badge-purple">Costo por Uso / Seguro</span>
+              </div>
+              <p class="option-desc">
+                Integración directa con los servidores de Meta para desarrolladores o mediante plataformas aliadas
+                (ManyChat, WATI). Es 100% automático, requiere registrar la empresa y usar "plantillas" pre-aprobadas
+                por Meta.
+              </p>
+              <div class="option-meta">
+                <span class="option-meta-item">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                      d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Esfuerzo: Alto (Requiere verificación e integración)
+                </span>
+                <span class="option-meta-item" style="color: var(--green-dark);">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Riesgo de Bloqueo: Nulo (Es la vía legal)
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: CALCULATOR & ROADMAP -->
+      <div class="flex flex-col gap-8" style="display: flex; flex-direction: column; gap: 2rem;">
+
+        <!-- INTERACTIVE CALCULATOR -->
+        <div class="card">
+          <div class="card-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 11h.01M12 7h.01M15 11h.01M3 21h18a2 2 0 002-2V5a2 2 0 00-2-2H3a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            Simulador de Envíos y Costos
+          </div>
+
+          <div class="calc-container">
+
+            <div class="input-group">
+              <div class="input-label">
+                <span>Número de pacientes activos</span>
+                <span id="val-pacientes">500</span>
+              </div>
+              <input type="range" class="input-range" id="range-pacientes" min="100" max="5000" step="50" value="500"
+                oninput="updateCalculations()">
+            </div>
+
+            <div class="input-group">
+              <div class="input-label">
+                <span>% de pacientes que cumplen años al mes</span>
+                <span id="val-cumpleanos">8.3% (~42 pac.)</span>
+              </div>
+              <input type="range" class="input-range" id="range-cumpleanos" min="5" max="15" step="0.5" value="8.3"
+                oninput="updateCalculations()">
+            </div>
+
+            <div class="input-group">
+              <div class="input-label">
+                <span>Mensajes de tratamiento al mes (estimado)</span>
+                <span id="val-tratamiento">150</span>
+              </div>
+              <input type="range" class="input-range" id="range-tratamiento" min="10" max="1000" step="10" value="150"
+                oninput="updateCalculations()">
+            </div>
+
+            <!-- RESULT DISPLAY -->
+            <div class="calc-summary">
+              <div class="calc-row">
+                <span>Total mensajes mensuales:</span>
+                <strong id="sum-mensajes">192 mensajes</strong>
+              </div>
+
+              <!-- Dinámicamente cambia basado en la pestaña activa -->
+              <div class="calc-row">
+                <span>Opción Seleccionada:</span>
+                <span id="sum-opcion-tag" class="badge badge-success">Opción A (1 Clic)</span>
+              </div>
+
+              <div class="calc-row">
+                <span>Costo de Plataforma (Mes):</span>
+                <span id="sum-costo-plataforma">$ 0 COP</span>
+              </div>
+
+              <div class="calc-row">
+                <span>Costo por Conversación (Meta):</span>
+                <span id="sum-costo-conversacion">$ 0 COP</span>
+              </div>
+
+              <div class="calc-row">
+                <span>Costo Total Estimado / Mes:</span>
+                <span id="sum-costo-total" style="color: var(--green-dark); font-weight: 800; font-size: 1.2rem;">$ 0
+                  COP</span>
+              </div>
+            </div>
+
+            <p
+              style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; text-align: center; margin-top: 0.5rem;">
+              *Nota: Tarifas estimadas de Meta para Colombia (~$180 COP por conversación de utilidad/servicio iniciada
+              por la clínica).
+            </p>
+          </div>
+        </div>
+
+        <!-- LEARNING PATHWAY & CONFIG -->
+        <div class="card">
+          <div class="card-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.782 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            Qué aprender y Configurar
+          </div>
+
+          <div class="step-list" id="steps-container">
+            <!-- Steps are rendered by JS based on selection, to keep details highly contextual -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COMPARISON TABLE IN DETAILS -->
+      <div class="card col-span-2">
+        <div class="card-title">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Tabla de Comparativa Completa
+        </div>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Criterio</th>
+                <th>Opción A: wa.me (1 Clic)</th>
+                <th>Opción B: Extensión / No Oficial</th>
+                <th>Opción C: API Oficial (Meta)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <strong>Costo Mensual</strong>
+                <td>$ 0 COP (Gratuito)</td>
+                <td>$ 40.000 - $ 120.000 COP</td>
+                <td>
+                  Tarifa base ($80.000 - $350.000 COP) + costo por mensaje (~$180 COP c/u)
+                </td>
+              </tr>
+              <tr>
+                <strong>Seguridad de la línea</strong>
+                <td style="color: var(--green-dark); font-weight: 600;">100% Segura</td>
+                <td style="color: var(--red); font-weight: 600;">Riesgo de bloqueo de chip</td>
+                <td style="color: var(--green-dark); font-weight: 600;">100% Segura (Avalada por Meta)</td>
+              </tr>
+              <tr>
+                <strong>Grado de automatización</strong>
+                <td>Semi-automática (Requiere clic humano)</td>
+                <td>Automática (En segundo plano)</td>
+                <td>Totalmente automática (24/7 en la nube)</td>
+              </tr>
+              <tr>
+                <strong>Requerimientos de Setup</strong>
+                <td>Ninguno (Solo un enlace de texto)</td>
+                <td>Instalar extensión y tener PC encendido</td>
+                <td>Cuenta en Meta Developers y aprobación de plantillas</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STRATEGIC RECOMMENDATION FOR HOLISTICA -->
+      <div class="banner col-span-2">
+        <h2 class="banner-title">Estrategia Recomendada para Holística</h2>
+        <p>
+          Dado que en Holística ya tienen una pantalla excelente en la sección de <strong>"Seguimientos"</strong> que
+          lista a los cumpleañeros del día con su teléfono y edad, la estrategia más inteligente es un enfoque híbrido
+          por fases:
+        </p>
+        <div>
+          <div class="roadmap-badge">Fase 1: <span>Acción Inmediata (Opción A)</span></div>
+          <div class="roadmap-badge">Fase 2: <span>SaaS Low-Code (ManyChat/Zoko)</span></div>
+          <div class="roadmap-badge">Fase 3: <span>API Directa de Meta</span></div>
+        </div>
+        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
+          <strong>¿Por qué?</strong> Implementar la Fase 1 toma literalmente 10 minutos de programación. Solo agregamos
+          un botón de acción rápida al lado del teléfono en la tabla. De esta forma, el equipo de administración puede
+          empezar a enviar mensajes hoy mismo sin pagar un solo peso y sin configuraciones complejas. A medida que
+          crezcan, pueden migrar a la automatización total sin que los pacientes lo noten.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      Holística Unidad de Medicina Integral &copy; 2026. Todos los derechos reservados.
+    </footer>
+
+  </div>
+
+  <script>
+    // Selected option state
+    let selectedOptionId = 1;
+
+    // Steps details dictionary
+    const stepsData = {
+      1: [
+        {
+          title: "1. Redactar las Plantillas de Mensaje",
+          desc: "Escribir los mensajes estándar en texto. Por ejemplo: 'Hola [Nombre], ¡de parte de Holística te deseamos un feliz cumpleaños! Reclama tu 15% de descuento en tu consulta especial...'"
+        },
+        {
+          title: "2. Formatear la URL wa.me",
+          desc: "En el código del frontend (React/Next.js), crear una función que limpie el número de teléfono (removiendo espacios o caracteres especiales) y concatene el texto en formato URL: https://wa.me/57[telefono]?text=[mensaje_codificado]."
+        },
+        {
+          title: "3. Añadir el botón en la UI",
+          desc: "Insertar un botón con el ícono de WhatsApp en la tabla de Seguimientos (al lado del teléfono del paciente). Al hacer clic, se abre una pestaña del navegador y listo."
+        }
+      ],
+      2: [
+        {
+          title: "1. Comprar Licencia de Extensión",
+          desc: "Adquirir un software o extensión de Chrome confiable (como WA Web Plus en plan premium o un servicio similar) que permita automatizar envíos."
+        },
+        {
+          title: "2. Exportar Pacientes a Excel/CSV",
+          desc: "Diseñar un botón en la clínica para descargar la lista de pacientes que cumplen años hoy o que tienen alertas de tratamientos en formato CSV."
+        },
+        {
+          title: "3. Cargar y Programar Envío",
+          desc: "Cargar el archivo en la extensión de Chrome, redactar el mensaje con variables y dejar que la extensión envíe de forma secuencial con un intervalo de 20-30 segundos para evitar bloqueos."
+        }
+      ],
+      3: [
+        {
+          title: "1. Registrar cuenta de Meta Developers",
+          desc: "Crear una cuenta de desarrollador en Facebook Meta, configurar un Business Manager y vincular una línea de teléfono limpia y exclusiva para la API de WhatsApp."
+        },
+        {
+          title: "2. Diseñar y Validar Plantillas (Templates)",
+          desc: "Meta exige que los mensajes iniciados por la empresa sean plantillas estructuradas (ej: 'Hola {{1}}, recuerda terminar tu tratamiento {{2}}'). Estas plantillas son validadas en minutos."
+        },
+        {
+          title: "3. Configurar API y Webhooks en Next.js/Supabase",
+          desc: "Programar un 'Cron Job' (tarea programada) diaria en Supabase que a las 8:00 AM filtre los pacientes de cumpleaños y llame a la API oficial de Meta para disparar el mensaje directamente."
+        }
+      ]
+    };
+
+    function selectOption(id) {
+      selectedOptionId = id;
+
+      // Update CSS classes
+      document.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected'));
+      document.getElementById(`opt-${id}`).classList.add('selected');
+
+      // Update UI texts
+      const tag = document.getElementById('sum-opcion-tag');
+      if (id === 1) {
+        tag.className = "badge badge-success";
+        tag.innerText = "Opción A (1 Clic)";
+      } else if (id === 2) {
+        tag.className = "badge badge-warning";
+        tag.innerText = "Opción B (No Oficial)";
+      } else {
+        tag.className = "badge badge-purple";
+        tag.innerText = "Opción C (API Oficial)";
+      }
+
+      updateCalculations();
+      renderSteps();
+    }
+
+    function updateCalculations() {
+      // Get input values
+      const pacientes = parseInt(document.getElementById('range-pacientes').value);
+      const cumpleanosPct = parseFloat(document.getElementById('range-cumpleanos').value);
+      const tratamientoMsg = parseInt(document.getElementById('range-tratamiento').value);
+
+      // Calculate derived numbers
+      const cumpleanosAlMes = Math.round(pacientes * (cumpleanosPct / 100));
+      const totalMensajes = cumpleanosAlMes + tratamientoMsg;
+
+      // Update slider value labels
+      document.getElementById('val-pacientes').innerText = pacientes;
+      document.getElementById('val-cumpleanos').innerText = `${cumpleanosPct}% (~${cumpleanosAlMes} pac.)`;
+      document.getElementById('val-tratamiento').innerText = tratamientoMsg;
+      document.getElementById('sum-mensajes').innerText = `${totalMensajes} mensajes / mes`;
+
+      // Cost Calculation in COP (1 USD ~ 4.000 COP)
+      let platformCost = 0;
+      let metaCost = 0;
+
+      if (selectedOptionId === 1) {
+        // Option A is completely free
+        platformCost = 0;
+        metaCost = 0;
+      } else if (selectedOptionId === 2) {
+        // Option B: typical chrome extension costs $15 USD (~60.000 COP)
+        platformCost = 60000;
+        metaCost = 0;
+      } else if (selectedOptionId === 3) {
+        // Option C: Meta Cloud API / Platform like Manychat is $15 USD (~60.000 COP) basic fee
+        // Meta charges ~$180 COP per conversation (utility/service) initiated by business in Colombia
+        platformCost = 80000; // Platform setup / subscription monthly
+        metaCost = totalMensajes * 180;
+      }
+
+      const totalCost = platformCost + metaCost;
+
+      // Format to COPcurrency
+      document.getElementById('sum-costo-plataforma').innerText = `$ ${platformCost.toLocaleString('es-CO')} COP`;
+      document.getElementById('sum-costo-conversacion').innerText = `$ ${metaCost.toLocaleString('es-CO')} COP`;
+      document.getElementById('sum-costo-total').innerText = `$ ${totalCost.toLocaleString('es-CO')} COP`;
+    }
+
+    function renderSteps() {
+      const container = document.getElementById('steps-container');
+      container.innerHTML = '';
+
+      const steps = stepsData[selectedOptionId];
+      steps.forEach((step, idx) => {
+        const item = document.createElement('div');
+        item.className = 'step-item';
+        item.innerHTML = `
+          <div class="step-number">${idx + 1}</div>
+          <div class="step-content">
+            <div class="step-title">${step.title}</div>
+            <div class="step-desc">${step.desc}</div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // Initial run
+    updateCalculations();
+    renderSteps();
+  </script>
+</body>
+
+</html>
