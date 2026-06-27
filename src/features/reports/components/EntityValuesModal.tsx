@@ -37,6 +37,12 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Estados para catálogos de opciones desde base de datos
+  const [availableEntities, setAvailableEntities] = useState<string[]>([]);
+  const [availableServices, setAvailableServices] = useState<string[]>([]);
+  // Control de dropdown activo
+  const [activeDropdown, setActiveDropdown] = useState<{ rowId: string, field: 'entity_name' | 'service_name' } | null>(null);
+
   // Modales personalizados de confirmación
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -45,7 +51,7 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
 
   const supabase = createClient();
 
-  // Cargar datos
+  // Cargar datos principales de tarifas
   const fetchValues = async () => {
     try {
       setLoading(true);
@@ -73,11 +79,69 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
     }
   };
 
+  // Cargar catálogos de entidades y servicios disponibles
+  const fetchOptions = async () => {
+    try {
+      // Cargar entidades únicas de unique_entities_view
+      const { data: entitiesData, error: entitiesError } = await supabase
+        .from('unique_entities_view')
+        .select('entity_name')
+        .order('entity_name', { ascending: true });
+
+      if (!entitiesError && entitiesData) {
+        setAvailableEntities(entitiesData.map(e => e.entity_name).filter(Boolean));
+      }
+
+      // Cargar servicios únicos mediante la función RPC get_unique_treatments
+      const { data: treatmentsData, error: treatmentsError } = await supabase
+        .rpc('get_unique_treatments');
+
+      if (!treatmentsError && treatmentsData) {
+        setAvailableServices(treatmentsData.map((t: any) => t.treatment_name || t).filter(Boolean));
+      }
+    } catch (err) {
+      console.error('Error fetching options for dropdowns:', err);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchValues();
+      fetchOptions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  // Funciones de filtrado para los dropdowns
+  const getFilteredEntities = (currentText: string) => {
+    const query = currentText === 'NUEVA ENTIDAD' ? '' : currentText.toLowerCase().trim();
+    if (!query) return availableEntities.slice(0, 50);
+    return availableEntities
+      .filter(entity => entity.toLowerCase().includes(query))
+      .slice(0, 50);
+  };
+
+  const getFilteredServices = (currentText: string) => {
+    const query = currentText === 'NUEVO SERVICIO' ? '' : currentText.toLowerCase().trim();
+    if (!query) return availableServices.slice(0, 50);
+    return availableServices
+      .filter(service => service.toLowerCase().includes(query))
+      .slice(0, 50);
+  };
+
+  // Manejar selección de opción en dropdown
+  const handleSelectOption = async (id: string, field: 'entity_name' | 'service_name', value: string) => {
+    const upperValue = value.toUpperCase();
+    
+    // Actualizar localmente de forma inmediata
+    setValues(prev => prev.map(item => item.id === id ? { ...item, [field]: upperValue } : item));
+    
+    // Cerrar el dropdown inmediatamente
+    setActiveDropdown(null);
+    
+    // Persistir pasando el valor directamente para evitar race condition
+    await handlePersistChange(id, field, upperValue);
+  };
 
   // Filtrado reactivo de valores
   const filteredValues = useMemo(() => {
@@ -118,9 +182,10 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
       } else {
         throw new Error(result.message);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error en cruce de valores:', err);
-      setError(err.message || 'Error al ejecutar el cruce en el servidor.');
+      const errMsg = err instanceof Error ? err.message : 'Error al ejecutar el cruce en el servidor.';
+      setError(errMsg);
     } finally {
       setSaving(false);
     }
@@ -156,7 +221,8 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
         // Limpiar el buscador para asegurar que la nueva fila sea visible
         setSearchTerm('');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      console.error('Error al crear una nueva fila de tarifas:', err);
       setError('Error al crear una nueva fila de tarifas en el servidor.');
     } finally {
       setSaving(false);
@@ -185,7 +251,8 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
         return copy;
       });
       showSuccess('Registro eliminado correctamente.');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      console.error('Error al eliminar el registro:', err);
       setError('Error al eliminar el registro.');
     } finally {
       setSaving(false);
@@ -196,7 +263,7 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
   const handleLocalChange = (id: string, field: keyof EntityValue, val: string) => {
     setValues(prev => prev.map(item => {
       if (item.id === id) {
-        let parsedVal: any = val;
+        let parsedVal: string | number = val;
         if (field === 'copay' || field === 'entity_value') {
           // Dejar que el input maneje el string para escribir cómodamente números y decimales
           parsedVal = val;
@@ -210,15 +277,17 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
   };
 
   // Persistir cambios en Supabase en blur o enter
-  const handlePersistChange = async (id: string, field: keyof EntityValue) => {
+  const handlePersistChange = async (id: string, field: keyof EntityValue, overrideValue?: string | number) => {
     const row = values.find(v => v.id === id);
     if (!row) return;
 
-    let targetVal = row[field];
+    let targetVal = overrideValue !== undefined ? overrideValue : row[field];
     
     // Parsear números si corresponde
     if (field === 'copay' || field === 'entity_value') {
       targetVal = parseFloat(String(targetVal)) || 0;
+    } else if (typeof targetVal === 'string') {
+      targetVal = targetVal.toUpperCase();
     }
 
     const originalRow = originalValues[id];
@@ -261,8 +330,9 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
       // Normalizar en el estado local
       setValues(prev => prev.map(item => item.id === id ? { ...item, [field]: targetVal } : item));
       showSuccess('Cambio guardado automáticamente.');
-    } catch (err: any) {
-      setError(err.message || 'Error al guardar los cambios en la base de datos.');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Error al guardar los cambios en la base de datos.';
+      setError(errMsg);
       // Revertir en el estado local al valor original
       setValues(prev => prev.map(item => item.id === id ? { ...item, [field]: originalVal } : item));
     } finally {
@@ -398,13 +468,19 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
                       <tr key={row.id} className="hover:bg-[#dadbe2]/40 transition-colors">
                         
                         {/* Celda Entidad */}
-                        <td className="px-2 py-2">
+                        <td className="px-2 py-2 relative">
                           <div className="relative flex items-center">
                             <input 
                               type="text"
                               value={row.entity_name}
                               onChange={(e) => handleLocalChange(row.id!, 'entity_name', e.target.value)}
-                              onBlur={() => handlePersistChange(row.id!, 'entity_name')}
+                              onFocus={() => setActiveDropdown({ rowId: row.id!, field: 'entity_name' })}
+                              onBlur={() => {
+                                setTimeout(() => {
+                                  setActiveDropdown(prev => (prev?.rowId === row.id && prev?.field === 'entity_name') ? null : prev);
+                                  handlePersistChange(row.id!, 'entity_name');
+                                }, 200);
+                              }}
                               onKeyDown={(e) => e.key === 'Enter' && handlePersistChange(row.id!, 'entity_name')}
                               className="px-4 py-3 w-full font-bold text-gray-700 uppercase rounded-2xl bg-[#e6e7ee] shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-xs transition-all"
                             />
@@ -412,16 +488,43 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
                               <Loader2 className="absolute right-3 w-3 h-3 text-blue-500 animate-spin" />
                             )}
                           </div>
+                          {activeDropdown?.rowId === row.id && activeDropdown?.field === 'entity_name' && (
+                            <div className="absolute left-2 right-2 mt-1 max-h-48 overflow-y-auto bg-[#e6e7ee] rounded-2xl shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] border border-white/40 z-[999] py-1">
+                              {getFilteredEntities(row.entity_name).length === 0 ? (
+                                <div className="px-4 py-2 text-xs text-gray-400 font-medium">Sin coincidencias</div>
+                              ) : (
+                                getFilteredEntities(row.entity_name).map((entity) => (
+                                  <button
+                                    key={entity}
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleSelectOption(row.id!, 'entity_name', entity);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-[10px] sm:text-xs font-bold text-gray-700 hover:bg-[#dadbe2] transition-colors uppercase"
+                                  >
+                                    {entity}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
                         </td>
 
                         {/* Celda Servicio */}
-                        <td className="px-2 py-2">
+                        <td className="px-2 py-2 relative">
                           <div className="relative flex items-center">
                             <input 
                               type="text"
                               value={row.service_name}
                               onChange={(e) => handleLocalChange(row.id!, 'service_name', e.target.value)}
-                              onBlur={() => handlePersistChange(row.id!, 'service_name')}
+                              onFocus={() => setActiveDropdown({ rowId: row.id!, field: 'service_name' })}
+                              onBlur={() => {
+                                setTimeout(() => {
+                                  setActiveDropdown(prev => (prev?.rowId === row.id && prev?.field === 'service_name') ? null : prev);
+                                  handlePersistChange(row.id!, 'service_name');
+                                }, 200);
+                              }}
                               onKeyDown={(e) => e.key === 'Enter' && handlePersistChange(row.id!, 'service_name')}
                               className="px-4 py-3 w-full font-semibold text-gray-600 uppercase rounded-2xl bg-[#e6e7ee] shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] border-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-xs transition-all"
                             />
@@ -429,6 +532,27 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
                               <Loader2 className="absolute right-3 w-3 h-3 text-blue-500 animate-spin" />
                             )}
                           </div>
+                          {activeDropdown?.rowId === row.id && activeDropdown?.field === 'service_name' && (
+                            <div className="absolute left-2 right-2 mt-1 max-h-48 overflow-y-auto bg-[#e6e7ee] rounded-2xl shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] border border-white/40 z-[999] py-1">
+                              {getFilteredServices(row.service_name).length === 0 ? (
+                                <div className="px-4 py-2 text-xs text-gray-400 font-medium">Sin coincidencias</div>
+                              ) : (
+                                getFilteredServices(row.service_name).map((service) => (
+                                  <button
+                                    key={service}
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleSelectOption(row.id!, 'service_name', service);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-[10px] sm:text-xs font-bold text-gray-600 hover:bg-[#dadbe2] transition-colors uppercase"
+                                  >
+                                    {service}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
                         </td>
 
                         {/* Celda Copago */}
