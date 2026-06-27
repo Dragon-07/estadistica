@@ -344,7 +344,7 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
                 onClick={handleCruceValoresClick}
                 disabled={saving || loading}
                 className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#e6e7ee] text-green-600 font-bold text-xs rounded-2xl shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff] hover:scale-[0.99] active:scale-[0.96] transition-all duration-200"
-                title="Comparar y cruzar las tarifas con la base de datos de registros médicos para completar los Pagos Pendientes"
+                title="Comparar y cruzar las tarifas con la base de datos de registros médicos para completar el Pago Pendiente por la entidad"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4 text-green-500 shrink-0" />}
                 <span>Completar valores</span>
@@ -510,7 +510,7 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
             <div className="space-y-2">
               <h3 className="text-lg font-bold text-gray-800">Confirmar Cruce de Valores</h3>
               <p className="text-xs text-gray-500 leading-relaxed px-2">
-                ¿Deseas comparar las tarifas configuradas con los registros médicos de la base de datos y completar los **Pagos Pendientes** y **Total final** automáticamente?
+                ¿Deseas comparar las tarifas configuradas con los registros médicos de la base de datos y completar el **Pago Pendiente por la entidad** y **Total final** automáticamente?
               </p>
             </div>
 

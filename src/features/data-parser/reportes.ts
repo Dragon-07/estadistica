@@ -11,7 +11,7 @@ export const GLOBAL_REPORT_COLUMNS = [
   'Género',             // NUEVA
   'EPS/Entidad Paciente',
   'Pagos Recibidos',
-  'Pagos Pendientes',
+  'Pago Pendiente por la entidad',
   'Medios Pago',
   'Estado Factura',
   'Dirección',

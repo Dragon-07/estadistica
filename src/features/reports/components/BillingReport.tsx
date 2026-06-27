@@ -480,7 +480,7 @@ export function BillingReport() {
   const handleExportExcel = () => {
     // Columnas numéricas que se deben exportar como número puro
     const NUMERIC_COLUMNS = new Set([
-      'Pagos Recibidos', 'Pagos Pendientes', 'Valor', 'Cantidad',
+      'Pagos Recibidos', 'Pago Pendiente por la entidad', 'Valor', 'Cantidad',
       'IVA', 'TIPO DE IVA', 'Total Item',
       'Valor Servicio (Particular o por convenio)',
       'Facturado a la entidad del Paciente', 'Total final',

@@ -272,7 +272,7 @@ export function Dashboard() {
 
       // Columnas numéricas que se deben exportar como número puro
       const NUMERIC_COLUMNS = new Set([
-        'Pagos Recibidos', 'Pagos Pendientes', 'Valor', 'Cantidad',
+        'Pagos Recibidos', 'Pago Pendiente por la entidad', 'Valor', 'Cantidad',
         'IVA', 'TIPO DE IVA', 'Total Item',
         'Valor Servicio (Particular o por convenio)',
         'Facturado a la entidad del Paciente', 'Total final',
@@ -281,7 +281,7 @@ export function Dashboard() {
       // Todas las columnas del esquema global
       const ALL_COLUMNS = [
         'M Tratante', 'Fecha Creación', 'Factura', 'Número Documento',
-        'Cliente', 'Fecha de Nacimiento', 'Género', 'EPS/Entidad Paciente', 'Pagos Recibidos', 'Pagos Pendientes',
+        'Cliente', 'Fecha de Nacimiento', 'Género', 'EPS/Entidad Paciente', 'Pagos Recibidos', 'Pago Pendiente por la entidad',
         'Medios Pago', 'Estado Factura', 'Dirección', 'Teléfono', 'Correo',
         'Tipo Cliente', 'Código (CUP)', 'Concepto', 'Valor', 'Cantidad',
         'IVA', 'TIPO DE IVA', 'Total Item', 'Fecha Anulación',
