@@ -525,7 +525,7 @@ export function ProfitabilityReport({ refreshTrigger, onOpenDisabledModal }: { r
         });
 
         if (error) {
-          console.error('Error fetching distribution stats:', error);
+          console.error('Error fetching distribution stats:', error.message, '| Details:', error.details, '| Hint:', error.hint, '| Full error:', error);
           return;
         }
 
