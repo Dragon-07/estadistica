@@ -136,20 +136,25 @@ export default function Home() {
 
     try {
       setIsProcessing(true);
-      const result = type === 'facturacion' 
-        ? await processReporteFacturacion(file)
-        : await processReporteTransaccion(file);
-      
-      // Guardar copia individual para exportación específica si es transacciones
-      if (type === 'transaccion') {
-        setReporteTransaccionData(result.data, result.filteredCount);
-      }
-
-      // La primera vez usamos set, las siguientes usamos append para sumar a la lista maestra
-      if (!reporteFacturacionData) {
-        setReporteFacturacionData(result.data, result.filteredCount);
+      if (type === 'facturacion') {
+        const result = await processReporteFacturacion(file);
+        if (!reporteFacturacionData) {
+          setReporteFacturacionData(result.data, result.filteredCount);
+        } else {
+          appendReporteData(result.data, result.filteredCount);
+        }
       } else {
-        appendReporteData(result.data, result.filteredCount);
+        // Transacción: Si ya hay tabla cargada (facturación), actualizamos sus renglones
+        if (reporteFacturacionData && reporteFacturacionData.length > 1) {
+          const updated = await processReporteTransaccion(file, reporteFacturacionData);
+          if (Array.isArray(updated)) {
+            updateReporteFacturacionData(updated);
+          }
+        } else {
+          const result = (await processReporteTransaccion(file)) as { data: any[][]; filteredCount: number };
+          setReporteTransaccionData(result.data, result.filteredCount);
+          setReporteFacturacionData(result.data, result.filteredCount);
+        }
       }
 
       // Feedback visual en lugar de alert

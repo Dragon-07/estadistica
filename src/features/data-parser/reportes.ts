@@ -121,7 +121,7 @@ export async function processReporteFacturacion(file: File): Promise<{ data: any
             
             if (targetCol === 'Total final') {
               // Lógica de Total final: Total Item o Valor Servicio
-              // Nuevos índices: Total Item (23), Valor Servicio (25)
+              // Índices: Total Item (23), Valor Servicio (25)
               const totalItem = rowData[23];
               const valorServicio = rowData[25];
               
@@ -135,7 +135,13 @@ export async function processReporteFacturacion(file: File): Promise<{ data: any
             if (targetCol === '') {
               rowData.push('');
             } else {
-              const originalKey = keys.find(k => k.trim().toLowerCase() === targetCol.toLowerCase());
+              let originalKey = keys.find(k => k.trim().toLowerCase() === targetCol.toLowerCase());
+              if (!originalKey && targetCol === 'Valor Servicio (Particular o por convenio)') {
+                originalKey = keys.find(k => {
+                  const norm = k.trim().toLowerCase();
+                  return norm === 'valor servicio (particular o convenio)' || norm === 'valor servicio' || norm.includes('valor servicio');
+                });
+              }
               rowData.push(originalKey ? row[originalKey] : '');
             }
           }
@@ -151,7 +157,10 @@ export async function processReporteFacturacion(file: File): Promise<{ data: any
   });
 }
 
-export async function processReporteTransaccion(file: File): Promise<{ data: any[][], filteredCount: number }> {
+export async function processReporteTransaccion(
+  file: File,
+  currentData?: any[][] | null
+): Promise<{ data: any[][], filteredCount: number } | any[][]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -169,47 +178,156 @@ export async function processReporteTransaccion(file: File): Promise<{ data: any
 
         if (rawRows.length === 0) throw new Error("El archivo Excel está vacío.");
 
-        const wsData: any[][] = [GLOBAL_REPORT_COLUMNS];
-        let filteredCount = 0;
+        const normalizeStr = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        for (const row of rawRows) {
+        const cleanDoc = (val: unknown): string => {
+          if (val === null || val === undefined) return '';
+          let str = String(val).trim().replace(/\s+/g, '');
+          if (str.endsWith('.0')) str = str.slice(0, -2);
+          return str.replace(/[.,\-]/g, '').toUpperCase();
+        };
+
+        const cleanFact = (val: unknown): string => {
+          if (val === null || val === undefined) return '';
+          return String(val).trim().toUpperCase();
+        };
+
+        const cleanDate = (val: unknown): string => {
+          if (!val) return '';
+          if (val instanceof Date) return val.toISOString().slice(0, 10);
+          const str = String(val).trim();
+          if (str.includes('/')) {
+            const parts = str.split('/');
+            if (parts.length === 3 && parts[2].length === 4) {
+              return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+          }
+          return str.slice(0, 10);
+        };
+
+        const cleanCup = (val: unknown): string => {
+          if (!val) return '';
+          const str = String(val).trim();
+          const m = str.match(/^(\d+)/);
+          return m ? m[1] : str.toLowerCase();
+        };
+
+        const getValFromRow = (row: Record<string, unknown>, ...targetNames: string[]) => {
           const keys = Object.keys(row);
-          
-          const entidadKey = keys.find(k => k.trim().toLowerCase() === 'entidad');
-          const entidadVal = entidadKey ? String(row[entidadKey]).trim() : '';
+          for (const targetName of targetNames) {
+            const targetNorm = normalizeStr(targetName);
+            const k = keys.find(key => normalizeStr(key) === targetNorm);
+            if (k && row[k] !== undefined && row[k] !== null && row[k] !== '') {
+              return row[k];
+            }
+          }
+          return '';
+        };
 
-          if (!ENTIDADES_PERMITIDAS.includes(entidadVal)) {
-            filteredCount++;
-            continue;
+        // MODO A: Si se pasa la tabla actual de facturación, actualizamos cada fila con los datos de transacción
+        if (currentData && currentData.length > 1) {
+          const byFactura = new Map<string, { valServ: any; factEnt: any }>();
+          const byDocDateCup = new Map<string, { valServ: any; factEnt: any }>();
+          const byDocDate = new Map<string, { valServ: any; factEnt: any }[]>();
+
+          for (const row of rawRows) {
+            const fact = cleanFact(getValFromRow(row, '# Factura del Paciente', 'Factura del Paciente', 'Factura'));
+            const doc = cleanDoc(getValFromRow(row, 'Documento', 'Numero Documento', 'Identificacion'));
+            const date = cleanDate(getValFromRow(row, 'Fecha', 'Fecha Creacion'));
+            const cup = cleanCup(getValFromRow(row, 'CUP', 'Codigo (CUP)', 'Codigo CUP'));
+            const valServ = getValFromRow(row,
+              'Valor Servicio (Particular o por convenio)',
+              'Valor Servicio (Particular o convenio)',
+              'Valor Servicio',
+              'Valor'
+            );
+            const factEnt = getValFromRow(row, 'Facturado a la entidad del Paciente', 'Facturado a la entidad', 'Facturado');
+
+            const payload = { valServ, factEnt };
+
+            if (fact && fact !== '-') {
+              byFactura.set(fact, payload);
+            }
+            if (doc && date && cup) {
+              byDocDateCup.set(`${doc}_${date}_${cup}`, payload);
+            }
+            if (doc && date) {
+              if (!byDocDate.has(`${doc}_${date}`)) byDocDate.set(`${doc}_${date}`, []);
+              byDocDate.get(`${doc}_${date}`)!.push(payload);
+            }
           }
 
-          const rowData = new Array(GLOBAL_REPORT_COLUMNS.length).fill('');
-          
-          const getVal = (targetName: string) => {
-            const k = keys.find(key => key.trim().toLowerCase() === targetName.toLowerCase());
-            return k ? row[k] : '';
-          };
+          const updatedData = currentData.map((row, idx) => {
+            if (idx === 0) return row; // Encabezado
 
-          // Mapeo solicitado: Índices ajustados tras insertar Fecha de Nacimiento y Género
-          rowData[1] = getVal('Fecha');                           // Fecha Creación
-          rowData[3] = getVal('Documento');                       // Número Documento
-          rowData[4] = getVal('Paciente');                        // Cliente
-          rowData[7] = getVal('Entidad');                         // EPS/Entidad Paciente
-          rowData[17] = getVal('CUP');                            // Código (CUP)
-          rowData[18] = getVal('Servicio');                       // Concepto
-          rowData[25] = getVal('Valor Servicio (Particular o por convenio)');
-          rowData[26] = getVal('Facturado a la entidad del Paciente');
+            const factNum = cleanFact(row[2]);  // Factura
+            const docNum = cleanDoc(row[3]);    // Número Documento
+            const dateStr = cleanDate(row[1]);  // Fecha Creación
+            const cupStr = cleanCup(row[17]);   // Código (CUP)
+
+            let match: { valServ: any; factEnt: any } | null = null;
+            if (factNum && byFactura.has(factNum)) {
+              match = byFactura.get(factNum)!;
+            } else if (docNum && dateStr && cupStr && byDocDateCup.has(`${docNum}_${dateStr}_${cupStr}`)) {
+              match = byDocDateCup.get(`${docNum}_${dateStr}_${cupStr}`)!;
+            } else if (docNum && dateStr && byDocDate.has(`${docNum}_${dateStr}`)) {
+              match = byDocDate.get(`${docNum}_${dateStr}`)![0];
+            }
+
+            const newRow = [...row];
+            if (match) {
+              if (match.valServ !== undefined && match.valServ !== null && match.valServ !== '') {
+                newRow[25] = match.valServ; // Valor Servicio (Particular o por convenio)
+              }
+              if (match.factEnt !== undefined && match.factEnt !== null && match.factEnt !== '') {
+                newRow[26] = match.factEnt; // Facturado a la entidad del Paciente
+              }
+
+              // Recalcular Total final (índice 27)
+              const totalItemVal = newRow[23] || '';
+              let totalFinal = internalParseToNumber(totalItemVal);
+              if (totalFinal === 0) {
+                totalFinal = internalParseToNumber(newRow[25]);
+              }
+              newRow[27] = totalFinal;
+            }
+            return newRow;
+          });
+
+          resolve(updatedData);
+          return;
+        }
+
+        // MODO B: Si no hay tabla previa, generamos las filas desde el reporte de transacciones
+        const wsData: any[][] = [GLOBAL_REPORT_COLUMNS];
+
+        for (const row of rawRows) {
+          const rowData = new Array(GLOBAL_REPORT_COLUMNS.length).fill('');
+
+          rowData[1] = getValFromRow(row, 'Fecha', 'Fecha Creacion');
+          rowData[3] = getValFromRow(row, 'Documento', 'Numero Documento', 'Cedula', 'Identificacion');
+          rowData[4] = getValFromRow(row, 'Paciente', 'Cliente', 'Nombre');
+          rowData[7] = getValFromRow(row, 'Entidad', 'EPS/Entidad Paciente', 'EPS');
+          rowData[17] = getValFromRow(row, 'CUP', 'Codigo (CUP)', 'Codigo CUP', 'Código (CUP)');
+          rowData[18] = getValFromRow(row, 'Servicio', 'Concepto', 'Tratamiento');
+          rowData[25] = getValFromRow(row,
+            'Valor Servicio (Particular o por convenio)',
+            'Valor Servicio (Particular o convenio)',
+            'Valor Servicio',
+            'Valor'
+          );
+          rowData[26] = getValFromRow(row, 'Facturado a la entidad del Paciente', 'Facturado a la entidad', 'Facturado');
 
           // Calcular Total final para transacciones
-          const totalItemVal = rowData[23] || ''; // Total Item
+          const totalItemVal = rowData[23] || '';
           const valorServicioVal = rowData[25];
           let totalFinalTrans = internalParseToNumber(totalItemVal);
           if (totalFinalTrans === 0) totalFinalTrans = internalParseToNumber(valorServicioVal);
-          rowData[27] = totalFinalTrans; // Total final
+          rowData[27] = totalFinalTrans;
 
           wsData.push(rowData);
         }
-        resolve({ data: wsData, filteredCount });
+        resolve({ data: wsData, filteredCount: 0 });
       } catch (err: any) {
         reject(new Error('Error al procesar Transacciones: ' + err.message));
       }

@@ -279,15 +279,7 @@ export function Dashboard() {
       ]);
 
       // Todas las columnas del esquema global
-      const ALL_COLUMNS = [
-        'M Tratante', 'Fecha Creación', 'Factura', 'Número Documento',
-        'Cliente', 'Fecha de Nacimiento', 'Género', 'EPS/Entidad Paciente', 'Pagos Recibidos', 'Pago Pendiente por la entidad',
-        'Medios Pago', 'Estado Factura', 'Dirección', 'Teléfono', 'Correo',
-        'Tipo Cliente', 'Código (CUP)', 'Concepto', 'Valor', 'Cantidad',
-        'IVA', 'TIPO DE IVA', 'Total Item', 'Fecha Anulación',
-        'Valor Servicio (Particular o por convenio)',
-        'Facturado a la entidad del Paciente', 'Total final',
-      ];
+      const ALL_COLUMNS = GLOBAL_REPORT_COLUMNS.filter(col => col !== '');
 
       // Función de parseo numérico inteligente integrada
       const smartParse = (raw: unknown): number => {
