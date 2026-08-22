@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, saveUnifiedToSupabase, exportToExcel, fetchDatabasePreview, deleteAllRecords, getDatabaseTotalCount, deleteRecordsByDateRange, getDatabaseDateRange } from '@/features/data-parser/reportes';
+import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, processCompletarValoresLocal, saveUnifiedToSupabase, exportToExcel, fetchDatabasePreview, deleteAllRecords, getDatabaseTotalCount, deleteRecordsByDateRange, getDatabaseDateRange } from '@/features/data-parser/reportes';
+import { createClient } from '@/shared/lib/supabase/client';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
 import { Dashboard } from '@/features/reports/components/Dashboard';
 import { BillingReport } from '@/features/reports/components/BillingReport';
@@ -45,7 +46,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | 'save' | null>(null);
+  const [successStatus, setSuccessStatus] = useState<'facturacion' | 'transaccion' | 'medico' | 'completar_valores' | 'save' | null>(null);
   const [isEntityModalOpen, setIsEntityModalOpen] = useState(false);
   const [isDisabledTreatmentsModalOpen, setIsDisabledTreatmentsModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -186,6 +187,30 @@ export default function Home() {
     } finally {
       setIsProcessing(false);
       e.target.value = '';
+    }
+  };
+
+  const handleCompletarValores = async () => {
+    try {
+      setIsProcessing(true);
+
+      // 1. Procesar datos cargados en memoria si existen
+      if (reporteFacturacionData && reporteFacturacionData.length > 1) {
+        const result = await processCompletarValoresLocal(reporteFacturacionData);
+        updateReporteFacturacionData(result.updatedData);
+      }
+
+      // 2. Ejecutar también en Supabase DB
+      const supabase = createClient();
+      await supabase.rpc('cruce_valores_pendientes');
+
+      setSuccessStatus('completar_valores');
+      setTimeout(() => setSuccessStatus(null), 3000);
+    } catch (err: any) {
+      console.error(err);
+      alert('Error al completar valores: ' + err.message);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -532,15 +557,44 @@ export default function Home() {
 
                 {/* Botón Completar valores */}
                 <div className="flex flex-col gap-4">
-                  <button
-                    onClick={() => setIsEntityModalOpen(true)}
-                    className="flex items-center gap-4 px-8 py-5 rounded-3xl font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] bg-[#e6e7ee] text-gray-700 hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all duration-300 group min-w-[240px]"
-                  >
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center transition-transform bg-white shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] group-hover:scale-95">
-                      <TrendingUp className="w-5 h-5 text-blue-500" />
-                    </div>
-                    <span className="text-sm tracking-wide">Completar valores</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleCompletarValores}
+                      disabled={isProcessing || successStatus === 'completar_valores'}
+                      className={`flex items-center gap-4 px-8 py-5 rounded-3xl font-semibold shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] transition-all duration-300 group min-w-[240px] ${
+                        successStatus === 'completar_valores'
+                          ? 'bg-green-500 text-white shadow-[0_4px_14px_rgba(34,197,94,0.4)]'
+                          : 'bg-[#e6e7ee] text-gray-700 hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]'
+                      } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-transform ${
+                        successStatus === 'completar_valores'
+                          ? 'bg-white/20'
+                          : 'bg-white shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] group-hover:scale-95'
+                      }`}>
+                        {successStatus === 'completar_valores' ? (
+                          <span className="text-white text-lg">✓</span>
+                        ) : (
+                          <TrendingUp className={`w-5 h-5 ${isProcessing ? 'text-gray-400 animate-pulse' : 'text-blue-500'}`} />
+                        )}
+                      </div>
+                      <span className="text-sm tracking-wide">
+                        {isProcessing && successStatus === null
+                          ? 'Procesando...'
+                          : successStatus === 'completar_valores'
+                          ? '¡Completado!'
+                          : 'Completar valores'}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsEntityModalOpen(true)}
+                      title="Configurar Tabla de Tarifas"
+                      className="p-5 rounded-3xl bg-[#e6e7ee] text-gray-600 shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all duration-300 flex items-center justify-center"
+                    >
+                      <Database className="w-5 h-5 text-blue-500" />
+                    </button>
+                  </div>
                 </div>
               </div>
 

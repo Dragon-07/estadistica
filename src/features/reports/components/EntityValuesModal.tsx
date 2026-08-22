@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/shared/lib/supabase/client';
+import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
+import { processCompletarValoresLocal } from '@/features/data-parser/reportes';
 import { 
   X, 
   Search, 
@@ -28,6 +30,7 @@ interface EntityValuesModalProps {
 }
 
 export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
+  const { reporteFacturacionData, updateReporteFacturacionData } = useReportesStore();
   const [values, setValues] = useState<EntityValue[]>([]);
   // Clon para realizar seguimiento de los valores iniciales y evitar escrituras redundantes
   const [originalValues, setOriginalValues] = useState<Record<string, EntityValue>>({});
@@ -163,22 +166,31 @@ export function EntityValuesModal({ isOpen, onClose }: EntityValuesModalProps) {
     setShowConfirmModal(true);
   };
 
-  // Ejecutar el cruce de valores en lote en la base de datos (tras confirmar)
+  // Ejecutar el cruce de valores tanto en los datos locales (si existen) como en la base de datos
   const executeCruceValores = async () => {
     setShowConfirmModal(false);
     try {
       setSaving(true);
       setError(null);
 
-      // Llamar al RPC en Supabase
-      const { data, error: rpcError } = await supabase.rpc('cruce_valores_pendientes');
+      let localUpdatedCount = 0;
 
+      // 1. Si hay datos cargados localmente en memoria (previsualización después de subir Excel)
+      if (reporteFacturacionData && reporteFacturacionData.length > 1) {
+        const localResult = await processCompletarValoresLocal(reporteFacturacionData);
+        updateReporteFacturacionData(localResult.updatedData);
+        localUpdatedCount = localResult.updatedCount;
+      }
+
+      // 2. Ejecutar también en la base de datos Supabase
+      const { data, error: rpcError } = await supabase.rpc('cruce_valores_pendientes');
       if (rpcError) throw rpcError;
 
       const result = data as { success: boolean; message: string; rows_updated?: number };
 
       if (result.success) {
-        showSuccess(`¡Cruce completado con éxito! Se actualizaron ${result.rows_updated || 0} registros médicos.`);
+        const totalUpdated = (result.rows_updated || 0) + localUpdatedCount;
+        showSuccess(`¡Cruce completado con éxito! Se actualizaron ${totalUpdated} registros (${localUpdatedCount} en la vista previa y ${result.rows_updated || 0} en la BD).`);
       } else {
         throw new Error(result.message);
       }

@@ -508,6 +508,74 @@ export async function processMedicoTratante(file: File, currentData: any[][]): P
   });
 }
 
+/**
+ * Cruza las tarifas de la tabla 'entity_values' con los datos procesados en memoria (reporteFacturacionData).
+ * Permite completar 'Pago Pendiente por la entidad' (índice 9) y recalcular 'Total final' (índice 27)
+ * después de subir los archivos Excel y ANTES de guardar en Supabase.
+ */
+export async function processCompletarValoresLocal(
+  currentData: any[][]
+): Promise<{ updatedData: any[][]; updatedCount: number }> {
+  const supabase = createClient();
+  const { data: entityValues, error } = await supabase
+    .from('entity_values')
+    .select('*');
+
+  if (error) {
+    throw new Error('Error al obtener tarifas de entidades: ' + error.message);
+  }
+
+  if (!entityValues || entityValues.length === 0 || !currentData || currentData.length <= 1) {
+    return { updatedData: currentData || [], updatedCount: 0 };
+  }
+
+  let updatedCount = 0;
+
+  const updatedData = currentData.map((row, idx) => {
+    if (idx === 0) return row; // Mantener encabezados
+
+    const normRowEntity = String(row[7] || '').trim().toUpperCase();
+    const normRowTreatment = String(row[18] || '').trim().toUpperCase();
+    const rowCopayNum = internalParseToNumber(row[8]);
+
+    // Buscar coincidencia en entity_values
+    const match = entityValues.find((ev) => {
+      const evEntity = String(ev.entity_name || '').trim().toUpperCase();
+      const evService = String(ev.service_name || '').trim().toUpperCase();
+      const evCopayNum = Number(ev.copay) || 0;
+
+      // 1. Coincidencia de Entidad (exacta o por inclusión si >= 4 caracteres)
+      let entityMatch = normRowEntity === evEntity;
+      if (!entityMatch && evEntity.length >= 4 && normRowEntity.length >= 4) {
+        entityMatch = normRowEntity.includes(evEntity) || evEntity.includes(normRowEntity);
+      }
+
+      // 2. Coincidencia de Servicio / Concepto
+      const serviceMatch = normRowTreatment === evService;
+
+      // 3. Coincidencia de Copago / Pagos Recibidos
+      const copayMatch = Math.abs(rowCopayNum - evCopayNum) < 0.01;
+
+      return entityMatch && serviceMatch && copayMatch;
+    });
+
+    if (match) {
+      const newRow = [...row];
+      const entityVal = Number(match.entity_value) || 0;
+
+      newRow[9] = entityVal; // Pago Pendiente por la entidad
+      newRow[27] = rowCopayNum + entityVal; // Total final = Pagos Recibidos + Pago Pendiente por la entidad
+
+      updatedCount++;
+      return newRow;
+    }
+
+    return row;
+  });
+
+  return { updatedData, updatedCount };
+}
+
 export function exportToExcel(data: any[][], fileName: string = 'Reporte_Consolidado') {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet(data);
