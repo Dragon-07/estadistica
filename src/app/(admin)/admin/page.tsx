@@ -145,11 +145,12 @@ export default function Home() {
           appendReporteData(result.data, result.filteredCount);
         }
       } else {
-        // Transacción: Si ya hay tabla cargada (facturación), actualizamos sus renglones
+        // Transacción: Si ya hay tabla cargada (facturación), actualizamos sus renglones y añadimos entidades requeridas
         if (reporteFacturacionData && reporteFacturacionData.length > 1) {
           const updated = await processReporteTransaccion(file, reporteFacturacionData);
           if (Array.isArray(updated)) {
             updateReporteFacturacionData(updated);
+            setReporteTransaccionData(updated, 0);
           }
         } else {
           const result = (await processReporteTransaccion(file)) as { data: any[][]; filteredCount: number };

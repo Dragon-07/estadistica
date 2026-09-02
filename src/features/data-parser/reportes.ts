@@ -224,6 +224,72 @@ export async function processReporteTransaccion(
           return '';
         };
 
+        const isTargetEntity = (entVal: unknown): boolean => {
+          if (!entVal) return false;
+          const norm = normalizeStr(String(entVal));
+          return norm.includes('colmena') || norm.includes('ecopetrol');
+        };
+
+        const createRowFromTransaction = (row: Record<string, unknown>): any[] => {
+          const rowData = new Array(GLOBAL_REPORT_COLUMNS.length).fill('');
+
+          const rawDate = getValFromRow(row, 'Fecha', 'Fecha Creacion');
+          const dateStr = cleanDate(rawDate) || String(rawDate || '');
+          const factStr = cleanFact(getValFromRow(row, '# Factura del Paciente', 'Factura del Paciente', 'Factura'));
+          const docStr = cleanDoc(getValFromRow(row, 'Documento', 'Numero Documento', 'Cedula', 'Identificacion'));
+          const pacienteStr = String(getValFromRow(row, 'Paciente', 'Cliente', 'Nombre') || '').trim();
+          const entidadStr = String(getValFromRow(row, 'Entidad', 'EPS/Entidad Paciente', 'EPS') || '').trim();
+          const medioPagoStr = String(getValFromRow(row, 'Medio Pago', 'Medios Pago') || '').trim();
+          const cupStr = String(getValFromRow(row, 'CUP', 'Codigo (CUP)', 'Codigo CUP', 'Código (CUP)') || '').trim();
+          const servicioStr = String(getValFromRow(row, 'Servicio', 'Concepto', 'Tratamiento') || '').trim();
+          const medicoStr = String(getValFromRow(row, 'Profesional Atendió', 'Profesional Atendio', 'Agenda', 'Medico') || '').trim();
+
+          const valServRaw = getValFromRow(row,
+            'Valor Servicio (Particular o por convenio)',
+            'Valor Servicio (Particular o convenio)',
+            'Valor Servicio',
+            'Valor'
+          );
+          const factEntRaw = getValFromRow(row, 'Facturado a la entidad del Paciente', 'Facturado a la entidad', 'Facturado');
+
+          const valorServicio = internalParseToNumber(valServRaw);
+          let facturadoEntidad: any = 0;
+          if (factEntRaw && String(factEntRaw).toLowerCase() !== 'no' && factEntRaw !== '-') {
+            facturadoEntidad = internalParseToNumber(factEntRaw);
+          }
+
+          rowData[0] = medicoStr;
+          rowData[1] = dateStr;
+          rowData[2] = (factStr && factStr !== '-') ? factStr : '';
+          rowData[3] = docStr;
+          rowData[4] = pacienteStr;
+          rowData[5] = '';
+          rowData[6] = '';
+          rowData[7] = entidadStr;
+          rowData[8] = 0;
+          rowData[9] = 0;
+          rowData[10] = (medioPagoStr && medioPagoStr !== '-') ? medioPagoStr : '';
+          rowData[11] = '';
+          rowData[12] = '';
+          rowData[13] = '';
+          rowData[14] = '';
+          rowData[15] = '';
+          rowData[16] = '';
+          rowData[17] = cupStr;
+          rowData[18] = servicioStr;
+          rowData[19] = 0;
+          rowData[20] = 0;
+          rowData[21] = 0;
+          rowData[22] = 0;
+          rowData[23] = 0;
+          rowData[24] = '';
+          rowData[25] = valorServicio;
+          rowData[26] = facturadoEntidad;
+          rowData[27] = valorServicio;
+
+          return rowData;
+        };
+
         // MODO A: Si se pasa la tabla actual de facturación, actualizamos cada fila con los datos de transacción
         if (currentData && currentData.length > 1) {
           const byFactura = new Map<string, { valServ: any; factEnt: any }>();
@@ -294,6 +360,43 @@ export async function processReporteTransaccion(
             return newRow;
           });
 
+          // Añadir a la tabla los ítems de "COLMENA SEGUROS RIESGOS LABORALES" y "ECOPETROL S A"
+          const existingCountMap = new Map<string, number>();
+          for (let i = 1; i < currentData.length; i++) {
+            const r = currentData[i];
+            const d = cleanDoc(r[3]);
+            const dt = cleanDate(r[1]);
+            const c = cleanCup(r[17]);
+            const val = internalParseToNumber(r[25]);
+            const key = `${d}_${dt}_${c}_${val}`;
+            existingCountMap.set(key, (existingCountMap.get(key) || 0) + 1);
+          }
+
+          for (const row of rawRows) {
+            const entidad = getValFromRow(row, 'Entidad', 'EPS/Entidad Paciente', 'EPS');
+            if (isTargetEntity(entidad)) {
+              const doc = cleanDoc(getValFromRow(row, 'Documento', 'Numero Documento', 'Cedula', 'Identificacion'));
+              const dt = cleanDate(getValFromRow(row, 'Fecha', 'Fecha Creacion'));
+              const cup = cleanCup(getValFromRow(row, 'CUP', 'Codigo (CUP)', 'Codigo CUP'));
+              const valServ = internalParseToNumber(getValFromRow(row,
+                'Valor Servicio (Particular o por convenio)',
+                'Valor Servicio (Particular o convenio)',
+                'Valor Servicio',
+                'Valor'
+              ));
+              const key = `${doc}_${dt}_${cup}_${valServ}`;
+
+              const currentCount = existingCountMap.get(key) || 0;
+              if (currentCount > 0) {
+                existingCountMap.set(key, currentCount - 1);
+                continue;
+              }
+
+              const newRow = createRowFromTransaction(row);
+              updatedData.push(newRow);
+            }
+          }
+
           resolve(updatedData);
           return;
         }
@@ -302,30 +405,7 @@ export async function processReporteTransaccion(
         const wsData: any[][] = [GLOBAL_REPORT_COLUMNS];
 
         for (const row of rawRows) {
-          const rowData = new Array(GLOBAL_REPORT_COLUMNS.length).fill('');
-
-          rowData[1] = getValFromRow(row, 'Fecha', 'Fecha Creacion');
-          rowData[3] = getValFromRow(row, 'Documento', 'Numero Documento', 'Cedula', 'Identificacion');
-          rowData[4] = getValFromRow(row, 'Paciente', 'Cliente', 'Nombre');
-          rowData[7] = getValFromRow(row, 'Entidad', 'EPS/Entidad Paciente', 'EPS');
-          rowData[17] = getValFromRow(row, 'CUP', 'Codigo (CUP)', 'Codigo CUP', 'Código (CUP)');
-          rowData[18] = getValFromRow(row, 'Servicio', 'Concepto', 'Tratamiento');
-          rowData[25] = getValFromRow(row,
-            'Valor Servicio (Particular o por convenio)',
-            'Valor Servicio (Particular o convenio)',
-            'Valor Servicio',
-            'Valor'
-          );
-          rowData[26] = getValFromRow(row, 'Facturado a la entidad del Paciente', 'Facturado a la entidad', 'Facturado');
-
-          // Calcular Total final para transacciones
-          const totalItemVal = rowData[23] || '';
-          const valorServicioVal = rowData[25];
-          let totalFinalTrans = internalParseToNumber(totalItemVal);
-          if (totalFinalTrans === 0) totalFinalTrans = internalParseToNumber(valorServicioVal);
-          rowData[27] = totalFinalTrans;
-
-          wsData.push(rowData);
+          wsData.push(createRowFromTransaction(row));
         }
         resolve({ data: wsData, filteredCount: 0 });
       } catch (err: any) {
