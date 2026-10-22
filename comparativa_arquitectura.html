@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análisis Arquitectónico: Monolito vs 2 Aplicaciones Separadas | Holística</title>
+  <!-- Tailwind CSS 3.4 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            outfit: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            deep: {
+              900: '#0B1329',
+              850: '#0F1A36',
+              800: '#152248',
+              700: '#1C2E60',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-card {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .dark .glass-card {
+      background: rgba(15, 26, 54, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-gradient {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%);
+    }
+    .badge-glow {
+      box-shadow: 0 0 20px -3px rgba(34, 197, 94, 0.4);
+    }
+    .tab-active {
+      background: #2563eb;
+      color: #ffffff !important;
+      box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-white antialiased">
+
+  <!-- Glow Background Effects -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px]"></div>
+    <div class="absolute top-1/3 -right-40 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[140px]"></div>
+    <div class="absolute -bottom-40 left-1/3 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[160px]"></div>
+  </div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+
+    <!-- HEADER / HERO -->
+    <header class="text-center space-y-4 max-w-3xl mx-auto">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider badge-glow">
+        <i data-lucide="shield-check" class="w-4 h-4"></i>
+        Dictamen de Arquitectura & Seguridad
+      </div>
+      <h1 class="text-4xl sm:text-5xl font-extrabold font-outfit tracking-tight text-white leading-tight">
+        Portal Pacientes vs. Acceso Administrativo
+      </h1>
+      <p class="text-slate-400 text-lg leading-relaxed">
+        Análisis técnico exhaustivo para la plataforma médica <span class="text-emerald-400 font-semibold">Holística</span>: ¿Conviene tener <strong class="text-white">todo en una sola aplicación</strong> o separar en <strong class="text-white">dos aplicaciones independientes</strong>?
+      </p>
+    </header>
+
+    <!-- VEREDICTO EJECUTIVO RAPIDO -->
+    <section class="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-blue-950/60 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+      <div class="absolute right-0 top-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl"></div>
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+        <div class="space-y-3 text-left">
+          <div class="flex items-center gap-2 text-emerald-400 font-bold text-sm tracking-wide">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            RECOMENDACIÓN FINAL DEL INGENIERO
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white font-outfit">
+            Opción 1: Un Solo Proyecto Modular (Next.js + Supabase RLS)
+          </h2>
+          <p class="text-slate-300 text-sm sm:text-base max-w-2xl">
+            Es la opción <strong>más segura, rápida de desarrollar, económica y fácil de mantener</strong>. La seguridad no se logra separando proyectos, sino configurando las políticas <code class="text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30 font-mono text-xs">Row Level Security (RLS)</code> en Supabase y el <code class="text-blue-400 bg-blue-950/80 px-2 py-0.5 rounded border border-blue-500/30 font-mono text-xs">Middleware</code> de Next.js.
+          </p>
+        </div>
+        <div class="flex-shrink-0 flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-800/80 border border-slate-700/60 text-center min-w-[200px]">
+          <span class="text-xs text-slate-400 uppercase font-semibold">Índice de Viabilidad</span>
+          <span class="text-4xl font-extrabold text-emerald-400 font-outfit mt-1">98%</span>
+          <span class="text-xs text-emerald-300/80 mt-1 font-medium">Altamente Recomendada</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPARATIVA VISUAL LADO A LADO -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- OPCIÓN A: MONOLITO MODULAR (RECOMENDADA) -->
+      <div class="rounded-3xl bg-slate-850/90 border-2 border-emerald-500/50 p-6 sm:p-8 flex flex-col justify-between shadow-xl shadow-emerald-950/30 relative">
+        <div class="absolute -top-3.5 right-6 bg-emerald-500 text-slate-950 text-xs font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-md">
+          ⭐ Opción Más Recomendada
+        </div>
+
+        <div class="space-y-6">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+              <i data-lucide="layers" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold font-outfit text-white">Opción 1: Todo en Una App</h3>
+              <p class="text-xs text-emerald-400 font-medium">Monolito Modular con Roles (Next.js 16)</p>
+            </div>
+          </div>
+
+          <p class="text-slate-300 text-sm leading-relaxed">
+            Una sola aplicación en Next.js donde la pantalla principal (Imagen 1) actúa como bifurcador. El paciente inicia sesión y ve únicamente su portal de recompensas y referidos, mientras que el personal administrativo entra a los módulos clínicos y financieros según su rol.
+          </p>
+
+          <!-- Ventajas -->
+          <div class="space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+              <i data-lucide="check-circle" class="w-4 h-4"></i> Ventajas Clave (Puntos a Favor)
+            </h4>
+            <ul class="space-y-2 text-sm text-slate-300">
+              <li class="flex items-start gap-2.5">
+                <span class="text-emerald-400 mt-1">✓</span>
+                <span><strong>Sincronización en Tiempo Real instantánea:</strong> Cuando recepción marca "Asistió" a un referido en la pantalla admin, el paciente ve de inmediato su recompensa liberada en su portal. No hay APIs intermedias ni retrasos.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="text-emerald-400 mt-1">✓</span>
+                <span><strong>Un Solo Dominio y Hosting en Vercel:</strong> Despliegas una sola vez (ej. <code class="text-xs bg-slate-800 px-1.5 py-0.5 rounded text-blue-300">holistica.com</code> o <code class="text-xs bg-slate-800 px-1.5 py-0.5 rounded text-blue-300">app.holistica.com</code>). 0 complicaciones de DNS, SSL o cookies cross-domain.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="text-emerald-400 mt-1">✓</span>
+                <span><strong>Componentes y Estilos Compartidos:</strong> La identidad visual (colores de Holística, tipografías, botones, modales, iconos) se diseña una sola vez y se reutiliza.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="text-emerald-400 mt-1">✓</span>
+                <span><strong>Next.js App Router separa el código solo:</strong> Gracias al Route Grouping <code class="text-xs bg-slate-800 px-1.5 py-0.5 rounded text-emerald-300">/(pacientes)</code> y <code class="text-xs bg-slate-800 px-1.5 py-0.5 rounded text-emerald-300">/(admin)</code>, Next.js empaqueta el JS de forma aislada. Los pacientes no descargan el código de finanzas.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="text-emerald-400 mt-1">✓</span>
+                <span><strong>Mantenimiento 10x más ágil:</strong> Solo tienes un repositorio en GitHub, una sola lista de dependencias y una sola base de configuración.</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Desventajas -->
+          <div class="space-y-3 pt-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i> Puntos en Contra / Cuidados a tener
+            </h4>
+            <ul class="space-y-2 text-sm text-slate-300">
+              <li class="flex items-start gap-2.5">
+                <span class="text-amber-400 mt-1">⚠️</span>
+                <span><strong>Requiere RLS estricto en Supabase:</strong> Si alguien escribe una consulta sin RLS, podría haber fuga de información. Debe configurarse que un paciente solo pueda consultar sus propios datos.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="text-amber-400 mt-1">⚠️</span>
+                <span><strong>Middleware de autenticación mandatorio:</strong> Las rutas <code class="text-xs bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">/admin/*</code> deben estar protegidas a nivel servidor para expulsar de inmediato a cualquier usuario no autorizado.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <span>Complejidad de Mantenimiento: <strong class="text-emerald-400">Baja</strong></span>
+          <span>Costos de Infraestructura: <strong class="text-emerald-400">Mínimo (1 solo proyecto)</strong></span>
+        </div>
+      </div>
+
+      <!-- OPCIÓN B: DOS APLICACIONES SEPARADAS -->
+      <div class="rounded-3xl bg-slate-850/60 border border-slate-700/60 p-6 sm:p-8 flex flex-col justify-between shadow-lg relative">
+        <div class="space-y-6">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+              <i data-lucide="split" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold font-outfit text-white">Opción 2: Dos Apps Separadas</h3>
+              <p class="text-xs text-blue-400 font-medium">Frontend Pacientes + Frontend Admin en repositorios distintos</p>
+            </div>
+          </div>
+
+          <p class="text-slate-300 text-sm leading-relaxed">
+            Crear dos aplicaciones web distintas: una pública (<code class="text-xs bg-slate-800 px-1.5 py-0.5 rounded text-blue-300">pacientes.holistica.com</code>) para consulta de puntos/referidos, y otra privada (<code class="text-xs bg-slate-800 px-1.5 py-0.5 rounded text-blue-300">admin.holistica.com</code>) para la gestión médica interna.
+          </p>
+
+          <!-- Ventajas -->
+          <div class="space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+              <i data-lucide="check-circle" class="w-4 h-4"></i> Ventajas (Puntos a Favor)
+            </h4>
+            <ul class="space-y-2 text-sm text-slate-300">
+              <li class="flex items-start gap-2.5">
+                <span class="text-blue-400 mt-1">✓</span>
+                <span><strong>Aislamiento total de código:</strong> Es físicamente imposible que un paciente vea una pantalla admin filtrada en el bundle de JS, porque ese código simplemente no existe en su repositorio.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="text-blue-400 mt-1">✓</span>
+                <span><strong>Aislamiento de tráfico masivo:</strong> Si lanzas una campaña en redes sociales y entran 5,000 pacientes simultáneos, el portal de pacientes absorberá la carga sin afectar la fluidez del sistema admin de la clínica.</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Desventajas -->
+          <div class="space-y-3 pt-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-2">
+              <i data-lucide="x-circle" class="w-4 h-4"></i> Puntos en Contra (Desventajas Severas)
+            </h4>
+            <ul class="space-y-2 text-sm text-slate-300">
+              <li class="flex items-start gap-2.5">
+                <span class="text-rose-400 mt-1">✕</span>
+                <span><strong>Doble trabajo y doble mantenimiento:</strong> Cada cambio visual, actualización de paquetes o ajuste en el diseño debe replicarse manualmente en dos proyectos diferentes.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="text-rose-400 mt-1">✕</span>
+                <span><strong>Doble despliegue en Vercel:</strong> Tienes que gestionar 2 proyectos en Vercel, configurar variables de entorno duplicadas y vigilar límites de planes gratuitos/pro por separado.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="text-rose-400 mt-1">✕</span>
+                <span><strong>Autenticación y Sesiones Cruzadas Complejas:</strong> Si quieres compartir sesión o cookies entre dominios diferentes, Supabase requiere configuración avanzada de cookies seguras y dominios autorizados.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="text-rose-400 mt-1">✕</span>
+                <span><strong>Igual necesitas RLS en Supabase:</strong> Aunque tengas 2 apps, ambas atacarán la misma base de datos Supabase. Por ende, la seguridad de datos se tiene que hacer en Supabase de todos modos. Separar el frontend no te ahorra la seguridad de backend.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <span>Complejidad de Mantenimiento: <strong class="text-rose-400">Alta (Doble repo)</strong></span>
+          <span>Costos de Infraestructura: <strong class="text-amber-400">Mayor (2 proyectos Vercel)</strong></span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- TABLA COMPARATIVA DETALLADA POR CRITERIOS -->
+    <section class="rounded-3xl bg-slate-850/80 border border-slate-700/60 p-6 sm:p-8 space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-2xl font-bold font-outfit text-white">Matriz Comparativa Técnica</h3>
+          <p class="text-slate-400 text-sm">Evaluación técnica frente a Vercel, Supabase y operaciones del día a día</p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-700/80 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-900/60">
+              <th class="py-4 px-4 rounded-l-xl">Criterio</th>
+              <th class="py-4 px-4 text-emerald-400 bg-emerald-950/20">Opción 1: Monolito Único (Recomendada)</th>
+              <th class="py-4 px-4 text-blue-400 rounded-r-xl">Opción 2: Dos Apps Separadas</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 text-sm">
+            <tr>
+              <td class="py-4 px-4 font-semibold text-white flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i>
+                Seguridad de Datos
+              </td>
+              <td class="py-4 px-4 bg-emerald-950/10 text-slate-300">
+                <strong class="text-white">Alta y Robusta.</strong> Se basa en Supabase RLS. Un paciente autenticado solo puede hacer queries a sus propios registros de referidos.
+              </td>
+              <td class="py-4 px-4 text-slate-300">
+                <strong class="text-white">Alta a nivel Frontend</strong>, pero <strong class="text-amber-300">idéntica a nivel Backend</strong> (ambas apps deben tener el mismo RLS para no ser vulnerables).
+              </td>
+            </tr>
+
+            <tr>
+              <td class="py-4 px-4 font-semibold text-white flex items-center gap-2">
+                <i data-lucide="cloud" class="w-4 h-4 text-blue-400"></i>
+                Despliegue en Vercel
+              </td>
+              <td class="py-4 px-4 bg-emerald-950/10 text-slate-300">
+                <strong class="text-emerald-400">1 Solo Proyecto Vercel.</strong> Un solo dominio o subdominio. 1 pipeline de CI/CD, sin costo duplicado de build time.
+              </td>
+              <td class="py-4 px-4 text-slate-300">
+                <strong class="text-rose-400">2 Proyectos Vercel.</strong> Gastas el doble de minutos de build mensual y requieres configurar 2 dominios DNS.
+              </td>
+            </tr>
+
+            <tr>
+              <td class="py-4 px-4 font-semibold text-white flex items-center gap-2">
+                <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i>
+                Gestión de Supabase
+              </td>
+              <td class="py-4 px-4 bg-emerald-950/10 text-slate-300">
+                <strong class="text-emerald-400">1 Solo Cliente Supabase.</strong> Tipos de TypeScript sincronizados en un solo lugar. Manejo de sesiones nativo y fluido.
+              </td>
+              <td class="py-4 px-4 text-slate-300">
+                <strong class="text-amber-300">Configuración compartida:</strong> Necesitas sincronizar tipos en dos repos o crear un paquete npm compartido.
+              </td>
+            </tr>
+
+            <tr>
+              <td class="py-4 px-4 font-semibold text-white flex items-center gap-2">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-purple-400"></i>
+                Tiempo Real (Referidos)
+              </td>
+              <td class="py-4 px-4 bg-emerald-950/10 text-slate-300">
+                <strong class="text-emerald-400">Inmediato.</strong> Recepción marca asistencia en el admin y el paciente ve su meta cumplida en segundos.
+              </td>
+              <td class="py-4 px-4 text-slate-300">
+                Igualmente posible si ambas apps usan Supabase Realtime, pero con mayor dificultad para coordinar estados y cacheo.
+              </td>
+            </tr>
+
+            <tr>
+              <td class="py-4 px-4 font-semibold text-white flex items-center gap-2">
+                <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+                Tiempo de Desarrollo
+              </td>
+              <td class="py-4 px-4 bg-emerald-950/10 text-slate-300">
+                <strong class="text-emerald-400">Muy Rápido (1 a 2 días):</strong> Ya tienes la estructura base creada (Landing e interfaz de referidos). Solo es agregar la ruta del paciente y la verificación de rol.
+              </td>
+              <td class="py-4 px-4 text-slate-300">
+                <strong class="text-rose-400">Lento (1 a 2 semanas):</strong> Hay que crear un proyecto desde cero, volver a configurar Tailwind, fuentes, Supabase y autenticación.
+              </td>
+            </tr>
+
+            <tr>
+              <td class="py-4 px-4 font-semibold text-white flex items-center gap-2">
+                <i data-lucide="smartphone" class="w-4 h-4 text-pink-400"></i>
+                Experiencia de Usuario (UX)
+              </td>
+              <td class="py-4 px-4 bg-emerald-950/10 text-slate-300">
+                <strong class="text-white">Excelente y Profesional:</strong> La pantalla de entrada (Imagen 1) le da a Holística una imagen de corporativo médico serio con un ecosistema unificado.
+              </td>
+              <td class="py-4 px-4 text-slate-300">
+                El usuario final debe recordar dos URLs diferentes o ser redirigido entre dominios distintos.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CÓMO SE IMPLEMENTA LA OPCIÓN RECOMENDADA DE FORMA SEGURA -->
+    <section class="rounded-3xl bg-gradient-to-b from-slate-850 to-slate-900 border border-slate-700/60 p-6 sm:p-8 space-y-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+          <i data-lucide="lock" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-xl sm:text-2xl font-bold font-outfit text-white">¿Cómo se garantiza que un Paciente NUNCA vea datos Admin?</h3>
+          <p class="text-slate-400 text-sm">El "Tridente de Seguridad" estándar de la industria</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+        <!-- Nivel 1 -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+          <div class="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+            <span class="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs">1</span>
+            Middleware de Next.js
+          </div>
+          <h4 class="font-bold text-white text-base">Filtro de Rutas en Servidor</h4>
+          <p class="text-slate-400 text-xs leading-relaxed">
+            Si un paciente intenta teclear directamente en su navegador <code class="text-emerald-300">/admin</code> o <code class="text-emerald-300">/admin/rentabilidad</code>, el archivo <code class="text-white font-mono">middleware.ts</code> intercepta la solicitud antes de renderizar y lo redirige automáticamente a <code class="text-emerald-300">/portal-pacientes</code> o al login.
+          </p>
+        </div>
+
+        <!-- Nivel 2 -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+          <div class="flex items-center gap-2 text-blue-400 text-xs font-bold uppercase tracking-wider">
+            <span class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs">2</span>
+            Supabase RLS (Row Level Security)
+          </div>
+          <h4 class="font-bold text-white text-base">Blindaje en Base de Datos</h4>
+          <p class="text-slate-400 text-xs leading-relaxed">
+            Incluso si un paciente con conocimientos de informática lograra ejecutar una petición fetch a la API de Supabase pidiendo los "ingresos" o los "costos", la base de datos de Supabase evalúa su rol y responde con <strong class="text-rose-400">403 Acceso Denegado</strong>.
+          </p>
+        </div>
+
+        <!-- Nivel 3 -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+          <div class="flex items-center gap-2 text-purple-400 text-xs font-bold uppercase tracking-wider">
+            <span class="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">3</span>
+            Route Groups Aislados
+          </div>
+          <h4 class="font-bold text-white text-base">Code Splitting de Next.js</h4>
+          <p class="text-slate-400 text-xs leading-relaxed">
+            En la carpeta <code class="text-white font-mono">src/app/</code> separamos:
+            <br>📁 <code class="text-purple-300">(admin)/admin/...</code>
+            <br>📁 <code class="text-emerald-300">(paciente)/portal/...</code>
+            <br>El navegador del paciente <strong>jamás descarga el código JavaScript</strong> de los gráficos ni de los reportes del admin.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ESTRUCTURA DE CARPETAS PROPUESTA -->
+    <section class="rounded-3xl bg-slate-850/80 border border-slate-700/60 p-6 sm:p-8 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+          <i data-lucide="folder-tree" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold font-outfit text-white">Estructura Recomendada en tu Proyecto Actual</h3>
+          <p class="text-slate-400 text-sm">Cómo se organiza dentro de la misma aplicación sin revolver nada</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 font-mono text-xs sm:text-sm text-slate-300 leading-relaxed overflow-x-auto">
+<pre class="text-slate-300">
+src/
+├── app/
+│   ├── page.tsx                  <span class="text-emerald-400"># Tu pantalla actual (Imagen 1: Puerta de Entrada Holística)</span>
+│   │
+│   ├── (paciente)/               <span class="text-blue-400"># GRUPO PACIENTES (Público / Autenticación ligera por Cédula)</span>
+│   │   ├── portal/
+│   │   │   ├── page.tsx          <span class="text-slate-400"># Dashboard del Paciente: Mis Referidos, Mis Puntos, Mi Enlace</span>
+│   │   │   └── registrar/page.tsx <span class="text-slate-400"># Formulario rápido para que el paciente invite un amigo</span>
+│   │
+│   ├── (admin)/                  <span class="text-amber-400"># GRUPO ADMINISTRATIVO (Requiere login con rol 'admin')</span>
+│   │   ├── admin/
+│   │   │   ├── page.tsx          <span class="text-slate-400"># Dashboard de métricas generales</span>
+│   │   │   ├── referidos/page.tsx<span class="text-slate-400"># Gestión y aprobación de referidos (Imagen 2)</span>
+│   │   │   ├── ingresos/page.tsx <span class="text-slate-400"># Cuenta de ingresos</span>
+│   │   │   ├── rentabilidad/     <span class="text-slate-400"># Rentabilidad y costos</span>
+│   │   │   └── seguimientos/     <span class="text-slate-400"># Seguimientos clínicos</span>
+│   │
+│   └── middleware.ts             <span class="text-rose-400 font-bold"># Guardián de seguridad: Si no es admin, bloquea /(admin)</span>
+</pre>
+      </div>
+    </section>
+
+    <!-- CONCLUSIÓN & SIGUIENTES PASOS -->
+    <footer class="text-center space-y-4 pt-6 border-t border-slate-800 text-slate-400 text-sm">
+      <p>
+        💡 <strong>Conclusión:</strong> Mantenerlo todo en esta misma aplicación es la opción <strong>más elegante, profesional y eficiente</strong> tanto a nivel técnico como de negocio. No hay necesidad de crear un segundo proyecto.
+      </p>
+      <div class="flex items-center justify-center gap-2 text-xs text-slate-500">
+        <i data-lucide="info" class="w-4 h-4"></i>
+        Documento generado para revisión interna de Holística • Unidad de Medicina Integral
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    // Inicializar iconos de Lucide
+    lucide.createIcons();
+  </script>
+</body>
+</html>
