@@ -1,58 +1,46 @@
-import Link from "next/link";
-import { ArrowRight, User, Settings } from "lucide-react";
+import Navbar from '../components/Navbar';
+import Hero from '../components/Hero';
+import Services from '../components/Services';
+import Highlights from '../components/Highlights';
+import Testimonials from '../components/Testimonials';
+import AppointmentSection from '../components/AppointmentSection';
+import Allies from '../components/Allies';
+import Footer from '../components/Footer';
+import WhatsAppButton from '../components/WhatsAppButton';
 
-export default function LandingPage() {
+export default function Page() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e293b] flex flex-col items-center justify-center p-6 text-white font-sans relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/20 rounded-full blur-[120px]" />
-
-      <div className="relative z-10 max-w-4xl w-full flex flex-col items-center text-center space-y-12">
-        <div className="space-y-6 animate-fade-in-up">
-          <div className="inline-flex items-center justify-center p-4 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl mb-4">
-            <span className="text-4xl">🌿</span>
-          </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-            Holística
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto font-light">
-            Unidad de Medicina Integral
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mt-12 animate-fade-in-up" style={{ animationDelay: "150ms" }}>
-          {/* Card Pacientes */}
-          <Link href="/pacientes" className="group relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
-            <div className="relative h-full flex flex-col items-center justify-center p-8 bg-[#1e293b]/80 backdrop-blur-xl rounded-3xl border border-white/10 hover:border-blue-500/50 transition-all duration-300">
-              <div className="w-16 h-16 mb-6 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform duration-300">
-                <User size={32} />
-              </div>
-              <h3 className="text-2xl font-bold mb-2 text-white">Portal de Pacientes</h3>
-              <p className="text-gray-400 text-sm mb-6">Accede a tus beneficios e invita amigos</p>
-              <div className="flex items-center text-blue-400 font-semibold group-hover:text-blue-300">
-                Ingresar <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </Link>
-
-          {/* Card Admin */}
-          <Link href="/admin" className="group relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
-            <div className="relative h-full flex flex-col items-center justify-center p-8 bg-[#1e293b]/80 backdrop-blur-xl rounded-3xl border border-white/10 hover:border-emerald-500/50 transition-all duration-300">
-              <div className="w-16 h-16 mb-6 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform duration-300">
-                <Settings size={32} />
-              </div>
-              <h3 className="text-2xl font-bold mb-2 text-white">Acceso Administrativo</h3>
-              <p className="text-gray-400 text-sm mb-6">Gestión interna y estadísticas</p>
-              <div className="flex items-center text-emerald-400 font-semibold group-hover:text-emerald-300">
-                Ingresar <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </Link>
-        </div>
-      </div>
-    </div>
+    <main className="min-h-screen bg-slate-50/50">
+      <Navbar />
+      <Hero />
+      <StatsBanner />
+      <Services />
+      <Highlights />
+      <Testimonials />
+      <AppointmentSection />
+      <Allies />
+      <Footer />
+      <WhatsAppButton />
+    </main>
   );
 }
+
+// Banner con estadísticas institucionales de Holística
+const StatsBanner = () => (
+  <div className="bg-white py-5 sm:py-7 border-y border-slate-100/80 relative overflow-hidden">
+    <div className="absolute inset-0 geometric-bg -z-10 opacity-[0.01]" />
+    <div className="max-w-6xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-2 relative z-10 md:divide-x divide-slate-100">
+      {[
+        { label: 'Años de Experiencia', value: '28' },
+        { label: 'Tratamientos Alternativos', value: '14' },
+        { label: 'Entidades Aliadas', value: '11' },
+        { label: 'Pacientes Atendidos', value: '75k+' },
+      ].map((s, i) => (
+        <div key={i} className="text-center px-2 sm:px-4 py-2.5 sm:py-0 bg-slate-50/60 sm:bg-transparent rounded-2xl sm:rounded-none border sm:border-0 border-slate-100/90 flex flex-col justify-center">
+          <p className="text-2xl sm:text-3xl lg:text-4xl font-display font-black text-slate-900 tracking-tight">{s.value}</p>
+          <p className="text-[10px] sm:text-[11px] uppercase font-bold tracking-widest text-[#0891b2] mt-0.5 leading-tight">{s.label}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
