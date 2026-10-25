@@ -7,7 +7,6 @@ import { useReportesStore } from '@/features/data-parser/store/use-reportes-stor
 import { Dashboard } from '@/features/reports/components/Dashboard';
 import { BillingReport } from '@/features/reports/components/BillingReport';
 import { FollowUps } from '@/features/reports/components/FollowUps';
-import { ReferralsAdmin } from '@/features/reports/components/ReferralsAdmin';
 import { ProfitabilityReport } from '@/features/profitability/components/ProfitabilityReport';
 import { EntityValuesModal } from '@/features/reports/components/EntityValuesModal';
 import { DisabledTreatmentsModal } from '@/features/reports/components/DisabledTreatmentsModal';
@@ -27,7 +26,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 
-type Tab = 'dashboard' | 'billing' | 'process' | 'followups' | 'referrals' | 'profitability';
+type Tab = 'dashboard' | 'billing' | 'process' | 'followups' | 'profitability';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -35,7 +34,6 @@ const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'process', label: 'Procesar Datos', icon: Database },
   { id: 'profitability', label: 'Rentabilidad y Costos', icon: TrendingUp },
   { id: 'followups', label: 'Seguimientos', icon: Activity },
-  { id: 'referrals', label: 'Referidos', icon: Users },
 ];
 
 export default function Home() {
@@ -469,7 +467,6 @@ export default function Home() {
               {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
               {activeTab === 'profitability' && 'Análisis de rentabilidad y costos operativos'}
               {activeTab === 'followups' && 'Seguimientos de pacientes y procesos'}
-              {activeTab === 'referrals' && 'Gestión y aprobación del sistema de referidos'}
             </p>
           </div>
           <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
@@ -770,9 +767,6 @@ export default function Home() {
         </div>
         <div className={activeTab === 'followups' ? 'block' : 'hidden'}>
           <FollowUps />
-        </div>
-        <div className={activeTab === 'referrals' ? 'block' : 'hidden'}>
-          <ReferralsAdmin />
         </div>
         <div className={activeTab === 'profitability' ? 'block' : 'hidden'}>
           <ProfitabilityReport refreshTrigger={refreshTrigger} onOpenDisabledModal={() => setIsDisabledTreatmentsModalOpen(true)} />
