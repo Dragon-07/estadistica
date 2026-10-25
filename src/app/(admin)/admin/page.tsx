@@ -8,6 +8,7 @@ import { Dashboard } from '@/features/reports/components/Dashboard';
 import { BillingReport } from '@/features/reports/components/BillingReport';
 import { FollowUps } from '@/features/reports/components/FollowUps';
 import { ProfitabilityReport } from '@/features/profitability/components/ProfitabilityReport';
+import { ReferralsManager } from '@/features/reports/components/ReferralsManager';
 import { EntityValuesModal } from '@/features/reports/components/EntityValuesModal';
 import { DisabledTreatmentsModal } from '@/features/reports/components/DisabledTreatmentsModal';
 import {
@@ -26,7 +27,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 
-type Tab = 'dashboard' | 'billing' | 'process' | 'followups' | 'profitability';
+type Tab = 'dashboard' | 'billing' | 'process' | 'profitability' | 'followups' | 'referrals';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -34,6 +35,7 @@ const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'process', label: 'Procesar Datos', icon: Database },
   { id: 'profitability', label: 'Rentabilidad y Costos', icon: TrendingUp },
   { id: 'followups', label: 'Seguimientos', icon: Activity },
+  { id: 'referrals', label: 'Referidos', icon: Users },
 ];
 
 export default function Home() {
@@ -467,6 +469,7 @@ export default function Home() {
               {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
               {activeTab === 'profitability' && 'Análisis de rentabilidad y costos operativos'}
               {activeTab === 'followups' && 'Seguimientos de pacientes y procesos'}
+              {activeTab === 'referrals' && 'Gestión de campaña, canje de bonos y billetera de embajadores'}
             </p>
           </div>
           <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
@@ -770,6 +773,9 @@ export default function Home() {
         </div>
         <div className={activeTab === 'profitability' ? 'block' : 'hidden'}>
           <ProfitabilityReport refreshTrigger={refreshTrigger} onOpenDisabledModal={() => setIsDisabledTreatmentsModalOpen(true)} />
+        </div>
+        <div className={activeTab === 'referrals' ? 'block' : 'hidden'}>
+          <ReferralsManager />
         </div>
         </div>
       </main>

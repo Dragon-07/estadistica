@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Propuesta Sistema de Referidos Cuantitativo - Holística Medicina Integral</title>
+  
+  <!-- Tailwind CSS 3.4.0 -->
+  <script src="https://cdn.tailwindcss.com/"></script>
+  
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            outfit: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            holistica: {
+              blue: '#0284c7',
+              dark: '#0369a1',
+              cyan: '#06b6d4',
+              teal: '#0d9488',
+              emerald: '#10b981',
+              orange: '#f97316',
+              bg: '#f1f5f9',
+              card: '#ffffff',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f1f5f9;
+      color: #1e293b;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .neu-flat {
+      background: #ffffff;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+      border: 1px solid #e2e8f0;
+    }
+    .neu-panel {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+    .gradient-hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%);
+    }
+    .tab-active {
+      background-color: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 lg:p-8">
+
+  <div class="max-w-6xl mx-auto space-y-8">
+    
+    <!-- HEADER HERO -->
+    <header class="gradient-hero rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
+      <div class="absolute -right-16 -top-16 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -left-16 -bottom-16 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-3">
+            <span>✨ Arquitectura & Estrategia 2.0</span>
+          </div>
+          <h1 class="text-2xl sm:text-4xl font-extrabold font-outfit tracking-tight">
+            Sistema de Referidos Cuantitativo
+          </h1>
+          <p class="text-slate-300 text-sm sm:text-base max-w-2xl mt-2 leading-relaxed">
+            Propuesta de valor dinámico con <strong class="text-white">recompensas fijas configurables</strong> (ej. $15.000 COP) para el paciente embajador y su invitado en primera cita médica.
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center">
+            <span class="text-xs text-slate-300 block">Bono Base Propuesto</span>
+            <span class="text-2xl font-black text-cyan-300 font-outfit">$15.000 COP</span>
+            <span class="text-[10px] text-emerald-300 block">Configurable en Gerencia</span>
+          </div>
+          <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center">
+            <span class="text-xs text-slate-300 block">Esquema</span>
+            <span class="text-2xl font-black text-amber-300 font-outfit">Ganar-Ganar</span>
+            <span class="text-[10px] text-slate-300 block">Bono Doble (Ambos ganan)</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- NAVEGACIÓN POR PESTAÑAS INTERACTIVAS -->
+    <div class="flex flex-wrap gap-2 p-1.5 bg-slate-200/80 rounded-2xl text-xs sm:text-sm font-semibold text-slate-600">
+      <button onclick="setTab('flujo')" id="btn-flujo" class="tab-btn px-4 py-2.5 rounded-xl transition-all tab-active">
+        1. Flujo Paso a Paso
+      </button>
+      <button onclick="setTab('simulador')" id="btn-simulador" class="tab-btn px-4 py-2.5 rounded-xl transition-all hover:text-slate-900">
+        2. Simulador Financiero (ROI)
+      </button>
+      <button onclick="setTab('admin')" id="btn-admin" class="tab-btn px-4 py-2.5 rounded-xl transition-all hover:text-slate-900">
+        3. Panel de Administración
+      </button>
+      <button onclick="setTab('opciones')" id="btn-opciones" class="tab-btn px-4 py-2.5 rounded-xl transition-all hover:text-slate-900">
+        4. Modelos de Entrega del Bono
+      </button>
+      <button onclick="setTab('blindaje')" id="btn-blindaje" class="tab-btn px-4 py-2.5 rounded-xl transition-all hover:text-slate-900">
+        5. Blindaje & Antifraude
+      </button>
+    </div>
+
+    <!-- SECCIÓN 1: FLUJO OPERATIVO PASO A PASO -->
+    <section id="tab-flujo" class="tab-content neu-flat rounded-3xl p-6 sm:p-8 space-y-6">
+      <div class="border-b border-slate-100 pb-4">
+        <h2 class="text-xl font-bold font-outfit text-slate-800 flex items-center gap-2">
+          <span>🔄</span> Flujo Operativo Simple y sin Fricción
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">
+          Diseñado para que ni recepción ni el paciente pierdan tiempo con pasos engorrosos.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Paso 1 -->
+        <div class="bg-blue-50/70 border border-blue-100 rounded-2xl p-5 space-y-3 relative">
+          <span class="w-8 h-8 rounded-xl bg-blue-600 text-white font-black text-sm flex items-center justify-center font-outfit">1</span>
+          <h3 class="font-bold text-slate-800 text-sm">El Paciente Invita</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            El paciente existente (Embajador) comparte su enlace único o código (ej: <code class="font-bold text-blue-700 bg-white px-1.5 py-0.5 rounded">CARLOS123</code>) por WhatsApp con un solo clic.
+          </p>
+          <div class="bg-white p-2.5 rounded-xl border border-blue-200/60 text-[11px] text-slate-500 italic">
+            "¡Te regalo $15.000 para tu primera cita en Holística! Usa mi código..."
+          </div>
+        </div>
+
+        <!-- Paso 2 -->
+        <div class="bg-cyan-50/70 border border-cyan-100 rounded-2xl p-5 space-y-3 relative">
+          <span class="w-8 h-8 rounded-xl bg-cyan-600 text-white font-black text-sm flex items-center justify-center font-outfit">2</span>
+          <h3 class="font-bold text-slate-800 text-sm">El Invitado Agenda</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            El nuevo paciente llega a recepción o agenda cita mencionando el código del amigo que lo invitó.
+          </p>
+          <div class="bg-white p-2.5 rounded-xl border border-cyan-200/60 text-[11px] text-slate-500">
+            ✅ Recepción verifica en 3 segundos que sea <strong>paciente nuevo</strong> (sin citas previas).
+          </div>
+        </div>
+
+        <!-- Paso 3 -->
+        <div class="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-5 space-y-3 relative">
+          <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white font-black text-sm flex items-center justify-center font-outfit">3</span>
+          <h3 class="font-bold text-slate-800 text-sm">Canje en Recepción</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Al pagar su primera consulta o tratamiento, se le aplica el <strong class="text-emerald-700 font-bold">descuento inmediato de $15.000</strong> en su factura.
+          </p>
+          <div class="bg-white p-2.5 rounded-xl border border-emerald-200/60 text-[11px] text-slate-500 font-mono">
+            Valor: $80.000<br>
+            Bono Referido: -$15.000<br>
+            <strong>Total a Pagar: $65.000</strong>
+          </div>
+        </div>
+
+        <!-- Paso 4 -->
+        <div class="bg-amber-50/70 border border-amber-100 rounded-2xl p-5 space-y-3 relative">
+          <span class="w-8 h-8 rounded-xl bg-amber-600 text-white font-black text-sm flex items-center justify-center font-outfit">4</span>
+          <h3 class="font-bold text-slate-800 text-sm">Premio al Embajador</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            En ese instante, el sistema abona <strong class="text-amber-700 font-bold">$15.000</strong> a la "Billetera Holística" del paciente que invitó.
+          </p>
+          <div class="bg-white p-2.5 rounded-xl border border-amber-200/60 text-[11px] text-slate-500">
+            🎉 Se le notifica: <em>"¡Tu amigo Carlos vino a su cita! Tienes $15.000 disponibles para tu próximo tratamiento."</em>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 2: SIMULADOR FINANCIERO Y ROI -->
+    <section id="tab-simulador" class="tab-content neu-flat rounded-3xl p-6 sm:p-8 space-y-6 hidden">
+      <div class="border-b border-slate-100 pb-4">
+        <h2 class="text-xl font-bold font-outfit text-slate-800 flex items-center gap-2">
+          <span>📊</span> Simulador de Impacto Económico & Rentabilidad
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">
+          Ajusta los valores para calcular cuánto dinero real genera la clínica tras descontar las recompensas.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Controles -->
+        <div class="neu-panel rounded-2xl p-5 space-y-5">
+          <div>
+            <label class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+              <span>Bono para el Nuevo Paciente</span>
+              <span id="lbl-bono-invitado" class="text-blue-600 font-extrabold">$15.000 COP</span>
+            </label>
+            <input type="range" id="rng-bono-invitado" min="5000" max="40000" step="5000" value="15000" class="w-full accent-blue-600" oninput="recalcSim()">
+          </div>
+
+          <div>
+            <label class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+              <span>Recompensa al Embajador</span>
+              <span id="lbl-bono-embajador" class="text-amber-600 font-extrabold">$15.000 COP</span>
+            </label>
+            <input type="range" id="rng-bono-embajador" min="5000" max="40000" step="5000" value="15000" class="w-full accent-amber-600" oninput="recalcSim()">
+          </div>
+
+          <div>
+            <label class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+              <span>Ticket Promedio 1ra Cita</span>
+              <span id="lbl-ticket" class="text-emerald-600 font-extrabold">$85.000 COP</span>
+            </label>
+            <input type="range" id="rng-ticket" min="40000" max="250000" step="5000" value="85000" class="w-full accent-emerald-600" oninput="recalcSim()">
+          </div>
+
+          <div>
+            <label class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+              <span>Nuevos Pacientes Referidos / Mes</span>
+              <span id="lbl-pacientes" class="text-slate-800 font-extrabold">20 pacientes</span>
+            </label>
+            <input type="range" id="rng-pacientes" min="5" max="100" step="5" value="20" class="w-full accent-slate-800" oninput="recalcSim()">
+          </div>
+        </div>
+
+        <!-- Resultados Numéricos -->
+        <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-5 flex flex-col justify-between">
+            <span class="text-xs uppercase text-slate-400 font-semibold">Facturación Bruta Generada</span>
+            <span id="res-facturacion" class="text-3xl font-black font-outfit text-white my-2">$1.700.000</span>
+            <span class="text-[11px] text-slate-400">Total pagado por los pacientes nuevos en caja</span>
+          </div>
+
+          <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-5 flex flex-col justify-between">
+            <span class="text-xs uppercase text-emerald-100 font-semibold">Margen Neto para la Clínica</span>
+            <span id="res-neto" class="text-3xl font-black font-outfit text-white my-2">$1.100.000</span>
+            <span class="text-[11px] text-emerald-100">Tras restar los dos bonos promocionales</span>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-2xl p-5">
+            <span class="text-xs text-slate-500 font-medium">Costo Total de Recompensas</span>
+            <span id="res-costo-premios" class="text-2xl font-bold font-outfit text-red-500 block my-1">-$600.000</span>
+            <span class="text-[11px] text-slate-400">Inversión en captación ($30.000 por paciente nuevo)</span>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-2xl p-5">
+            <span class="text-xs text-slate-500 font-medium">Retorno Sobre la Inversión (ROI)</span>
+            <span id="res-roi" class="text-2xl font-bold font-outfit text-blue-600 block my-1">+183%</span>
+            <span class="text-[11px] text-slate-400">Por cada $1.000 invertido en referidos, retornan $2.830</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: CÓMO SE VE EL PANEL DE ADMINISTRACIÓN -->
+    <section id="tab-admin" class="tab-content neu-flat rounded-3xl p-6 sm:p-8 space-y-6 hidden">
+      <div class="border-b border-slate-100 pb-4">
+        <h2 class="text-xl font-bold font-outfit text-slate-800 flex items-center gap-2">
+          <span>⚙️</span> Panel de Configuración Dinámica (Dentro de /admin)
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">
+          Tú tienes el control absoluto: cambias montos, fechas y reglas según la temporada sin tocar código.
+        </p>
+      </div>
+
+      <!-- Mockup de interfaz administrativa -->
+      <div class="bg-slate-100 rounded-2xl p-4 sm:p-6 border border-slate-200 space-y-6">
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-slate-800 text-base">Campaña Activa de Referidos</h3>
+              <p class="text-xs text-slate-400">Configuración vigente para todo el sistema de la clínica</p>
+            </div>
+            <span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> ACTIVA
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <label class="text-[11px] uppercase font-bold text-slate-500 block mb-1">Nombre de la Campaña</label>
+              <input type="text" value="Campaña Estándar 2026" class="w-full bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700" readonly>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <label class="text-[11px] uppercase font-bold text-slate-500 block mb-1">Bono al Nuevo Paciente</label>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-400">$</span>
+                <input type="text" value="15.000" class="w-full bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-blue-600" readonly>
+                <span class="text-[10px] text-slate-400">COP</span>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <label class="text-[11px] uppercase font-bold text-slate-500 block mb-1">Bono al Embajador</label>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-400">$</span>
+                <input type="text" value="15.000" class="w-full bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-amber-600" readonly>
+                <span class="text-[10px] text-slate-400">COP</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100">
+            <div>
+              <label class="text-xs font-semibold text-slate-600 block mb-1">Condición Mínima de Factura</label>
+              <p class="text-[11px] text-slate-400">Aplica solo en tratamientos iguales o superiores a:</p>
+              <input type="text" value="$50.000 COP" class="w-full mt-1 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700" readonly>
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-600 block mb-1">Modo de Temporada Especial</label>
+              <p class="text-[11px] text-slate-400">Activa multiplicadores temporales (ej. Mes de la Mujer, Navidad):</p>
+              <select class="w-full mt-1 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700" disabled>
+                <option>Normal (1x)</option>
+                <option>Doble Bono Embajador (2x en Mayo)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Módulo de Canje Rápido en Caja/Recepción -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+          <h3 class="font-bold text-slate-800 text-base mb-1">Validación Rápida en Caja / Recepción</h3>
+          <p class="text-xs text-slate-400 mb-4">La recepcionista valida y aplica el bono en menos de 10 segundos</p>
+
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="text" placeholder="Cédula del Nuevo Paciente (Ej: 11223344)" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50" readonly>
+            <input type="text" placeholder="Código o Cédula del que invitó (Ej: CARLOS123)" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-slate-50" readonly>
+            <button class="px-6 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-200 hover:bg-blue-700">
+              Validar y Aplicar -$15.000
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: OPCIONES DE ENTREGA DEL BONO -->
+    <section id="tab-opciones" class="tab-content neu-flat rounded-3xl p-6 sm:p-8 space-y-6 hidden">
+      <div class="border-b border-slate-100 pb-4">
+        <h2 class="text-xl font-bold font-outfit text-slate-800 flex items-center gap-2">
+          <span>🎁</span> 3 Alternativas para Entregar la Recompensa al Embajador
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">
+          El nuevo paciente siempre recibe su descuento de $15.000 en caja. Pero para el paciente que invitó, ¿cómo prefieres que reciba sus $15.000?
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Alternativa A: Billetera Digital Interna -->
+        <div class="p-6 rounded-2xl border-2 border-blue-500 bg-blue-50/20 flex flex-col justify-between relative shadow-sm">
+          <span class="absolute -top-3 right-4 bg-blue-600 text-white text-[10px] font-extrabold uppercase px-3 py-0.5 rounded-full">
+            ⭐ Más Recomendada
+          </span>
+          <div class="space-y-3">
+            <h3 class="font-extrabold text-base text-slate-900 font-outfit">Opción A: Billetera Holística (Saldo a Favor)</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Cada referido exitoso le suma <strong>+$15.000 COP</strong> de saldo digital en su ficha de paciente.
+            </p>
+            <ul class="text-xs text-slate-600 space-y-1.5 pt-2">
+              <li class="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                <span>✔</span> <strong>Retiene al paciente:</strong> Está obligado a volver a la clínica para gastar su saldo.
+              </li>
+              <li class="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                <span>✔</span> Es acumulable (2 referidos = $30.000 de saldo).
+              </li>
+              <li class="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                <span>✔</span> Cero salida de efectivo de la cuenta bancaria.
+              </li>
+            </ul>
+          </div>
+          <div class="mt-4 pt-3 border-t border-blue-200 text-xs font-bold text-blue-700">
+            Impacto: Máxima retención y retorno.
+          </div>
+        </div>
+
+        <!-- Alternativa B: Cupones Físicos o Digitales de Próxima Cita -->
+        <div class="p-6 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between shadow-sm">
+          <div class="space-y-3">
+            <h3 class="font-extrabold text-base text-slate-900 font-outfit">Opción B: Cupón Digital / Vale de Descuento</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              El sistema genera un voucher con código único y fecha de vencimiento (ej: 60 días) que le llega por WhatsApp.
+            </p>
+            <ul class="text-xs text-slate-600 space-y-1.5 pt-2">
+              <li class="flex items-center gap-1.5 text-slate-700">
+                <span>✔</span> Crea sentido de urgencia por la fecha de vencimiento.
+              </li>
+              <li class="flex items-center gap-1.5 text-slate-700">
+                <span>✔</span> No requiere llevar una cuenta corriente de billetera.
+              </li>
+              <li class="flex items-center gap-1.5 text-amber-700">
+                <span>⚠️</span> No es acumulable: 1 cupón por factura.
+              </li>
+            </ul>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 text-xs font-bold text-slate-700">
+            Impacto: Fomenta visitas rápidas en 30-60 días.
+          </div>
+        </div>
+
+        <!-- Alternativa C: Pago Real en Dinero (Nequi / Daviplata) -->
+        <div class="p-6 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between shadow-sm">
+          <div class="space-y-3">
+            <h3 class="font-extrabold text-base text-slate-900 font-outfit">Opción C: Pago en Efectivo / Nequi</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Se le transfieren los $15.000 en dinero real a su cuenta cuando su amigo paga la cita.
+            </p>
+            <ul class="text-xs text-slate-600 space-y-1.5 pt-2">
+              <li class="flex items-center gap-1.5 text-slate-700">
+                <span>✔</span> Es el mayor incentivo para recomendar masivamente.
+              </li>
+              <li class="flex items-center gap-1.5 text-red-600">
+                <span>❌</span> Hay salida real de caja/dinero.
+              </li>
+              <li class="flex items-center gap-1.5 text-red-600">
+                <span>❌</span> Carga operativa administrativa de transferir dinero.
+              </li>
+            </ul>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 text-xs font-bold text-slate-700">
+            Impacto: Ideal solo para "Aliados Clave" o terapeutas.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 5: BLINDAJE Y ANTIFRAUDE -->
+    <section id="tab-blindaje" class="tab-content neu-flat rounded-3xl p-6 sm:p-8 space-y-6 hidden">
+      <div class="border-b border-slate-100 pb-4">
+        <h2 class="text-xl font-bold font-outfit text-slate-800 flex items-center gap-2">
+          <span>🛡️</span> Reglas de Seguridad y Protección de Margen
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">
+          Blindajes automáticos para evitar trampas o pérdidas de dinero en tratamientos de bajo costo.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-start gap-3">
+          <div class="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold shrink-0">1</div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-800">Validación de Paciente 100% Nuevo</h4>
+            <p class="text-xs text-slate-500 mt-0.5">
+              El sistema cruza la cédula del invitado contra toda la base histórica de facturas. Si ya ha sido atendido en el pasado, el sistema rechaza el código amablemente.
+            </p>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-start gap-3">
+          <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold shrink-0">2</div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-800">Regla de Ticket Mínimo</h4>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Para aplicar el bono de $15.000, el tratamiento debe costar al menos $50.000. Así se evita regalar un procedimiento de $20.000 o perder el costo de insumos.
+            </p>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-start gap-3">
+          <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0">3</div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-800">Anti Auto-Referidos</h4>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Bloqueo automático si el paciente intenta usar su propia cédula o si ambos registros comparten el mismo teléfono celular.
+            </p>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-start gap-3">
+          <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold shrink-0">4</div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-800">Cruce Automático con el Excel</h4>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Al cargar el reporte diario de facturación en "Procesar Datos", el sistema valida que la factura del invitado exista formalmente antes de liberar el saldo definitivo al embajador.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESUMEN DE DECISIÓN -->
+    <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="space-y-2 text-center md:text-left">
+        <h3 class="text-xl sm:text-2xl font-black font-outfit">¿Con qué opciones arrancamos?</h3>
+        <p class="text-slate-300 text-xs sm:text-sm max-w-xl">
+          Podemos empezar con el <strong>Bono Base de $15.000 COP</strong> y la <strong>Billetera Holística (Saldo a favor para tratamientos)</strong>, junto con el panel administrativo para que tú mismo ajustes el valor cuando quieras.
+        </p>
+      </div>
+      <div class="shrink-0 flex flex-col sm:flex-row gap-3">
+        <a href="#tab-flujo" onclick="setTab('flujo')" class="px-6 py-3 rounded-xl bg-white text-blue-900 font-extrabold text-xs shadow-lg hover:bg-slate-100 transition-all text-center">
+          Ver Flujo Recomendado
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function setTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('hover:text-slate-900');
+      });
+
+      const selectedContent = document.getElementById(`tab-${tabId}`);
+      const selectedBtn = document.getElementById(`btn-${tabId}`);
+      if (selectedContent) selectedContent.classList.remove('hidden');
+      if (selectedBtn) {
+        selectedBtn.classList.add('tab-active');
+        selectedBtn.classList.remove('hover:text-slate-900');
+      }
+    }
+
+    function recalcSim() {
+      const bonoInv = parseInt(document.getElementById('rng-bono-invitado').value);
+      const bonoEmb = parseInt(document.getElementById('rng-bono-embajador').value);
+      const ticket = parseInt(document.getElementById('rng-ticket').value);
+      const pacientes = parseInt(document.getElementById('rng-pacientes').value);
+
+      document.getElementById('lbl-bono-invitado').innerText = '$' + bonoInv.toLocaleString('es-CO') + ' COP';
+      document.getElementById('lbl-bono-embajador').innerText = '$' + bonoEmb.toLocaleString('es-CO') + ' COP';
+      document.getElementById('lbl-ticket').innerText = '$' + ticket.toLocaleString('es-CO') + ' COP';
+      document.getElementById('lbl-pacientes').innerText = pacientes + ' pacientes';
+
+      const factBruta = ticket * pacientes;
+      const costoTotalPremios = (bonoInv + bonoEmb) * pacientes;
+      const netoClinica = factBruta - costoTotalPremios;
+      const roi = Math.round((netoClinica / costoTotalPremios) * 100);
+
+      document.getElementById('res-facturacion').innerText = '$' + factBruta.toLocaleString('es-CO');
+      document.getElementById('res-costo-premios').innerText = '-$' + costoTotalPremios.toLocaleString('es-CO');
+      document.getElementById('res-neto').innerText = '$' + netoClinica.toLocaleString('es-CO');
+      document.getElementById('res-roi').innerText = (roi >= 0 ? '+' : '') + roi + '%';
+    }
+
+    // Inicializar
+    window.onload = recalcSim;
+  </script>
+</body>
+</html>
