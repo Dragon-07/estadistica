@@ -760,3 +760,425 @@ export async function deleteRecordsByDateRange(startDate: string, endDate: strin
     throw new Error('No se pudo borrar los registros: ' + error.message);
   }
 }
+
+export interface ProcessPacientesResult {
+  totalProcessed: number;
+  newPatientsCount: number;
+  existingUpdatedCount: number;
+  newPatients: Array<{
+    doc_id: string;
+    full_name: string;
+    phone: string;
+    referral_code: string | null;
+    referred_by_code?: string;
+  }>;
+  referralsDetected: Array<{
+    patient_doc: string;
+    patient_name: string;
+    referrer_code?: string;
+    referrer_doc: string;
+    referrer_name?: string;
+    reward_amount?: number;
+  }>;
+}
+
+/**
+ * Obtiene todos los registros de patients_directory paginando de 1000 en 1000
+ * para superar el límite por defecto de PostgREST.
+ */
+export async function fetchAllPatientsDirectory() {
+  const supabase = createClient();
+  const allRows: Array<any> = [];
+  const pageSize = 1000;
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('patients_directory')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      console.error('Error cargando patients_directory:', error);
+      break;
+    }
+
+    if (!data || data.length === 0) break;
+    allRows.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return allRows;
+}
+
+/**
+ * Genera un código de referido único basado en el primer nombre y los últimos dígitos de la cédula.
+ */
+export function buildUniqueReferralCode(
+  fullNameOrFirstName: string,
+  docId: string,
+  existingCodesSet: Set<string>
+): string {
+  const rawFirst = (fullNameOrFirstName || '').trim().split(/\s+/)[0] || 'PACIENTE';
+  const cleanFirst =
+    rawFirst
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '') || 'PACIENTE';
+
+  const cleanDoc = docId.replace(/\D/g, '') || docId;
+  let baseCode = cleanFirst + cleanDoc.slice(-4);
+  let suffixLength = 4;
+
+  while (existingCodesSet.has(baseCode) && suffixLength < cleanDoc.length) {
+    suffixLength++;
+    baseCode = cleanFirst + cleanDoc.slice(-suffixLength);
+  }
+
+  if (existingCodesSet.has(baseCode)) {
+    let counter = 1;
+    while (existingCodesSet.has(`${baseCode}${counter}`)) {
+      counter++;
+    }
+    baseCode = `${baseCode}${counter}`;
+  }
+
+  existingCodesSet.add(baseCode);
+  return baseCode;
+}
+
+/**
+ * Verifica qué pacientes referidos en estado 'pending' ya se encuentran en la Base de Datos
+ * de Pacientes (patients_directory). Cuando un paciente referido ya aparece en la base de datos:
+ * 1. Pasa su estado a 'completed' (Asistió).
+ * 2. Vincula referred_by_doc y referred_by_code en patients_directory.
+ * 3. Asigna automáticamente la bonificación correspondiente a la billetera de quien lo refirió.
+ */
+export async function syncPendingReferralsWithDatabase(): Promise<ProcessPacientesResult['referralsDetected']> {
+  const supabase = createClient();
+  const confirmedList: ProcessPacientesResult['referralsDetected'] = [];
+
+  // 1. Obtener todos los referidos pendientes
+  const { data: pendingRefs, error: refErr } = await supabase
+    .from('referrals')
+    .select('*')
+    .eq('status', 'pending');
+
+  if (refErr || !pendingRefs || pendingRefs.length === 0) {
+    return confirmedList;
+  }
+
+  // 2. Obtener configuración de campaña por si algún registro no tenía monto
+  const { data: campaignCfg } = await supabase
+    .from('referral_settings')
+    .select('referrer_reward, referred_discount')
+    .eq('id', 1)
+    .maybeSingle();
+
+  const defaultReward = Number(campaignCfg?.referrer_reward) || 15000;
+  const defaultDiscount = Number(campaignCfg?.referred_discount) || 15000;
+
+  // 3. Consultar si los documentos de los referidos pendientes ya existen en patients_directory
+  const referredDocs = Array.from(new Set(pendingRefs.map((r) => String(r.referred_doc).trim())));
+  const referrerDocs = Array.from(new Set(pendingRefs.map((r) => String(r.referrer_doc).trim())));
+
+  const { data: matchedPatients } = await supabase
+    .from('patients_directory')
+    .select('doc_id, full_name, referral_code')
+    .in('doc_id', [...referredDocs, ...referrerDocs]);
+
+  const patientMap = new Map<string, { full_name: string; referral_code: string | null }>();
+  (matchedPatients || []).forEach((p) => {
+    patientMap.set(String(p.doc_id).trim(), {
+      full_name: p.full_name,
+      referral_code: p.referral_code,
+    });
+  });
+
+  // 4. Procesar cada referido pendiente que YA aparece en la base de datos de pacientes
+  for (const ref of pendingRefs) {
+    const cleanReferredDoc = String(ref.referred_doc).trim();
+    const cleanReferrerDoc = String(ref.referrer_doc).trim();
+
+    if (!patientMap.has(cleanReferredDoc)) {
+      continue; // Todavía no figura en la base de datos de pacientes de la clínica
+    }
+
+    const referredPatient = patientMap.get(cleanReferredDoc)!;
+    const referrerPatient = patientMap.get(cleanReferrerDoc);
+    const rewardVal = Number(ref.reward_amount) || defaultReward;
+    const discountVal = Number(ref.discount_amount) || defaultDiscount;
+    const referrerName = ref.referrer_name || referrerPatient?.full_name || `Paciente ${cleanReferrerDoc}`;
+    const referredName = ref.referred_name || referredPatient.full_name || `Paciente ${cleanReferredDoc}`;
+    const referrerCode = referrerPatient?.referral_code || undefined;
+
+    // A) Actualizar estado del referido a 'completed'
+    const { error: updRefErr } = await supabase
+      .from('referrals')
+      .update({
+        status: 'completed',
+        referrer_name: referrerName,
+        referred_name: referredName,
+        reward_amount: rewardVal,
+        discount_amount: discountVal,
+        treatment_name: ref.treatment_name || 'Confirmado en Base de Datos de Pacientes (1ra Atención)',
+        notes: ref.notes
+          ? `${ref.notes} | Confirmado en BD de pacientes`
+          : 'Asistencia verificada en Base de Datos de Pacientes',
+      })
+      .eq('id', ref.id);
+
+    if (updRefErr) {
+      console.error('Error actualizando referido pendiente:', updRefErr);
+      continue;
+    }
+
+    // B) Marcar en patients_directory quién lo refirió
+    await supabase
+      .from('patients_directory')
+      .update({
+        referred_by_doc: cleanReferrerDoc,
+        referred_by_code: referrerCode || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('doc_id', cleanReferredDoc);
+
+    // C) Acreditar la bonificación a la billetera del embajador que lo refirió
+    const { data: walletData } = await supabase
+      .from('ambassador_wallets')
+      .select('*')
+      .eq('doc_id', cleanReferrerDoc)
+      .maybeSingle();
+
+    const currentEarned = Number(walletData?.total_earned) || 0;
+    const currentRedeemed = Number(walletData?.total_redeemed) || 0;
+    const currentBalance = Number(walletData?.balance) || 0;
+
+    await supabase.from('ambassador_wallets').upsert(
+      [
+        {
+          doc_id: cleanReferrerDoc,
+          full_name: referrerName,
+          total_earned: currentEarned + rewardVal,
+          total_redeemed: currentRedeemed,
+          balance: currentBalance + rewardVal,
+          updated_at: new Date().toISOString(),
+        },
+      ],
+      { onConflict: 'doc_id' }
+    );
+
+    confirmedList.push({
+      patient_doc: cleanReferredDoc,
+      patient_name: referredName,
+      referrer_code: referrerCode,
+      referrer_doc: cleanReferrerDoc,
+      referrer_name: referrerName,
+      reward_amount: rewardVal,
+    });
+  }
+
+  return confirmedList;
+}
+
+/**
+ * Procesa el archivo Excel 'reporte_datos_pacientes' para actualizar la base de datos maestra de pacientes.
+ * - Conserva los códigos de referido de los pacientes que ya los hayan creado en el Portal de Pacientes.
+ * - Para los pacientes nuevos de la base de datos, los registra con referral_code = null hasta que ellos mismos
+ *   ingresen al Portal de Pacientes y creen su código.
+ * - Si un paciente que estaba inscrito con código de referido ('pending') ya aparece en este archivo Excel,
+ *   automáticamente confirma su asistencia y le acredita la bonificación a la persona que lo refirió.
+ */
+export async function processReportePacientes(file: File): Promise<ProcessPacientesResult> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+
+        const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
+          raw: false,
+          defval: '',
+        });
+
+        if (rawRows.length === 0) {
+          throw new Error('El archivo de pacientes está vacío.');
+        }
+
+        const normalizeStr = (s: string) =>
+          s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+        const cleanDoc = (val: unknown): string => {
+          if (val === null || val === undefined) return '';
+          let str = String(val).trim().replace(/\s+/g, '');
+          if (str.endsWith('.0')) str = str.slice(0, -2);
+          return str.replace(/[.,\-]/g, '').toUpperCase();
+        };
+
+        const supabase = createClient();
+
+        // 1. Obtener todos los pacientes existentes en la base de datos (sin truncar en 1000)
+        const existingPatients = await fetchAllPatientsDirectory();
+
+        const existingDocMap = new Map<
+          string,
+          {
+            full_name: string;
+            referral_code: string | null;
+            referred_by_code: string | null;
+            referred_by_doc: string | null;
+          }
+        >();
+
+        (existingPatients || []).forEach((p) => {
+          existingDocMap.set(String(p.doc_id).trim(), {
+            full_name: p.full_name,
+            referral_code: p.referral_code || null,
+            referred_by_code: p.referred_by_code || null,
+            referred_by_doc: p.referred_by_doc || null,
+          });
+        });
+
+        // 2. Extraer y limpiar registros del archivo Excel
+        const parsedRows: Array<{
+          doc_id: string;
+          first_name: string;
+          last_name: string;
+          full_name: string;
+          phone: string;
+          email: string;
+          how_found: string;
+        }> = [];
+
+        const seenInFile = new Set<string>();
+
+        for (const row of rawRows) {
+          const keys = Object.keys(row);
+
+          const docKey = keys.find((k) => {
+            const n = normalizeStr(k);
+            return n === 'documento' || n === 'numero documento' || n === 'cedula' || n === 'doc';
+          });
+          const nameKey = keys.find((k) => {
+            const n = normalizeStr(k);
+            return n === 'nombres' || n === 'nombre' || n === 'paciente' || n === 'cliente';
+          });
+          const lastNameKey = keys.find((k) => {
+            const n = normalizeStr(k);
+            return n === 'apellidos' || n === 'apellido';
+          });
+          const phoneKey = keys.find((k) => {
+            const n = normalizeStr(k);
+            return n === 'celular' || n === 'telefono' || n === 'tel';
+          });
+          const emailKey = keys.find((k) => {
+            const n = normalizeStr(k);
+            return n === 'correo' || n === 'email' || n === 'correo electronico';
+          });
+          const howFoundKey = keys.find((k) => {
+            const n = normalizeStr(k);
+            return n.includes('como se enter') || n.includes('entero') || n.includes('medio');
+          });
+
+          if (!docKey) continue;
+          const doc = cleanDoc(row[docKey]);
+          if (!doc || doc.length < 4 || seenInFile.has(doc)) continue;
+          seenInFile.add(doc);
+
+          const firstName = nameKey ? String(row[nameKey]).trim() : '';
+          const lastName = lastNameKey ? String(row[lastNameKey]).trim() : '';
+          const fullName = `${firstName} ${lastName}`.trim() || `Paciente ${doc.slice(-4)}`;
+          const phone = phoneKey && row[phoneKey] ? String(row[phoneKey]).trim() : '';
+          const email = emailKey && row[emailKey] ? String(row[emailKey]).trim() : '';
+          const howFound = howFoundKey && row[howFoundKey] ? String(row[howFoundKey]).trim() : '';
+
+          parsedRows.push({
+            doc_id: doc,
+            first_name: firstName,
+            last_name: lastName,
+            full_name: fullName,
+            phone,
+            email,
+            how_found: howFound,
+          });
+        }
+
+        // 3. Preparar registros para patients_directory (conservando códigos existentes sin autogenerar a los nuevos)
+        const newPatientsList: ProcessPacientesResult['newPatients'] = [];
+        const rowsToUpsert: Array<any> = [];
+        let newCount = 0;
+        let existingCount = 0;
+
+        for (const p of parsedRows) {
+          const existing = existingDocMap.get(p.doc_id);
+
+          if (existing) {
+            existingCount++;
+          } else {
+            newCount++;
+            newPatientsList.push({
+              doc_id: p.doc_id,
+              full_name: p.full_name,
+              phone: p.phone,
+              referral_code: null,
+            });
+          }
+
+          rowsToUpsert.push({
+            doc_id: p.doc_id,
+            first_name: p.first_name,
+            last_name: p.last_name,
+            full_name: p.full_name,
+            phone: p.phone || null,
+            email: p.email || null,
+            referral_code: existing?.referral_code || null,
+            referred_by_code: existing?.referred_by_code || null,
+            referred_by_doc: existing?.referred_by_doc || null,
+            how_found: p.how_found || null,
+            updated_at: new Date().toISOString(),
+          });
+        }
+
+        // 4. Guardar en lotes de 500 en Supabase
+        const batchSize = 500;
+        for (let i = 0; i < rowsToUpsert.length; i += batchSize) {
+          const batch = rowsToUpsert.slice(i, i + batchSize);
+          const { error: upsertErr } = await supabase
+            .from('patients_directory')
+            .upsert(batch, { onConflict: 'doc_id' });
+
+          if (upsertErr) {
+            console.error('Error guardando lote de pacientes:', upsertErr);
+            throw new Error(`Error al guardar en Supabase: ${upsertErr.message}`);
+          }
+        }
+
+        // 5. Cruzar con los referidos pendientes: si un paciente referido ya aparece en la BD subida,
+        // se aprueba su asistencia y se le asigna la bonificación a quien lo refirió.
+        const referralsDetected = await syncPendingReferralsWithDatabase();
+
+        resolve({
+          totalProcessed: parsedRows.length,
+          newPatientsCount: newCount,
+          existingUpdatedCount: existingCount,
+          newPatients: newPatientsList,
+          referralsDetected,
+        });
+      } catch (err: any) {
+        console.error('Error procesando archivo de pacientes:', err);
+        reject(new Error(err.message || 'Error al procesar el archivo Excel de pacientes'));
+      }
+    };
+
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo Excel.'));
+    reader.readAsBinaryString(file);
+  });
+}
+

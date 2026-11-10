@@ -60,7 +60,17 @@ const Navbar = () => {
 
           {/* BOTONES DE LOGUEO / ACCESO A LA DERECHA (DESKTOP) */}
           <div className="hidden sm:flex items-center gap-2.5 flex-shrink-0">
-
+            {/* Opción 1: Portal de Pacientes */}
+            <Link
+              href="/pacientes"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-[#0891b2] bg-cyan-50/80 hover:bg-cyan-100/90 border border-cyan-200/80 shadow-xs hover:shadow-md hover:shadow-cyan-500/10 active:scale-95 transition-all"
+              title="Portal de Pacientes: Crea tu código de referido y consulta tu saldo a favor"
+            >
+              <span className="w-6 h-6 rounded-lg bg-cyan-500/15 flex items-center justify-center text-[#0891b2]">
+                <User className="w-3.5 h-3.5" />
+              </span>
+              <span>Portal Pacientes</span>
+            </Link>
 
             {/* Opción 2: Acceso Administrativo */}
             <Link
@@ -105,7 +115,22 @@ const Navbar = () => {
                 Accesos a la Plataforma
               </p>
               
-
+              <Link 
+                href="/pacientes"
+                onClick={() => setIsOpen(false)}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-cyan-200/80 shadow-xs active:scale-98 transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-cyan-50 flex items-center justify-center text-[#0891b2]">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-slate-900 leading-tight">Portal Pacientes</p>
+                    <p className="text-[11px] text-slate-500">Crea tu código de referido y consulta tu saldo</p>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-[#0891b2]" />
+              </Link>
 
               <Link 
                 href="/admin"
