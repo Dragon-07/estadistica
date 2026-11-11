@@ -581,7 +581,13 @@ export default function Home() {
       )}
 
       {/* Contenido principal */}
-      <main className="flex-1 p-4 sm:p-6 md:p-8 w-full max-w-full overflow-x-hidden">
+      <main
+        className={`flex-1 w-full overflow-x-hidden ${
+          userRole === 'cashier'
+            ? 'max-w-[1320px] mx-auto px-4 sm:px-6 md:px-10 py-6 md:py-8'
+            : 'p-4 sm:p-6 md:p-8 max-w-full'
+        }`}
+      >
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
           <div className="flex items-center gap-3.5">

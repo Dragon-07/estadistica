@@ -1275,26 +1275,26 @@ export function ReferralsManager({
 
             {/* RESULTADO DE LA BÚSQUEDA POR CÉDULA */}
             {normalizedCajaDoc && (
-              <div className="space-y-6 pt-2 animate-fade-in">
+              <div className="w-full space-y-4 pt-1 animate-fade-in">
                 {/* ENCABEZADO DE FICHA DEL PACIENTE */}
-                <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-black text-xl shadow">
+                <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-black text-base shadow shrink-0">
                       {(cajaPatientDisplayName || 'P')[0]}
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-lg font-black text-gray-900">
+                        <h4 className="text-base font-black text-gray-900">
                           {cajaPatientDisplayName}
                         </h4>
-                        <span className="px-3 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono text-xs font-extrabold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono text-xs font-extrabold">
                           CC: {normalizedCajaDoc}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-gray-500">
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-gray-500">
                         {cajaPatientDir?.referral_code ? (
-                          <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">
-                            <Lock className="w-3 h-3" /> Código propio asignado en web:{' '}
+                          <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                            <Lock className="w-3 h-3" /> Código web:{' '}
                             <strong className="font-mono">
                               {cajaPatientDir.referral_code}
                             </strong>
@@ -1303,8 +1303,8 @@ export function ReferralsManager({
                           <span>Sin código propio creado</span>
                         )}
                         {cajaFirstVisitReferral && (
-                          <span className="inline-flex items-center gap-1 font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-lg border border-purple-200">
-                            <Lock className="w-3 h-3" /> Referido en web por:{' '}
+                          <span className="inline-flex items-center gap-1 font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                            <Lock className="w-3 h-3" /> Referido por:{' '}
                             <strong>
                               {cajaFirstVisitReferral.referrer_name ||
                                 `CC ${cajaFirstVisitReferral.referrer_doc}`}
@@ -1315,364 +1315,311 @@ export function ReferralsManager({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-center">
-                      <span className="text-[10px] font-bold uppercase text-amber-700 block">
-                        Bonos Disponibles Hoy
-                      </span>
-                      <span className="text-xl font-black text-amber-600">
-                        {(cajaFirstVisitReferral?.status === 'pending' ? 1 : 0) +
-                          cajaAvailableRewardRefs.length}{' '}
-                        bono(s)
-                      </span>
-                    </div>
+                  <div className="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-center shrink-0 self-start sm:self-auto">
+                    <span className="text-[10px] font-bold uppercase text-amber-700 block leading-tight">
+                      Bonos Disponibles Hoy
+                    </span>
+                    <span className="text-lg font-black text-amber-600">
+                      {(cajaFirstVisitReferral?.status === 'pending' ? 1 : 0) +
+                        cajaAvailableRewardRefs.length}{' '}
+                      bono(s)
+                    </span>
                   </div>
                 </div>
 
                 {/* ==============================================================
-                    SECCIÓN A: BONO DE 1RA ASISTENCIA (SI SE INSCRIBIÓ CON CÓDIGO DE REFERIDO EN LA WEB)
+                    SECCIÓN A Y B COMPACTAS (ALINEADAS ARRIBA SIN ESPACIO VACÍO)
                     ============================================================== */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-3xl p-6 border-2 border-indigo-100 shadow-sm flex flex-col justify-between space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-extrabold uppercase">
-                          <Gift className="w-3.5 h-3.5" /> 1. Bono por Primera Asistencia (Paciente Referido)
-                        </span>
-                      </div>
-
-                      {!cajaFirstVisitReferral ? (
-                        <div className="p-6 rounded-2xl bg-gray-50 border border-dashed border-gray-200 text-center space-y-1 my-4">
-                          <p className="text-sm font-bold text-gray-600">
-                            Este paciente no tiene bono de primera asistencia como referido
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            No registra inscripción previa con código de invitación en el Portal Pacientes de la página web.
-                          </p>
-                        </div>
-                      ) : cajaFirstVisitReferral.status === 'pending' ? (
-                        <div className="space-y-4 pt-2">
-                          <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white flex items-center justify-between">
-                            <div>
-                              <span className="text-[11px] uppercase font-bold text-indigo-100 block">
-                                Bono de Bienvenida Disponible (1 Bono)
-                              </span>
-                              <span className="text-2xl sm:text-3xl font-black">
-                                $
-                                {cajaFirstVisitReferral.discount_amount.toLocaleString(
-                                  'es-CO'
-                                )}{' '}
-                                COP
-                              </span>
-                              <span className="text-xs text-indigo-100 block mt-0.5">
-                                Inscrito con el código de:{' '}
-                                <strong>
-                                  {cajaFirstVisitReferral.referrer_name ||
-                                    `CC ${cajaFirstVisitReferral.referrer_doc}`}
-                                </strong>
-                              </span>
-                            </div>
-                            <div className="bg-white/20 px-3 py-1.5 rounded-xl text-xs font-extrabold">
-                              Listo para Canjear
-                            </div>
-                          </div>
-
-                          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-                            <strong>Importante:</strong> Al canjear este bono de primera asistencia en Caja, se aplicará el descuento de{' '}
-                            <strong>
-                              $
-                              {cajaFirstVisitReferral.discount_amount.toLocaleString(
-                                'es-CO'
-                              )}{' '}
-                              COP
-                            </strong>{' '}
-                            al paciente y en este mismo instante se asignará automáticamente el bono de recompensa (
-                            <strong>
-                              +$
-                              {cajaFirstVisitReferral.reward_amount.toLocaleString(
-                                'es-CO'
-                              )}{' '}
-                              COP
-                            </strong>
-                            ) a{' '}
-                            <strong>
-                              {cajaFirstVisitReferral.referrer_name}
-                            </strong>
-                            .
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                              Tratamiento Realizado / Observación de Caja (Opcional)
-                            </label>
-                            <input
-                              type="text"
-                              value={firstVisitNote}
-                              onChange={(e) => setFirstVisitNote(e.target.value)}
-                              placeholder="Ej. Sueroterapia / Consulta 1ra vez - Factura #104"
-                              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-800 focus:bg-white focus:border-indigo-500 outline-none"
-                            />
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleRedeemFirstVisitBonus(cajaFirstVisitReferral)
-                            }
-                            disabled={isRedeemingFirstVisit}
-                            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 text-white font-extrabold text-sm shadow-lg cursor-pointer transition-all disabled:opacity-50"
-                          >
-                            {isRedeemingFirstVisit
-                              ? 'Procesando Canje en Caja...'
-                              : `Canjear Bono 1ra Asistencia ($${cajaFirstVisitReferral.discount_amount.toLocaleString('es-CO')}) y Acreditar al Referente`}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2 mt-2">
-                          <div className="flex items-center justify-between">
-                            <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-800">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Bono de 1ra Asistencia Ya Fue Redimido
-                            </span>
-                            <span className="font-black text-emerald-700 text-base">
-                              $
-                              {cajaFirstVisitReferral.discount_amount.toLocaleString(
-                                'es-CO'
-                              )}{' '}
-                              COP
-                            </span>
-                          </div>
-                          <p className="text-xs text-emerald-700">
-                            Referido por:{' '}
-                            <strong>{cajaFirstVisitReferral.referrer_name}</strong> (CC{' '}
-                            {cajaFirstVisitReferral.referrer_doc})
-                          </p>
-                          <p className="text-[11px] text-emerald-600">
-                            Redimido el:{' '}
-                            {cajaFirstVisitReferral.redeemed_at
-                              ? new Date(
-                                  cajaFirstVisitReferral.redeemed_at
-                                ).toLocaleString('es-CO')
-                              : new Date(
-                                  cajaFirstVisitReferral.created_at
-                                ).toLocaleDateString('es-CO')}{' '}
-                            {cajaFirstVisitReferral.redeemed_by &&
-                              `por ${cajaFirstVisitReferral.redeemed_by}`}
-                          </p>
-                        </div>
-                      )}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                  {/* SECCIÓN A: 1. BONO POR PRIMERA ASISTENCIA */}
+                  <div
+                    className={`bg-white rounded-2xl p-4 border-2 border-indigo-100 shadow-xs space-y-3 ${
+                      !cajaFirstVisitReferral && cajaAvailableRewardRefs.length > 0
+                        ? 'lg:col-span-5'
+                        : 'lg:col-span-6'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-extrabold uppercase">
+                        <Gift className="w-3.5 h-3.5" /> 1. Bono 1ra Asistencia (Referido)
+                      </span>
                     </div>
+
+                    {!cajaFirstVisitReferral ? (
+                      <div className="p-3.5 rounded-xl bg-gray-50 border border-dashed border-gray-200 text-center space-y-0.5">
+                        <p className="text-xs font-bold text-gray-600">
+                          Sin bono de primera asistencia como referido
+                        </p>
+                        <p className="text-[11px] text-gray-400">
+                          No registra código de invitación en la web.
+                        </p>
+                      </div>
+                    ) : cajaFirstVisitReferral.status === 'pending' ? (
+                      <div className="space-y-2.5">
+                        <div className="p-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white flex items-center justify-between gap-2">
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-indigo-100 block">
+                              Bono Bienvenida Disponible (1 Bono)
+                            </span>
+                            <span className="text-2xl font-black">
+                              ${cajaFirstVisitReferral.discount_amount.toLocaleString('es-CO')} COP
+                            </span>
+                            <span className="text-[11px] text-indigo-100 block">
+                              Referido por:{' '}
+                              <strong>
+                                {cajaFirstVisitReferral.referrer_name ||
+                                  `CC ${cajaFirstVisitReferral.referrer_doc}`}
+                              </strong>
+                            </span>
+                          </div>
+                          <div className="bg-white/20 px-2.5 py-1 rounded-lg text-[11px] font-extrabold shrink-0">
+                            Disponible
+                          </div>
+                        </div>
+
+                        <p className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-snug">
+                          Al canjear en Caja, se aplica el descuento de{' '}
+                          <strong>
+                            ${cajaFirstVisitReferral.discount_amount.toLocaleString('es-CO')}
+                          </strong>{' '}
+                          y se asigna el bono de{' '}
+                          <strong>
+                            +${cajaFirstVisitReferral.reward_amount.toLocaleString('es-CO')}
+                          </strong>{' '}
+                          a <strong>{cajaFirstVisitReferral.referrer_name}</strong>.
+                        </p>
+
+                        <input
+                          type="text"
+                          value={firstVisitNote}
+                          onChange={(e) => setFirstVisitNote(e.target.value)}
+                          placeholder="Tratamiento / Nota de Caja (Opcional)..."
+                          className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-800 focus:bg-white focus:border-indigo-500 outline-none"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleRedeemFirstVisitBonus(cajaFirstVisitReferral)
+                          }
+                          disabled={isRedeemingFirstVisit}
+                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 text-white font-extrabold text-xs shadow cursor-pointer transition-all disabled:opacity-50"
+                        >
+                          {isRedeemingFirstVisit
+                            ? 'Procesando Canje...'
+                            : `Canjear Bono 1ra Asistencia ($${cajaFirstVisitReferral.discount_amount.toLocaleString('es-CO')})`}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="inline-flex items-center gap-1 text-xs font-extrabold text-emerald-800">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Bono 1ra Asistencia Redimido
+                          </span>
+                          <span className="font-black text-emerald-700 text-sm">
+                            ${cajaFirstVisitReferral.discount_amount.toLocaleString('es-CO')} COP
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-emerald-700">
+                          Referido por: <strong>{cajaFirstVisitReferral.referrer_name}</strong> ·{' '}
+                          {cajaFirstVisitReferral.redeemed_at
+                            ? new Date(cajaFirstVisitReferral.redeemed_at).toLocaleDateString('es-CO')
+                            : new Date(cajaFirstVisitReferral.created_at).toLocaleDateString('es-CO')}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  {/* ==============================================================
-                      SECCIÓN B: BONOS ACUMULADOS POR REFERIR A OTROS (EMBAJADOR)
-                      AQUÍ LA CAJERA DECIDE CUÁNTOS BONOS VA A REDIMIR Y VE EL VALOR TOTAL
-                      ============================================================== */}
-                  <div className="bg-white rounded-3xl p-6 border-2 border-amber-200 shadow-sm flex flex-col justify-between space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-extrabold uppercase">
-                          <Award className="w-3.5 h-3.5" /> 2. Bonos por Referir Pacientes (Embajador)
+                  {/* SECCIÓN B: 2. BONOS POR REFERIR PACIENTES (EMBAJADOR) */}
+                  <div
+                    className={`bg-white rounded-2xl p-4 border-2 border-amber-200 shadow-xs space-y-3 ${
+                      !cajaFirstVisitReferral && cajaAvailableRewardRefs.length > 0
+                        ? 'lg:col-span-7'
+                        : 'lg:col-span-6'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-extrabold uppercase">
+                        <Award className="w-3.5 h-3.5" /> 2. Bonos por Referir (Embajador)
+                      </span>
+                      <span className="text-[11px] font-bold text-gray-500">
+                        Inscritos: {cajaAmbassadorRefs.length}
+                      </span>
+                    </div>
+
+                    {/* RESUMEN COMPACTO DE BONOS DEL EMBAJADOR */}
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="py-2 px-2 rounded-xl bg-amber-50 border border-amber-200">
+                        <span className="text-lg font-black text-amber-600 block leading-none">
+                          {cajaAvailableRewardRefs.length}
                         </span>
-                        <span className="text-xs font-bold text-gray-500">
-                          Total referidos inscritos: {cajaAmbassadorRefs.length}
+                        <span className="text-[10px] font-extrabold text-amber-800">
+                          Disponibles
                         </span>
                       </div>
-
-                      {/* RESUMEN DE BONOS DEL EMBAJADOR */}
-                      <div className="grid grid-cols-3 gap-2.5 text-center">
-                        <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200">
-                          <span className="text-2xl font-black text-amber-600 block">
-                            {cajaAvailableRewardRefs.length}
-                          </span>
-                          <span className="text-[11px] font-extrabold text-amber-800">
-                            Bonos Disponibles
-                          </span>
-                        </div>
-                        <div className="p-3 rounded-2xl bg-purple-50 border border-purple-200">
-                          <span className="text-2xl font-black text-purple-600 block">
-                            {cajaRedeemedRewardRefs.length}
-                          </span>
-                          <span className="text-[11px] font-extrabold text-purple-800">
-                            Bonos Ya Redimidos
-                          </span>
-                        </div>
-                        <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200">
-                          <span className="text-2xl font-black text-gray-600 block">
-                            {cajaPendingAttendanceRefs.length}
-                          </span>
-                          <span className="text-[11px] font-extrabold text-gray-500">
-                            Pendientes 1ra Cita
-                          </span>
-                        </div>
+                      <div className="py-2 px-2 rounded-xl bg-purple-50 border border-purple-200">
+                        <span className="text-lg font-black text-purple-600 block leading-none">
+                          {cajaRedeemedRewardRefs.length}
+                        </span>
+                        <span className="text-[10px] font-extrabold text-purple-800">
+                          Ya Redimidos
+                        </span>
                       </div>
+                      <div className="py-2 px-2 rounded-xl bg-gray-50 border border-gray-200">
+                        <span className="text-lg font-black text-gray-600 block leading-none">
+                          {cajaPendingAttendanceRefs.length}
+                        </span>
+                        <span className="text-[10px] font-extrabold text-gray-500">
+                          Pendientes
+                        </span>
+                      </div>
+                    </div>
 
-                      {cajaAvailableRewardRefs.length === 0 ? (
-                        <div className="p-5 rounded-2xl bg-gray-50 border border-dashed border-gray-200 text-center space-y-1">
-                          <p className="text-sm font-bold text-gray-600">
-                            No tiene bonos de embajador disponibles para redimir hoy
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {cajaPendingAttendanceRefs.length > 0
-                              ? `Tiene ${cajaPendingAttendanceRefs.length} persona(s) inscrita(s) con su código, pero aún no han asistido a canjear su 1ra cita en Caja.`
-                              : 'Cuando un amigo inscrito con su código asista y canjee su 1ra cita en Caja, aparecerá aquí su bono disponible.'}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4 pt-1">
-                          {/* SELECTOR DE CANTIDAD DE BONOS Y CÁLCULO DE VALOR TOTAL */}
-                          <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white space-y-4 shadow-md">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                              <div>
-                                <span className="text-[11px] uppercase font-extrabold text-amber-100 block">
-                                  ¿Cuántos bonos desea redimir hoy?
-                                </span>
-                                <span className="text-xs text-amber-50">
-                                  Tiene{' '}
-                                  <strong>
-                                    {cajaAvailableRewardRefs.length} bono(s)
-                                  </strong>{' '}
-                                  disponibles ($
-                                  {settings.referrer_reward.toLocaleString('es-CO')}{' '}
-                                  c/u)
-                                </span>
-                              </div>
-
-                              {/* CONTROLES - / + */}
-                              <div className="flex items-center gap-2 bg-white/15 p-1.5 rounded-2xl border border-white/25 self-start sm:self-auto">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setBonusesToRedeemCount((prev) =>
-                                      Math.max(1, prev - 1)
-                                    )
-                                  }
-                                  className="w-9 h-9 rounded-xl bg-white text-orange-700 font-black flex items-center justify-center hover:bg-amber-50 cursor-pointer"
-                                >
-                                  <Minus className="w-4 h-4" />
-                                </button>
-                                <span className="px-4 font-mono text-2xl font-black">
-                                  {safeBonusesToRedeem}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setBonusesToRedeemCount((prev) =>
-                                      Math.min(
-                                        cajaAvailableRewardRefs.length,
-                                        prev + 1
-                                      )
-                                    )
-                                  }
-                                  className="w-9 h-9 rounded-xl bg-white text-orange-700 font-black flex items-center justify-center hover:bg-amber-50 cursor-pointer"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* BOTONES RÁPIDOS DE CANTIDAD */}
-                            {cajaAvailableRewardRefs.length > 1 && (
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                {Array.from(
-                                  { length: cajaAvailableRewardRefs.length },
-                                  (_, idx) => idx + 1
-                                ).map((num) => (
-                                  <button
-                                    key={num}
-                                    type="button"
-                                    onClick={() => setBonusesToRedeemCount(num)}
-                                    className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                                      safeBonusesToRedeem === num
-                                        ? 'bg-white text-orange-700 shadow'
-                                        : 'bg-white/20 text-white hover:bg-white/30'
-                                    }`}
-                                  >
-                                    {num === cajaAvailableRewardRefs.length
-                                      ? `Todos (${num})`
-                                      : `${num} Bono${num > 1 ? 's' : ''}`}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* VALOR TOTAL A DESCONTAR */}
-                            <div className="pt-3 border-t border-white/25 flex items-center justify-between">
-                              <div>
-                                <span className="text-xs font-bold text-amber-100 block">
-                                  VALOR TOTAL A REDIMIR ({safeBonusesToRedeem}{' '}
-                                  {safeBonusesToRedeem === 1 ? 'bono' : 'bonos'}):
-                                </span>
-                                <span className="text-[11px] text-amber-100">
-                                  Restarán{' '}
-                                  {cajaAvailableRewardRefs.length -
-                                    safeBonusesToRedeem}{' '}
-                                  bono(s) para el futuro
-                                </span>
-                              </div>
-                              <span className="text-3xl font-black tracking-tight">
-                                ${totalValueToRedeemNow.toLocaleString('es-CO')} COP
+                    {cajaAvailableRewardRefs.length === 0 ? (
+                      <div className="p-3.5 rounded-xl bg-gray-50 border border-dashed border-gray-200 text-center space-y-0.5">
+                        <p className="text-xs font-bold text-gray-600">
+                          Sin bonos de embajador disponibles hoy
+                        </p>
+                        <p className="text-[11px] text-gray-400">
+                          {cajaPendingAttendanceRefs.length > 0
+                            ? `Tiene ${cajaPendingAttendanceRefs.length} inscrito(s) pendientes de canjear su 1ra cita.`
+                            : 'Se activan cuando un referido suyo canjee su 1ra cita en Caja.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {/* SELECTOR COMPACTO DE CANTIDAD Y VALOR TOTAL */}
+                        <div className="p-3.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white space-y-2.5 shadow-xs">
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <span className="text-[10px] uppercase font-extrabold text-amber-100 block">
+                                ¿Cuántos bonos desea redimir hoy?
+                              </span>
+                              <span className="text-[11px] text-amber-50">
+                                Disponibles: <strong>{cajaAvailableRewardRefs.length}</strong> ($
+                                {settings.referrer_reward.toLocaleString('es-CO')} c/u)
                               </span>
                             </div>
+
+                            <div className="flex items-center gap-1.5 bg-white/15 p-1 rounded-xl border border-white/25 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setBonusesToRedeemCount((prev) =>
+                                    Math.max(1, prev - 1)
+                                  )
+                                }
+                                className="w-7 h-7 rounded-lg bg-white text-orange-700 font-black flex items-center justify-center hover:bg-amber-50 cursor-pointer"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="px-2.5 font-mono text-lg font-black">
+                                {safeBonusesToRedeem}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setBonusesToRedeemCount((prev) =>
+                                    Math.min(
+                                      cajaAvailableRewardRefs.length,
+                                      prev + 1
+                                    )
+                                  )
+                                }
+                                className="w-7 h-7 rounded-lg bg-white text-orange-700 font-black flex items-center justify-center hover:bg-amber-50 cursor-pointer"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
-                          {/* DETALLE DE QUÉ BONOS SE VAN A REDIMIR */}
-                          <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-1.5">
-                            <p className="text-[11px] font-extrabold uppercase text-amber-800">
-                              Bonos seleccionados para redimir hoy:
-                            </p>
-                            <ul className="text-xs text-gray-700 space-y-1">
-                              {selectedRefsPreview.map((r, i) => (
-                                <li
-                                  key={r.id}
-                                  className="flex items-center justify-between"
+                          {cajaAvailableRewardRefs.length > 1 && (
+                            <div className="flex flex-wrap items-center gap-1">
+                              {Array.from(
+                                { length: cajaAvailableRewardRefs.length },
+                                (_, idx) => idx + 1
+                              ).map((num) => (
+                                <button
+                                  key={num}
+                                  type="button"
+                                  onClick={() => setBonusesToRedeemCount(num)}
+                                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-extrabold transition-all cursor-pointer ${
+                                    safeBonusesToRedeem === num
+                                      ? 'bg-white text-orange-700 shadow-xs'
+                                      : 'bg-white/20 text-white hover:bg-white/30'
+                                  }`}
                                 >
-                                  <span>
-                                    Bono #{i + 1}: Por asistencia de{' '}
-                                    <strong>{r.referred_name}</strong> (CC{' '}
-                                    {r.referred_doc})
-                                  </span>
-                                  <span className="font-mono font-bold text-emerald-700">
-                                    +${r.reward_amount.toLocaleString('es-CO')}
-                                  </span>
-                                </li>
+                                  {num === cajaAvailableRewardRefs.length
+                                    ? `Todos (${num})`
+                                    : `${num} Bono${num > 1 ? 's' : ''}`}
+                                </button>
                               ))}
-                            </ul>
-                          </div>
+                            </div>
+                          )}
 
-                          <div>
-                            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                              Tratamiento / Nota de Redención en Caja (Opcional)
-                            </label>
-                            <input
-                              type="text"
-                              value={ambassadorRedeemNote}
-                              onChange={(e) =>
-                                setAmbassadorRedeemNote(e.target.value)
-                              }
-                              placeholder="Ej. Aplicado en Sueroterapia Detox - Factura #215"
-                              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-800 focus:bg-white focus:border-amber-500 outline-none"
-                            />
+                          <div className="pt-2 border-t border-white/25 flex items-center justify-between">
+                            <div>
+                              <span className="text-[11px] font-bold text-amber-100 block">
+                                VALOR TOTAL A REDIMIR ({safeBonusesToRedeem}):
+                              </span>
+                              <span className="text-[10px] text-amber-100">
+                                Quedan {cajaAvailableRewardRefs.length - safeBonusesToRedeem} disponible(s)
+                              </span>
+                            </div>
+                            <span className="text-2xl font-black tracking-tight">
+                              ${totalValueToRedeemNow.toLocaleString('es-CO')} COP
+                            </span>
                           </div>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleRedeemAmbassadorBonuses(
-                                normalizedCajaDoc,
-                                cajaPatientDisplayName,
-                                cajaAvailableRewardRefs
-                              )
-                            }
-                            disabled={isRedeemingAmbassadorBonuses}
-                            className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-95 text-white font-extrabold text-sm shadow-lg cursor-pointer transition-all disabled:opacity-50"
-                          >
-                            {isRedeemingAmbassadorBonuses
-                              ? 'Registrando Redención...'
-                              : `Confirmar y Redimir ${safeBonusesToRedeem} Bono(s) por $${totalValueToRedeemNow.toLocaleString('es-CO')} COP`}
-                          </button>
                         </div>
-                      )}
-                    </div>
+
+                        {/* DETALLE COMPACTO DE BONOS SELECCIONADOS */}
+                        <div className="px-3 py-2 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-1">
+                          <p className="text-[10px] font-extrabold uppercase text-amber-800">
+                            Bonos seleccionados hoy:
+                          </p>
+                          <ul className="text-[11px] text-gray-700 space-y-0.5">
+                            {selectedRefsPreview.map((r, i) => (
+                              <li
+                                key={r.id}
+                                className="flex items-center justify-between"
+                              >
+                                <span className="truncate pr-2">
+                                  #{i + 1}: Por <strong>{r.referred_name}</strong> (CC {r.referred_doc})
+                                </span>
+                                <span className="font-mono font-bold text-emerald-700 shrink-0">
+                                  +${r.reward_amount.toLocaleString('es-CO')}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <input
+                          type="text"
+                          value={ambassadorRedeemNote}
+                          onChange={(e) => setAmbassadorRedeemNote(e.target.value)}
+                          placeholder="Tratamiento / Nota de Caja (Opcional)..."
+                          className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-800 focus:bg-white focus:border-amber-500 outline-none"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleRedeemAmbassadorBonuses(
+                              normalizedCajaDoc,
+                              cajaPatientDisplayName,
+                              cajaAvailableRewardRefs
+                            )
+                          }
+                          disabled={isRedeemingAmbassadorBonuses}
+                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-95 text-white font-extrabold text-xs shadow cursor-pointer transition-all disabled:opacity-50"
+                        >
+                          {isRedeemingAmbassadorBonuses
+                            ? 'Registrando Redención...'
+                            : `Confirmar y Redimir ${safeBonusesToRedeem} Bono(s) por $${totalValueToRedeemNow.toLocaleString('es-CO')} COP`}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
