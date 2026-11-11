@@ -1156,7 +1156,7 @@ export default function PacientesPortal() {
 
                         <div className="pt-2 border-t border-indigo-100/80 flex items-center justify-between gap-2">
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100/90 text-emerald-800 text-[11px] font-extrabold">
-                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Sí Asistió (por 1ra Vez)
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Asistí (por 1ra Vez)
                           </span>
 
                           <div className="text-right">
@@ -1258,7 +1258,7 @@ export default function PacientesPortal() {
                             </td>
                             <td className="px-4 py-4 text-center">
                               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-extrabold">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Sí Asistió (por 1ra Vez)
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Asistí (por 1ra Vez)
                               </span>
                             </td>
                             <td className="px-4 py-4 text-right">
