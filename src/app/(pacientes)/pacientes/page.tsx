@@ -165,9 +165,12 @@ export default function PacientesPortal() {
         .eq('doc_id', userDoc)
         .maybeSingle();
 
+      const cleanPersonName = (raw?: string | null) =>
+        (raw || '').replace(/\bnull\b/gi, '').replace(/\s+/g, ' ').trim();
+
       if (dirPatient) {
         setIsInClinicDatabase(true);
-        setPatientName(dirPatient.full_name || fallbackName);
+        setPatientName(cleanPersonName(dirPatient.full_name) || cleanPersonName(fallbackName));
         setPatientCode(dirPatient.referral_code || null);
       } else {
         setIsInClinicDatabase(false);
@@ -187,7 +190,7 @@ export default function PacientesPortal() {
         setMyWelcomeBenefit({
           id: welcomeRef.id,
           referrer_doc: welcomeRef.referrer_doc,
-          referrer_name: welcomeRef.referrer_name || `Paciente ${welcomeRef.referrer_doc}`,
+          referrer_name: cleanPersonName(welcomeRef.referrer_name) || `Paciente ${welcomeRef.referrer_doc}`,
           discount_amount: Number(welcomeRef.discount_amount) || currentDiscount,
           status: welcomeRef.status,
           treatment_name: welcomeRef.treatment_name,
@@ -195,7 +198,7 @@ export default function PacientesPortal() {
           created_at: welcomeRef.created_at,
         });
         if (!dirPatient && welcomeRef.referred_name) {
-          setPatientName(welcomeRef.referred_name);
+          setPatientName(cleanPersonName(welcomeRef.referred_name));
         }
       } else {
         setMyWelcomeBenefit(null);
@@ -864,63 +867,37 @@ export default function PacientesPortal() {
 
         {/* ====================================================================
             SECCIÓN A: SALDO A FAVOR DE BIENVENIDA (SI SE REGISTRÓ CON UN CÓDIGO)
+            - Si está pendiente ('pending'): Banner destacado de bienvenida
+            - Si ya fue redimido ('completed'): Tabla compacta estilo "Personas Inscritas"
             ==================================================================== */}
-        {myWelcomeBenefit && (
-          <div
-            className={`rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden ${
-              myWelcomeBenefit.status === 'completed'
-                ? 'bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800'
-                : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-700'
-            }`}
-          >
+        {myWelcomeBenefit && myWelcomeBenefit.status !== 'completed' && (
+          <div className="rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-700">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
               <div className="space-y-2 max-w-xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-xs font-extrabold uppercase tracking-wider">
                   <Gift className="w-3.5 h-3.5" />
-                  <span>
-                    {myWelcomeBenefit.status === 'completed'
-                      ? 'Beneficio de 1ra Vez Redimido'
-                      : 'Saldo a Favor por Código de Referido'}
-                  </span>
+                  <span>Saldo a Favor por Código de Referido</span>
                 </div>
 
                 <h2 className="text-xl sm:text-2xl font-extrabold">
-                  {myWelcomeBenefit.status === 'completed'
-                    ? '¡Ya redimiste tu descuento de primer tratamiento!'
-                    : '¡Tienes un Saldo a Favor para tu Primera Cita Médica o Tratamiento!'}
+                  ¡Tienes un Saldo a Favor para tu Primera Cita Médica o Tratamiento!
                 </h2>
 
                 <p className="text-white/90 text-xs sm:text-sm leading-relaxed">
-                  Te inscribiste invitado por <strong>{myWelcomeBenefit.referrer_name}</strong>.{' '}
-                  {myWelcomeBenefit.status === 'completed'
-                    ? 'Tu descuento fue aplicado exitosamente en tu atención médica y la bonificación fue acreditada a quien te refirió.'
-                    : 'Este saldo a favor se te descontará automáticamente en recepción el día que asistas por primera vez a realizarte un tratamiento en Holística.'}
+                  Te inscribiste invitado por{' '}
+                  <strong>{myWelcomeBenefit.referrer_name.replace(/\bnull\b/gi, '').trim()}</strong>. Este saldo a favor se te descontará automáticamente en recepción el día que asistas por primera vez a realizarte un tratamiento en Holística.
                 </p>
               </div>
 
               <div className="bg-white/15 backdrop-blur-md border border-white/25 rounded-2xl p-5 text-center shrink-0 min-w-[210px]">
                 <span className="text-[11px] uppercase tracking-wider text-white/80 font-bold block">
-                  {myWelcomeBenefit.status === 'completed' ? 'Descuento Aplicado' : 'Tu Saldo a Favor'}
+                  Tu Saldo a Favor
                 </span>
                 <span className="text-3xl font-black block mt-1">
                   ${myWelcomeBenefit.discount_amount.toLocaleString('es-CO')}
                 </span>
-                <span
-                  className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold ${
-                    myWelcomeBenefit.status === 'completed'
-                      ? 'bg-emerald-400/25 text-emerald-100'
-                      : 'bg-amber-400 text-slate-950'
-                  }`}
-                >
-                  {myWelcomeBenefit.status === 'completed' ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Redimido en Clínica
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="w-3.5 h-3.5" /> Disponible en tu 1ra Cita
-                    </>
-                  )}
+                <span className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-amber-400 text-slate-950">
+                  <Clock className="w-3.5 h-3.5" /> Disponible en tu 1ra Cita
                 </span>
               </div>
             </div>
@@ -1052,21 +1029,27 @@ export default function PacientesPortal() {
               </div>
             </div>
 
-            {/* TARJETA 3: LISTADO DETALLADO DE PERSONAS QUE SE INSCRIBIERON CON MI CÓDIGO */}
+            {/* TARJETA 3 (UN SOLO RECUADRO EN LA PARTE DE ABAJO): PERSONAS INSCRITAS CON MI CÓDIGO + BENEFICIO DE 1RA VEZ REDIMIDO */}
             <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
                 <div>
                   <h3 className="text-lg font-extrabold text-slate-800 flex items-center gap-2">
                     <BadgeDollarSign className="w-5 h-5 text-blue-600" />
-                    <span>Personas Inscritas con Mi Código ({myReferrals.length})</span>
+                    <span>
+                      Personas Inscritas con Mi Código y Beneficios (
+                      {myReferrals.length +
+                        (myWelcomeBenefit?.status === 'completed' ? 1 : 0)}
+                      )
+                    </span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Seguimiento en tiempo real de tus amigos inscritos y el estado de su primera asistencia.
+                    Seguimiento en tiempo real de tus amigos inscritos con tu código y el registro del beneficio de bienvenida que redimiste en tu primer tratamiento.
                   </p>
                 </div>
               </div>
 
-              {myReferrals.length === 0 ? (
+              {myReferrals.length === 0 &&
+              myWelcomeBenefit?.status !== 'completed' ? (
                 <div className="text-center py-10 px-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 space-y-2">
                   <UserPlus className="w-8 h-8 text-slate-400 mx-auto" />
                   <p className="text-sm font-bold text-slate-700">
@@ -1088,10 +1071,13 @@ export default function PacientesPortal() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
+                      {/* ÍTEM 1 (MÁS RECIENTES ARRIBA): PERSONAS INSCRITAS CON MI CÓDIGO ORDENADAS DE MÁS RECIENTE A MÁS ANTIGUO */}
                       {myReferrals.map((ref) => (
                         <tr key={ref.id} className="hover:bg-slate-50/70 transition-colors">
                           <td className="px-4 py-4">
-                            <p className="font-extrabold text-slate-800">{ref.referred_name}</p>
+                            <p className="font-extrabold text-slate-800">
+                              {ref.referred_name.replace(/\bnull\b/gi, '').trim()}
+                            </p>
                             <p className="text-[11px] text-slate-400 font-mono">CC: {ref.referred_doc}</p>
                           </td>
                           <td className="px-4 py-4 text-xs text-slate-500">
@@ -1100,7 +1086,7 @@ export default function PacientesPortal() {
                           <td className="px-4 py-4 text-center">
                             {ref.status === 'completed' ? (
                               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-extrabold">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Sí Asistió (En Base de Datos)
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Sí Asistió (El Referido)
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-extrabold">
@@ -1142,6 +1128,38 @@ export default function PacientesPortal() {
                           </td>
                         </tr>
                       ))}
+
+                      {/* ÍTEM 2 (REGISTRO INICIAL DE 1RA VEZ ABAJO): BENEFICIO DE 1RA VEZ REDIMIDO */}
+                      {myWelcomeBenefit && myWelcomeBenefit.status === 'completed' && (
+                        <tr className="hover:bg-slate-50/70 transition-colors">
+                          <td className="px-4 py-4">
+                            <p className="font-extrabold text-slate-800">
+                              {myWelcomeBenefit.referrer_name.replace(/\bnull\b/gi, '').trim()}
+                            </p>
+                            <p className="text-[11px] text-slate-400 font-mono">
+                              CC: {myWelcomeBenefit.referrer_doc}
+                            </p>
+                          </td>
+                          <td className="px-4 py-4 text-xs text-slate-500">
+                            {new Date(myWelcomeBenefit.created_at).toLocaleDateString('es-CO')}
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-extrabold">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Sí Asistió (por 1ra Vez)
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <div>
+                              <span className="font-black text-purple-600 text-sm">
+                                ${myWelcomeBenefit.discount_amount.toLocaleString('es-CO')} COP
+                              </span>
+                              <span className="block text-[10px] text-purple-600 font-semibold">
+                                Bono ya redimido en Caja
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
