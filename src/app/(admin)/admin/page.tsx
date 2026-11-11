@@ -430,29 +430,31 @@ export default function Home() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen relative" style={{ background: 'var(--neu-bg)' }}>
-      {/* Mobile Header (Solo visible en móviles) */}
-      <div className="md:hidden flex items-center justify-between p-4 z-40 bg-[#e6e7ee] shadow-[0_4px_10px_rgba(0,0,0,0.05)] sticky top-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_2px_8px_rgba(59,130,246,0.4)]">
-            <Stethoscope className="w-5 h-5 text-white" />
+      {/* Mobile Header (Solo visible para admin en móviles) */}
+      {userRole === 'admin' && (
+        <div className="md:hidden flex items-center justify-between p-4 z-40 bg-[#e6e7ee] shadow-[0_4px_10px_rgba(0,0,0,0.05)] sticky top-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_2px_8px_rgba(59,130,246,0.4)]">
+              <Stethoscope className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="font-bold text-gray-800 text-sm leading-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
+                Holística
+              </p>
+              <p className="text-gray-400 text-[10px] uppercase tracking-wide">UNIDAD DE MEDICINA INTEGRAL</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-gray-800 text-sm leading-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
-              Holística
-            </p>
-            <p className="text-gray-400 text-[10px] uppercase tracking-wide">UNIDAD DE MEDICINA INTEGRAL</p>
-          </div>
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2.5 rounded-xl bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] text-gray-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2.5 rounded-xl bg-[#e6e7ee] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] text-gray-600 hover:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] transition-all"
-        >
-          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
+      )}
 
       {/* Overlay Oscuro para Menú Móvil */}
-      {isMobileMenuOpen && (
+      {userRole === 'admin' && isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/30 z-40 md:hidden backdrop-blur-sm transition-opacity"
           onClick={() => setIsMobileMenuOpen(false)}
@@ -503,104 +505,112 @@ export default function Home() {
         </div>
       )}
 
-      {/* Sidebar */}
-      <aside className={`fixed md:sticky top-0 h-[100dvh] w-72 md:w-64 shrink-0 p-6 flex flex-col gap-6 z-50 md:z-0 transition-transform duration-300 ease-in-out md:translate-x-0 ${
-        isMobileMenuOpen ? 'translate-x-0 shadow-[10px_0_20px_rgba(0,0,0,0.1)]' : '-translate-x-full shadow-none'
-      }`} style={{ background: 'var(--neu-bg)' }}>
-        {/* Logo */}
-        <div className="flex items-center justify-between px-2 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
-              <Stethoscope className="w-5 h-5 text-white" />
+      {/* Sidebar (Solo visible para el administrador general; oculta para cajeros para aprovechar todo el ancho) */}
+      {userRole === 'admin' && (
+        <aside className={`fixed md:sticky top-0 h-[100dvh] w-72 md:w-64 shrink-0 p-6 flex flex-col gap-6 z-50 md:z-0 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+          isMobileMenuOpen ? 'translate-x-0 shadow-[10px_0_20px_rgba(0,0,0,0.1)]' : '-translate-x-full shadow-none'
+        }`} style={{ background: 'var(--neu-bg)' }}>
+          {/* Logo */}
+          <div className="flex items-center justify-between px-2 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.4)]">
+                <Stethoscope className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-gray-800 text-lg leading-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
+                  Holística
+                </p>
+                <p className="text-gray-400 text-[10px] uppercase tracking-wide mt-0.5">UNIDAD DE MEDICINA INTEGRAL</p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-gray-800 text-lg leading-tight" style={{ fontFamily: 'var(--font-manrope)' }}>
-                Holística
-              </p>
-              <p className="text-gray-400 text-[10px] uppercase tracking-wide mt-0.5">UNIDAD DE MEDICINA INTEGRAL</p>
-            </div>
+            <button 
+              className="md:hidden p-1.5 rounded-lg bg-[#e6e7ee] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] text-gray-500"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button 
-            className="md:hidden p-1.5 rounded-lg bg-[#e6e7ee] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] text-gray-500"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
 
-        {/* Separador */}
-        <div className="h-px bg-[#e6e7ee] shadow-[0_1px_0_#ffffff,0_-1px_0_#b8b9be]" />
+          {/* Separador */}
+          <div className="h-px bg-[#e6e7ee] shadow-[0_1px_0_#ffffff,0_-1px_0_#b8b9be]" />
 
-        {/* Navegación */}
-        <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
-            {userRole === 'cashier' ? 'Módulo Caja' : 'Menú'}
-          </p>
-          {NAV_ITEMS.filter((item) => (userRole === 'cashier' ? item.id === 'referrals' : true)).map(({ id, label, icon: Icon }) => {
-            const isActive = activeTab === id;
-            return (
-              <button
-                key={id}
-                onClick={() => {
-                  setActiveTab(id);
-                  setIsMobileMenuOpen(false); // Cerrar en móvil al seleccionar
-                }}
-                className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium w-full text-left transition-all duration-200 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-[0_6px_18px_rgba(59,130,246,0.35)]'
-                    : 'text-gray-600 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:shadow-[inset_3px_3px_7px_#b8b9be,inset_-3px_-3px_7px_#ffffff]'
-                }`}
-              >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`} />
-                <span className="flex-1 truncate">{label}</span>
-                {isActive && <ChevronRight className="w-3 h-3 shrink-0" />}
-              </button>
-            );
-          })}
-        </nav>
+          {/* Navegación */}
+          <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">Menú</p>
+            {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => {
+                    setActiveTab(id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium w-full text-left transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-[0_6px_18px_rgba(59,130,246,0.35)]'
+                      : 'text-gray-600 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:shadow-[inset_3px_3px_7px_#b8b9be,inset_-3px_-3px_7px_#ffffff]'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                  <span className="flex-1 truncate">{label}</span>
+                  {isActive && <ChevronRight className="w-3 h-3 shrink-0" />}
+                </button>
+              );
+            })}
+          </nav>
 
-        {/* Botones Volver a la Página Web y Cerrar Sesión en el Sidebar */}
-        <div className="pt-2 border-t border-gray-300/60 flex flex-col gap-2.5">
-          <Link
-            href="/"
-            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold w-full text-left bg-white border border-slate-200/80 text-slate-700 hover:text-blue-600 shadow-xs transition-all"
-          >
-            <ArrowLeft className="w-4 h-4 shrink-0" />
-            <span>Volver a la Página Web</span>
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold w-full text-left text-red-600 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:bg-red-50 transition-all cursor-pointer"
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            <span>Cerrar Sesión ({currentUsername})</span>
-          </button>
-        </div>
-
-      </aside>
+          {/* Botones Volver a la Página Web y Cerrar Sesión en el Sidebar */}
+          <div className="pt-2 border-t border-gray-300/60 flex flex-col gap-2.5">
+            <Link
+              href="/"
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold w-full text-left bg-white border border-slate-200/80 text-slate-700 hover:text-blue-600 shadow-xs transition-all"
+            >
+              <ArrowLeft className="w-4 h-4 shrink-0" />
+              <span>Volver a la Página Web</span>
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold w-full text-left text-red-600 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:bg-red-50 transition-all cursor-pointer"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span>Cerrar Sesión ({currentUsername})</span>
+            </button>
+          </div>
+        </aside>
+      )}
 
       {/* Contenido principal */}
       <main className="flex-1 p-4 sm:p-6 md:p-8 w-full max-w-full overflow-x-hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
-          <div>
-            <h1
-              className="text-2xl font-bold text-gray-800"
-              style={{ fontFamily: 'var(--font-manrope)' }}
-            >
-              {NAV_ITEMS.find((n) => n.id === activeTab)?.label}
-            </h1>
-            <p className="text-gray-400 text-sm mt-0.5">
-              {activeTab === 'dashboard' && 'Resumen general de actividad médica'}
-              {activeTab === 'billing' && 'Cuenta de ingresos consolidada y sin duplicados'}
-              {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
-              {activeTab === 'profitability' && 'Análisis de rentabilidad y costos operativos'}
-              {activeTab === 'followups' && 'Seguimientos de pacientes y procesos'}
-              {activeTab === 'referrals' &&
-                (userRole === 'cashier'
-                  ? 'Consulta de pacientes por Cédula y redención de bonos en Caja'
-                  : 'Gestión de campaña, canje de bonos y billetera de embajadores')}
-            </p>
+          <div className="flex items-center gap-3.5">
+            {userRole === 'cashier' && (
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.4)] shrink-0">
+                <Stethoscope className="w-6 h-6 text-white" />
+              </div>
+            )}
+            <div>
+              <h1
+                className="text-2xl font-bold text-gray-800"
+                style={{ fontFamily: 'var(--font-manrope)' }}
+              >
+                {userRole === 'cashier'
+                  ? 'Holística · Sistema de Referidos (Caja)'
+                  : NAV_ITEMS.find((n) => n.id === activeTab)?.label}
+              </h1>
+              <p className="text-gray-400 text-sm mt-0.5">
+                {activeTab === 'dashboard' && 'Resumen general de actividad médica'}
+                {activeTab === 'billing' && 'Cuenta de ingresos consolidada y sin duplicados'}
+                {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
+                {activeTab === 'profitability' && 'Análisis de rentabilidad y costos operativos'}
+                {activeTab === 'followups' && 'Seguimientos de pacientes y procesos'}
+                {activeTab === 'referrals' &&
+                  (userRole === 'cashier'
+                    ? 'Consulta de pacientes por Cédula y redención de bonos en Caja'
+                    : 'Gestión de campaña, canje de bonos y billetera de embajadores')}
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link
@@ -621,9 +631,10 @@ export default function Home() {
             <button
               onClick={handleLogout}
               title="Cerrar sesión / Cambiar de usuario"
-              className="p-3.5 rounded-2xl bg-[#e6e7ee] text-red-500 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:bg-red-50 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-3.5 rounded-2xl bg-[#e6e7ee] text-red-600 font-bold text-xs sm:text-sm shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:bg-red-50 transition-all cursor-pointer"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span>Cerrar Sesión</span>
             </button>
           </div>
         </div>

@@ -249,9 +249,17 @@ export function ReferralsManager({
         });
       }
 
+      const cleanNameStr = (val?: string | null) =>
+        (val || '').replace(/\bnull\b/gi, '').replace(/\s+/g, ' ').trim();
+
       // 2. Cargar pacientes subidos en el Excel de Referidos
       const allPatients = await fetchAllPatientsDirectory();
-      setPatients(allPatients);
+      setPatients(
+        allPatients.map((p: any) => ({
+          ...p,
+          full_name: cleanNameStr(p.full_name),
+        }))
+      );
 
       // 3. Cargar Referidos inscritos en la web
       const { data: refData } = await supabase
@@ -261,6 +269,8 @@ export function ReferralsManager({
 
       const safeRefs: Referral[] = (refData || []).map((r) => ({
         ...r,
+        referrer_name: r.referrer_name ? cleanNameStr(r.referrer_name) : r.referrer_name,
+        referred_name: r.referred_name ? cleanNameStr(r.referred_name) : r.referred_name,
         reward_amount: Number(r.reward_amount) || 15000,
         discount_amount: Number(r.discount_amount) || 15000,
       }));
@@ -274,6 +284,7 @@ export function ReferralsManager({
 
       const safeWallets: AmbassadorWallet[] = (walletData || []).map((w) => ({
         ...w,
+        full_name: cleanNameStr(w.full_name),
         total_earned: Number(w.total_earned) || 0,
         total_redeemed: Number(w.total_redeemed) || 0,
         balance: Number(w.balance) || 0,
@@ -288,6 +299,7 @@ export function ReferralsManager({
 
       const safeRedemptions: ReferralRedemption[] = (redemptionsData || []).map((item) => ({
         ...item,
+        patient_name: cleanNameStr(item.patient_name),
         bonuses_count: Number(item.bonuses_count) || 1,
         unit_value: Number(item.unit_value) || 15000,
         total_amount: Number(item.total_amount) || 15000,
