@@ -1167,10 +1167,12 @@ export function ReferralsManager({
 
         <button
           onClick={loadAllData}
-          title="Recargar datos"
-          className="ml-auto p-2.5 rounded-xl text-gray-500 hover:text-blue-600 transition-colors cursor-pointer"
+          disabled={isLoading}
+          title="Actualizar y refrescar todos los datos"
+          className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 font-extrabold text-xs sm:text-sm shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-60"
         >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 text-blue-600 ${isLoading ? 'animate-spin' : ''}`} />
+          <span>{isLoading ? 'Actualizando...' : 'Actualizar Datos'}</span>
         </button>
       </div>
 
