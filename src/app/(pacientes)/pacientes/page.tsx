@@ -193,7 +193,7 @@ export default function PacientesPortal() {
         setMyWelcomeBenefit({
           id: welcomeRef.id,
           referrer_doc: welcomeRef.referrer_doc,
-          referrer_name: cleanPersonName(welcomeRef.referrer_name) || `Paciente ${welcomeRef.referrer_doc}`,
+          referrer_name: cleanPersonName(welcomeRef.referrer_name) || 'Paciente Embajador',
           discount_amount: Number(welcomeRef.discount_amount) || currentDiscount,
           status: welcomeRef.status,
           treatment_name: welcomeRef.treatment_name,
@@ -217,7 +217,7 @@ export default function PacientesPortal() {
       const mappedReferrals: ReferredPersonItem[] = (referredByMe || []).map((r) => ({
         id: r.id,
         referred_doc: r.referred_doc,
-        referred_name: r.referred_name || `Paciente ${r.referred_doc}`,
+        referred_name: r.referred_name || 'Paciente Invitado',
         status: r.status,
         referrer_reward_status:
           r.status !== 'completed'
@@ -1079,9 +1079,6 @@ export default function PacientesPortal() {
                             <p className="font-extrabold text-sm text-slate-900 leading-tight">
                               {cleanPersonName(ref.referred_name)}
                             </p>
-                            <p className="text-xs text-slate-500 font-mono mt-0.5">
-                              CC: {ref.referred_doc}
-                            </p>
                           </div>
                           <span className="text-[11px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-lg shrink-0">
                             {new Date(ref.created_at).toLocaleDateString('es-CO')}
@@ -1145,9 +1142,6 @@ export default function PacientesPortal() {
                             <p className="font-extrabold text-sm text-slate-900 leading-tight">
                               {cleanPersonName(myWelcomeBenefit.referrer_name)}
                             </p>
-                            <p className="text-xs text-slate-500 font-mono mt-0.5">
-                              CC: {myWelcomeBenefit.referrer_doc}
-                            </p>
                           </div>
                           <span className="text-[11px] font-bold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-lg shrink-0">
                             {new Date(myWelcomeBenefit.created_at).toLocaleDateString('es-CO')}
@@ -1191,7 +1185,6 @@ export default function PacientesPortal() {
                               <p className="font-extrabold text-slate-800">
                                 {cleanPersonName(ref.referred_name)}
                               </p>
-                              <p className="text-[11px] text-slate-400 font-mono">CC: {ref.referred_doc}</p>
                             </td>
                             <td className="px-4 py-4 text-xs text-slate-500">
                               {new Date(ref.created_at).toLocaleDateString('es-CO')}
@@ -1248,9 +1241,6 @@ export default function PacientesPortal() {
                             <td className="px-4 py-4">
                               <p className="font-extrabold text-slate-800">
                                 {cleanPersonName(myWelcomeBenefit.referrer_name)}
-                              </p>
-                              <p className="text-[11px] text-slate-400 font-mono">
-                                CC: {myWelcomeBenefit.referrer_doc}
                               </p>
                             </td>
                             <td className="px-4 py-4 text-xs text-slate-500">
