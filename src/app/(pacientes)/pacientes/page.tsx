@@ -777,8 +777,8 @@ export default function PacientesPortal() {
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 text-white font-extrabold text-sm shadow-lg shadow-indigo-500/25 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting
-                    ? 'Activando tu Bono de Referido...'
-                    : `Registrarme con Código y Recibir $${campaignDiscount.toLocaleString('es-CO')} COP`}
+                    ? 'Activando tu Bono de Bienvenida...'
+                    : `Activar mi Bono de Bienvenida de $${campaignDiscount.toLocaleString('es-CO')}`}
                 </button>
               </form>
             )}
@@ -887,7 +887,7 @@ export default function PacientesPortal() {
                 <h2 className="text-xl sm:text-2xl font-extrabold">
                   {myWelcomeBenefit.status === 'completed'
                     ? '¡Ya redimiste tu descuento de primer tratamiento!'
-                    : '¡Tienes un Saldo a Favor para tu Primer Tratamiento!'}
+                    : '¡Tienes un Saldo a Favor para tu Primera Cita Médica o Tratamiento!'}
                 </h2>
 
                 <p className="text-white/90 text-xs sm:text-sm leading-relaxed">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { processReporteFacturacion, processReporteTransaccion, processMedicoTratante, processCompletarValoresLocal, saveUnifiedToSupabase, exportToExcel, fetchDatabasePreview, deleteAllRecords, getDatabaseTotalCount, deleteRecordsByDateRange, getDatabaseDateRange } from '@/features/data-parser/reportes';
 import { createClient } from '@/shared/lib/supabase/client';
 import { useReportesStore } from '@/features/data-parser/store/use-reportes-store';
@@ -25,7 +26,8 @@ import {
   X,
   Users,
   TrendingUp,
-  LogOut
+  LogOut,
+  ArrowLeft
 } from 'lucide-react';
 
 type Tab = 'dashboard' | 'billing' | 'process' | 'profitability' | 'followups' | 'referrals';
@@ -355,49 +357,73 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#e6e7ee]" style={{ fontFamily: 'var(--font-manrope)' }}>
-        <form onSubmit={handleLogin} className="bg-[#e6e7ee] p-8 rounded-3xl shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] w-full max-w-sm flex flex-col gap-6">
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.4)] mb-4">
-              <Stethoscope className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800">Acceso Restringido</h1>
-            <p className="text-sm text-gray-500 mt-2">Ingresa tus credenciales para continuar</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Usuario</label>
-            <input
-              type="text"
-              value={loginUsername}
-              onChange={(e) => setLoginUsername(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              placeholder="Usuario"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Contraseña</label>
-            <input
-              type="password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              placeholder="••••••••"
-            />
-          </div>
-
-          {loginError && (
-            <p className="text-red-500 text-sm text-center font-medium">Credenciales incorrectas</p>
-          )}
-
-          <button
-            type="submit"
-            className="w-full py-3 mt-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-xl shadow-[4px_4px_10px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] transition-all"
+      <div className="min-h-screen flex flex-col justify-between p-4 sm:p-6 bg-[#e6e7ee]" style={{ fontFamily: 'var(--font-manrope)' }}>
+        {/* Barra Superior con botón Volver a la Página Web */}
+        <div className="max-w-5xl w-full mx-auto flex items-center justify-between py-2">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-700 hover:text-blue-600 hover:border-blue-200 text-xs sm:text-sm font-bold shadow-xs transition-all"
           >
-            Ingresar
-          </button>
-        </form>
+            <ArrowLeft className="w-4 h-4" />
+            <span>Volver a la Página Web</span>
+          </Link>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center my-6">
+          <form onSubmit={handleLogin} className="bg-[#e6e7ee] p-8 rounded-3xl shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] w-full max-w-sm flex flex-col gap-6">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.4)] mb-4">
+                <Stethoscope className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-800">Acceso Restringido</h1>
+              <p className="text-sm text-gray-500 mt-2">Ingresa tus credenciales para continuar</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Usuario</label>
+              <input
+                type="text"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                placeholder="Usuario"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Contraseña</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-[#e6e7ee] text-gray-700 border-none shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {loginError && (
+              <p className="text-red-500 text-sm text-center font-medium">Credenciales incorrectas</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full py-3 mt-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-xl shadow-[4px_4px_10px_rgba(59,130,246,0.3)] hover:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1)] transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isLoggingIn ? 'Verificando...' : 'Ingresar'}
+            </button>
+
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white border border-slate-200/80 text-slate-700 hover:text-blue-600 text-xs font-bold shadow-xs transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Volver a la Página Web</span>
+            </Link>
+          </form>
+        </div>
+
+        <div />
       </div>
     );
   }
@@ -533,8 +559,15 @@ export default function Home() {
           })}
         </nav>
 
-        {/* Botón Cerrar Sesión en el Sidebar */}
-        <div className="pt-2 border-t border-gray-300/60">
+        {/* Botones Volver a la Página Web y Cerrar Sesión en el Sidebar */}
+        <div className="pt-2 border-t border-gray-300/60 flex flex-col gap-2.5">
+          <Link
+            href="/"
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold w-full text-left bg-white border border-slate-200/80 text-slate-700 hover:text-blue-600 shadow-xs transition-all"
+          >
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            <span>Volver a la Página Web</span>
+          </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold w-full text-left text-red-600 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:bg-red-50 transition-all cursor-pointer"
@@ -569,7 +602,14 @@ export default function Home() {
                   : 'Gestión de campaña, canje de bonos y billetera de embajadores')}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-white border border-slate-200/80 text-slate-700 hover:text-blue-600 text-xs sm:text-sm font-bold shadow-xs transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Volver a la Página Web</span>
+            </Link>
             <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
               <p className="text-gray-500 text-xs">
                 {userRole === 'cashier' ? 'Recepción / Caja' : 'Unidad Médica'}

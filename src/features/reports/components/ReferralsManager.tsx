@@ -946,8 +946,8 @@ export function ReferralsManager({
         />
       )}
 
-      {/* BANNER SUPERIOR SEGÚN ROL */}
-      {userRole === 'admin' ? (
+      {/* BANNER SUPERIOR (SOLO ADMIN) */}
+      {userRole === 'admin' && (
         <div className="bg-gradient-to-r from-blue-950 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2 z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-cyan-300 text-xs font-bold uppercase tracking-wider">
@@ -994,24 +994,6 @@ export function ReferralsManager({
                 {isUploading ? 'Procesando Excel...' : 'Subir Excel de Pacientes'}
               </span>
             </button>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-gradient-to-r from-teal-900 via-cyan-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2 z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-400/20 text-teal-200 text-xs font-bold uppercase tracking-wider">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Módulo Exclusivo de Caja y Recepción · Usuario: {currentUsername}</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold">
-              Verificación por Cédula y Redención de Bonos de Referidos
-            </h2>
-            <p className="text-cyan-100 text-xs sm:text-sm max-w-3xl leading-relaxed">
-              Ingresa el <strong>Número de Cédula</strong> del paciente que se registra en caja para comprobar qué bonos tiene disponibles, elegir cuántos bonos va a redimir hoy y ver su valor total.{' '}
-              <span className="text-amber-300 font-semibold">
-                Nota: Los códigos de referido solo se inscriben desde la página web y no pueden ser modificados en caja.
-              </span>
-            </p>
           </div>
         </div>
       )}
