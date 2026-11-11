@@ -29,6 +29,7 @@ type ReferredPersonItem = {
   referred_doc: string;
   referred_name: string;
   status: 'pending' | 'completed' | 'cancelled';
+  referrer_reward_status?: 'pending' | 'available' | 'redeemed';
   reward_amount: number;
   discount_amount: number;
   treatment_name?: string;
@@ -212,6 +213,12 @@ export default function PacientesPortal() {
         referred_doc: r.referred_doc,
         referred_name: r.referred_name || `Paciente ${r.referred_doc}`,
         status: r.status,
+        referrer_reward_status:
+          r.status !== 'completed'
+            ? 'pending'
+            : r.referrer_reward_status === 'redeemed'
+            ? 'redeemed'
+            : 'available',
         reward_amount: Number(r.reward_amount) || currentReward,
         discount_amount: Number(r.discount_amount) || currentDiscount,
         treatment_name: r.treatment_name,
@@ -219,28 +226,18 @@ export default function PacientesPortal() {
       }));
       setMyReferrals(mappedReferrals);
 
-      // 5. Consultar mi billetera de embajador (saldo por los que sí han asistido)
-      const { data: wallet } = await supabase
-        .from('ambassador_wallets')
-        .select('*')
-        .eq('doc_id', userDoc)
-        .maybeSingle();
-
+      // 5. Calcular mi saldo de embajador por los que sí han asistido y canjeado en Caja
       const completedReferrals = mappedReferrals.filter((r) => r.status === 'completed');
-      const calculatedEarned = completedReferrals.reduce((acc, r) => acc + r.reward_amount, 0);
+      const availableReferrals = completedReferrals.filter((r) => r.referrer_reward_status !== 'redeemed');
+      const redeemedReferrals = completedReferrals.filter((r) => r.referrer_reward_status === 'redeemed');
 
-      if (wallet) {
-        const redeemed = Number(wallet.total_redeemed) || 0;
-        const earned = Math.max(Number(wallet.total_earned) || 0, calculatedEarned);
-        const balance = Math.max(earned - redeemed, 0);
-        setWalletTotalEarned(earned);
-        setWalletTotalRedeemed(redeemed);
-        setWalletBalance(balance);
-      } else {
-        setWalletTotalEarned(calculatedEarned);
-        setWalletTotalRedeemed(0);
-        setWalletBalance(calculatedEarned);
-      }
+      const calculatedEarned = completedReferrals.reduce((acc, r) => acc + r.reward_amount, 0);
+      const calculatedAvailable = availableReferrals.reduce((acc, r) => acc + r.reward_amount, 0);
+      const calculatedRedeemed = redeemedReferrals.reduce((acc, r) => acc + r.reward_amount, 0);
+
+      setWalletTotalEarned(calculatedEarned);
+      setWalletTotalRedeemed(calculatedRedeemed);
+      setWalletBalance(calculatedAvailable);
     } catch (err) {
       console.error('Error cargando datos del portal:', err);
     } finally {
@@ -1113,21 +1110,32 @@ export default function PacientesPortal() {
                           </td>
                           <td className="px-4 py-4 text-right">
                             {ref.status === 'completed' ? (
-                              <div>
-                                <span className="font-black text-emerald-600 text-sm">
-                                  +${ref.reward_amount.toLocaleString('es-CO')} COP
-                                </span>
-                                <span className="block text-[10px] text-emerald-600 font-semibold">
-                                  Sumado a tu saldo
-                                </span>
-                              </div>
+                              ref.referrer_reward_status === 'redeemed' ? (
+                                <div>
+                                  <span className="font-black text-purple-600 text-sm">
+                                    ${ref.reward_amount.toLocaleString('es-CO')} COP
+                                  </span>
+                                  <span className="block text-[10px] text-purple-600 font-semibold">
+                                    Bono ya redimido en Caja
+                                  </span>
+                                </div>
+                              ) : (
+                                <div>
+                                  <span className="font-black text-emerald-600 text-sm">
+                                    +${ref.reward_amount.toLocaleString('es-CO')} COP
+                                  </span>
+                                  <span className="block text-[10px] text-emerald-600 font-semibold">
+                                    ¡Disponible para redimir en Caja!
+                                  </span>
+                                </div>
+                              )
                             ) : (
                               <div>
                                 <span className="font-bold text-slate-400 text-sm">
                                   +${ref.reward_amount.toLocaleString('es-CO')} COP
                                 </span>
                                 <span className="block text-[10px] text-amber-600 font-semibold">
-                                  Se activa cuando asista
+                                  Se activa cuando canjee su 1ra cita en Caja
                                 </span>
                               </div>
                             )}

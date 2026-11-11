@@ -1160,16 +1160,13 @@ export async function processReportePacientes(file: File): Promise<ProcessPacien
           }
         }
 
-        // 5. Cruzar con los referidos pendientes: si un paciente referido ya aparece en la BD subida,
-        // se aprueba su asistencia y se le asigna la bonificación a quien lo refirió.
-        const referralsDetected = await syncPendingReferralsWithDatabase();
-
+        // Los bonos se hacen efectivos únicamente cuando el paciente los redime en Caja.
         resolve({
           totalProcessed: parsedRows.length,
           newPatientsCount: newCount,
           existingUpdatedCount: existingCount,
           newPatients: newPatientsList,
-          referralsDetected,
+          referralsDetected: [],
         });
       } catch (err: any) {
         console.error('Error procesando archivo de pacientes:', err);
@@ -1181,4 +1178,50 @@ export async function processReportePacientes(file: File): Promise<ProcessPacien
     reader.readAsBinaryString(file);
   });
 }
+
+/**
+ * Borra TODOS los registros exclusivos del módulo de Referidos
+ * (referral_redemptions, referrals, ambassador_wallets y patients_directory),
+ * sin tocar ninguna otra tabla del resto de la aplicación.
+ */
+export async function deleteAllReferralsData(): Promise<void> {
+  const supabase = createClient();
+
+  const { error: redErr } = await supabase
+    .from('referral_redemptions')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+
+  if (redErr) {
+    throw new Error('Error al borrar historial de bonos redimidos: ' + redErr.message);
+  }
+
+  const { error: refErr } = await supabase
+    .from('referrals')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+
+  if (refErr) {
+    throw new Error('Error al borrar historial de referidos: ' + refErr.message);
+  }
+
+  const { error: walletErr } = await supabase
+    .from('ambassador_wallets')
+    .delete()
+    .neq('doc_id', '__NEVER_MATCH__');
+
+  if (walletErr) {
+    throw new Error('Error al borrar billeteras de referidos: ' + walletErr.message);
+  }
+
+  const { error: dirErr } = await supabase
+    .from('patients_directory')
+    .delete()
+    .neq('doc_id', '__NEVER_MATCH__');
+
+  if (dirErr) {
+    throw new Error('Error al borrar base de datos de pacientes de referidos: ' + dirErr.message);
+  }
+}
+
 

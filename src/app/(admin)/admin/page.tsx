@@ -24,7 +24,8 @@ import {
   Menu,
   X,
   Users,
-  TrendingUp
+  TrendingUp,
+  LogOut
 } from 'lucide-react';
 
 type Tab = 'dashboard' | 'billing' | 'process' | 'profitability' | 'followups' | 'referrals';
@@ -57,30 +58,110 @@ export default function Home() {
   const [deleteEndDate, setDeleteEndDate] = useState('');
   const [isDeletingRange, setIsDeletingRange] = useState(false);
 
-  // Estados para Login Temporal
+  // Estados para Login y Rol de Usuario ('admin' = Gerencia completa, 'cashier' = Solo Referidos / Caja)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'cashier'>('admin');
+  const [currentUsername, setCurrentUsername] = useState<string>('holistica');
+  const [currentDisplayName, setCurrentDisplayName] = useState<string>('Gerencia');
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
     const auth = sessionStorage.getItem('app_auth');
+    const savedRole = (sessionStorage.getItem('app_role') as 'admin' | 'cashier') || 'admin';
+    const savedUser = sessionStorage.getItem('app_user') || 'holistica';
+    const savedDisplay = sessionStorage.getItem('app_display_name') || (savedRole === 'cashier' ? 'Caja (Recepción)' : 'Gerencia');
+
     if (auth === 'true') {
       setIsAuthenticated(true);
+      setUserRole(savedRole);
+      setCurrentUsername(savedUser);
+      setCurrentDisplayName(savedDisplay);
+      if (savedRole === 'cashier') {
+        setActiveTab('referrals');
+      }
     } else {
       setIsAuthenticated(false);
     }
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginUsername === 'holistica' && loginPassword === '07Holistica') {
+    setLoginError(false);
+    const cleanUser = loginUsername.trim().toLowerCase();
+    const cleanPass = loginPassword.trim();
+
+    // 1. Usuario Administrador General (Gerencia)
+    if (cleanUser === 'holistica' && cleanPass === '07Holistica') {
+      setUserRole('admin');
+      setCurrentUsername('holistica');
+      setCurrentDisplayName('Gerencia');
       setIsAuthenticated(true);
       sessionStorage.setItem('app_auth', 'true');
-      setLoginError(false);
-    } else {
-      setLoginError(true);
+      sessionStorage.setItem('app_role', 'admin');
+      sessionStorage.setItem('app_user', 'holistica');
+      sessionStorage.setItem('app_display_name', 'Gerencia');
+      return;
     }
+
+    // 2. Usuario de Caja por defecto ('caja1' / 'caja123') o creados en referral_cashiers
+    setIsLoggingIn(true);
+    try {
+      const supabase = createClient();
+      const { data: cashierRow } = await supabase
+        .from('referral_cashiers')
+        .select('*')
+        .eq('username', cleanUser)
+        .eq('password', cleanPass)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (cashierRow || (cleanUser === 'caja1' && cleanPass === 'caja123')) {
+        const displayName = cashierRow?.display_name || `Caja (${cleanUser.toUpperCase()})`;
+        setUserRole('cashier');
+        setCurrentUsername(cleanUser);
+        setCurrentDisplayName(displayName);
+        setActiveTab('referrals');
+        setIsAuthenticated(true);
+        sessionStorage.setItem('app_auth', 'true');
+        sessionStorage.setItem('app_role', 'cashier');
+        sessionStorage.setItem('app_user', cleanUser);
+        sessionStorage.setItem('app_display_name', displayName);
+        setLoginError(false);
+        return;
+      }
+
+      setLoginError(true);
+    } catch {
+      if (cleanUser === 'caja1' && cleanPass === 'caja123') {
+        setUserRole('cashier');
+        setCurrentUsername('caja1');
+        setCurrentDisplayName('Caja 1 (Recepción)');
+        setActiveTab('referrals');
+        setIsAuthenticated(true);
+        sessionStorage.setItem('app_auth', 'true');
+        sessionStorage.setItem('app_role', 'cashier');
+        sessionStorage.setItem('app_user', 'caja1');
+        sessionStorage.setItem('app_display_name', 'Caja 1 (Recepción)');
+      } else {
+        setLoginError(true);
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setLoginUsername('');
+    setLoginPassword('');
+    setLoginError(false);
+    sessionStorage.removeItem('app_auth');
+    sessionStorage.removeItem('app_role');
+    sessionStorage.removeItem('app_user');
+    sessionStorage.removeItem('app_display_name');
   };
   const { 
     reporteFacturacionData, 
@@ -426,8 +507,10 @@ export default function Home() {
 
         {/* Navegación */}
         <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">Menú</p>
-          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+            {userRole === 'cashier' ? 'Módulo Caja' : 'Menú'}
+          </p>
+          {NAV_ITEMS.filter((item) => (userRole === 'cashier' ? item.id === 'referrals' : true)).map(({ id, label, icon: Icon }) => {
             const isActive = activeTab === id;
             return (
               <button
@@ -450,6 +533,17 @@ export default function Home() {
           })}
         </nav>
 
+        {/* Botón Cerrar Sesión en el Sidebar */}
+        <div className="pt-2 border-t border-gray-300/60">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold w-full text-left text-red-600 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] hover:bg-red-50 transition-all cursor-pointer"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span>Cerrar Sesión ({currentUsername})</span>
+          </button>
+        </div>
+
       </aside>
 
       {/* Contenido principal */}
@@ -469,24 +563,44 @@ export default function Home() {
               {activeTab === 'process' && 'Procesa y limpia los datos cargados para reportes'}
               {activeTab === 'profitability' && 'Análisis de rentabilidad y costos operativos'}
               {activeTab === 'followups' && 'Seguimientos de pacientes y procesos'}
-              {activeTab === 'referrals' && 'Gestión de campaña, canje de bonos y billetera de embajadores'}
+              {activeTab === 'referrals' &&
+                (userRole === 'cashier'
+                  ? 'Consulta de pacientes por Cédula y redención de bonos en Caja'
+                  : 'Gestión de campaña, canje de bonos y billetera de embajadores')}
             </p>
           </div>
-          <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
-            <p className="text-gray-500 text-xs">Unidad Médica</p>
-            <p className="text-gray-700 font-semibold text-sm">Gerencia</p>
+          <div className="flex items-center gap-3">
+            <div className="bg-[#e6e7ee] rounded-2xl px-5 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]">
+              <p className="text-gray-500 text-xs">
+                {userRole === 'cashier' ? 'Recepción / Caja' : 'Unidad Médica'}
+              </p>
+              <p className="text-gray-700 font-semibold text-sm">
+                {currentDisplayName} <span className="text-xs font-mono text-blue-600">({currentUsername})</span>
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Cerrar sesión / Cambiar de usuario"
+              className="p-3.5 rounded-2xl bg-[#e6e7ee] text-red-500 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] hover:bg-red-50 transition-all cursor-pointer"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        {/* Contenido de cada pestaña (Mantenemos montados los componentes para no perder estado/caché) */}
+        {/* Contenido de cada pestaña (Para usuarios de Caja solo se monta Referidos) */}
         <div className="animate-fade-in">
-          <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
-            <Dashboard />
-          </div>
-          <div className={activeTab === 'billing' ? 'block' : 'hidden'}>
-            <BillingReport />
-          </div>
-          <div className={activeTab === 'process' ? 'block' : 'hidden'}>
+          {userRole === 'admin' && (
+            <>
+              <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
+                <Dashboard />
+              </div>
+              <div className={activeTab === 'billing' ? 'block' : 'hidden'}>
+                <BillingReport />
+              </div>
+            </>
+          )}
+          <div className={userRole === 'admin' && activeTab === 'process' ? 'block' : 'hidden'}>
             <div className="flex flex-col gap-8 animate-fade-in">
               {/* Botones Superiores */}
                <div className="flex flex-wrap gap-6">
@@ -768,14 +882,18 @@ export default function Home() {
               </div>
           </div>
         </div>
-        <div className={activeTab === 'followups' ? 'block' : 'hidden'}>
-          <FollowUps />
-        </div>
-        <div className={activeTab === 'profitability' ? 'block' : 'hidden'}>
-          <ProfitabilityReport refreshTrigger={refreshTrigger} onOpenDisabledModal={() => setIsDisabledTreatmentsModalOpen(true)} />
-        </div>
-        <div className={activeTab === 'referrals' ? 'block' : 'hidden'}>
-          <ReferralsManager />
+        {userRole === 'admin' && (
+          <>
+            <div className={activeTab === 'followups' ? 'block' : 'hidden'}>
+              <FollowUps />
+            </div>
+            <div className={activeTab === 'profitability' ? 'block' : 'hidden'}>
+              <ProfitabilityReport refreshTrigger={refreshTrigger} onOpenDisabledModal={() => setIsDisabledTreatmentsModalOpen(true)} />
+            </div>
+          </>
+        )}
+        <div className={activeTab === 'referrals' || userRole === 'cashier' ? 'block' : 'hidden'}>
+          <ReferralsManager userRole={userRole} currentUsername={currentUsername} />
         </div>
         </div>
       </main>
