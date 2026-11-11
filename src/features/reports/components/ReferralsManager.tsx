@@ -1128,62 +1128,64 @@ export function ReferralsManager({
       </div>
 
       {/* BARRA DE PESTAÑAS */}
-      <div className="flex flex-wrap items-center gap-2 bg-[#e6e7ee] p-2 rounded-2xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]">
-        {[
-          {
-            id: 'caja',
-            label: 'Canje en Caja (Buscar por Cédula)',
-            icon: Search,
-          },
-          {
-            id: 'redimidos',
-            label: `Bonos Redimidos por Día (${redemptions.length})`,
-            icon: Calendar,
-          },
-          {
-            id: 'embajadores',
-            label: `Códigos & Embajadores (${totalCodigosCreados})`,
-            icon: Award,
-          },
-          {
-            id: 'movimiento',
-            label: `Movimiento de Referidos (${totalReferidosInscritos})`,
-            icon: Users,
-          },
-          ...(userRole === 'admin'
-            ? [
-                {
-                  id: 'configuracion',
-                  label: 'Configurar Campaña & Usuarios Caja',
-                  icon: Settings,
-                },
-              ]
-            : []),
-        ].map(({ id, label, icon: Icon }) => {
-          const active = activeTab === id;
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                active
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{label}</span>
-            </button>
-          );
-        })}
+      <div className="flex items-center justify-between gap-1.5 overflow-x-auto bg-[#e6e7ee] p-1.5 rounded-2xl shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]">
+        <div className="flex items-center gap-1.5 shrink-0">
+          {[
+            {
+              id: 'caja',
+              label: 'Canje en Caja (Buscar por Cédula)',
+              icon: Search,
+            },
+            {
+              id: 'redimidos',
+              label: `Bonos Redimidos por Día (${redemptions.length})`,
+              icon: Calendar,
+            },
+            {
+              id: 'embajadores',
+              label: `Códigos & Embajadores (${totalCodigosCreados})`,
+              icon: Award,
+            },
+            {
+              id: 'movimiento',
+              label: `Movimiento de Referidos (${totalReferidosInscritos})`,
+              icon: Users,
+            },
+            ...(userRole === 'admin'
+              ? [
+                  {
+                    id: 'configuracion',
+                    label: 'Configurar Campaña & Usuarios Caja',
+                    icon: Settings,
+                  },
+                ]
+              : []),
+          ].map(({ id, label, icon: Icon }) => {
+            const active = activeTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id as any)}
+                className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  active
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
 
         <button
           onClick={loadAllData}
           disabled={isLoading}
           title="Actualizar y refrescar todos los datos"
-          className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 font-extrabold text-xs sm:text-sm shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+          className="shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 font-extrabold text-xs shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-60"
         >
-          <RefreshCw className={`w-4 h-4 text-blue-600 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 text-blue-600 shrink-0 ${isLoading ? 'animate-spin' : ''}`} />
           <span>{isLoading ? 'Actualizando...' : 'Actualizar Datos'}</span>
         </button>
       </div>
