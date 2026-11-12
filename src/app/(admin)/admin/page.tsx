@@ -168,7 +168,8 @@ export default function Home() {
   const { 
     reporteFacturacionData, 
     reporteTransaccionData,
-    filteredCount, 
+    filteredCount,
+    transaccionFilteredCount,
     setReporteFacturacionData, 
     setReporteTransaccionData,
     updateReporteFacturacionData,
@@ -232,8 +233,9 @@ export default function Home() {
         if (reporteFacturacionData && reporteFacturacionData.length > 1) {
           const updated = await processReporteTransaccion(file, reporteFacturacionData);
           if (Array.isArray(updated)) {
+            const fCount = (updated as any).filteredCount || 0;
             updateReporteFacturacionData(updated);
-            setReporteTransaccionData(updated, 0);
+            setReporteTransaccionData(updated, fCount);
           }
         } else {
           const result = (await processReporteTransaccion(file)) as { data: any[][]; filteredCount: number };
@@ -839,11 +841,18 @@ export default function Home() {
               {/* Controles y Visualización de los Datos de Facturación */}
               {reporteFacturacionData ? (
                 <div className="bg-[#e6e7ee] rounded-3xl p-6 shadow-[6px_6px_14px_#b8b9be,-6px_-6px_14px_#ffffff]">
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
                     <h2 className="text-lg font-bold text-gray-700">Previsualización de Datos Procesados</h2>
-                    <span className="text-xs font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                      {reporteFacturacionData.length - 1} registros (excluyendo encabezado)
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {((transaccionFilteredCount || 0) + (filteredCount || 0)) > 0 && (
+                        <span className="text-xs font-semibold bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
+                          {((transaccionFilteredCount || 0) + (filteredCount || 0))} excluidos (Ausentes / Empresa)
+                        </span>
+                      )}
+                      <span className="text-xs font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                        {reporteFacturacionData.length - 1} registros (excluyendo encabezado)
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="overflow-x-auto rounded-xl border border-gray-200" style={{ maxHeight: '500px' }}>

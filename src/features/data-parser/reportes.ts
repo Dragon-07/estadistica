@@ -230,6 +230,59 @@ export async function processReporteTransaccion(
           return norm.includes('colmena') || norm.includes('ecopetrol');
         };
 
+        const isAusenteRow = (row: Record<string, unknown>): boolean => {
+          const val = getValFromRow(
+            row,
+            'Estado en Turnero/Procedimiento',
+            'Estado en Turnero / Procedimiento',
+            'Estado en Turnero/ Procedimiento',
+            'Estado en Turnero',
+            'Estado Turnero/Procedimiento',
+            'Estado Turnero',
+            'Estado Procedimiento',
+            'Estado'
+          );
+          if (val) {
+            const norm = normalizeStr(String(val));
+            if (norm === 'ausente' || norm.includes('ausente')) return true;
+          }
+
+          // Búsqueda flexible por si la cabecera varía levemente
+          const keys = Object.keys(row);
+          const targetKey = keys.find(k => {
+            const nk = normalizeStr(k);
+            return (nk.includes('turnero') && (nk.includes('estado') || nk.includes('procedimiento'))) ||
+                   (nk.includes('estado') && nk.includes('procedimiento'));
+          });
+          if (targetKey) {
+            const normVal = normalizeStr(String(row[targetKey] || ''));
+            if (normVal === 'ausente' || normVal.includes('ausente')) return true;
+          }
+
+          return false;
+        };
+
+        // Identificar y excluir ítems que digan 'Ausente' en 'Estado en Turnero/Procedimiento' (anulados)
+        const ausenteFacturas = new Set<string>();
+        const ausenteDocDateCup = new Set<string>();
+        let filteredCount = 0;
+        const validRows: Record<string, unknown>[] = [];
+
+        for (const row of rawRows) {
+          if (isAusenteRow(row)) {
+            filteredCount++;
+            const fact = cleanFact(getValFromRow(row, '# Factura del Paciente', 'Factura del Paciente', 'Factura'));
+            const doc = cleanDoc(getValFromRow(row, 'Documento', 'Numero Documento', 'Identificacion'));
+            const date = cleanDate(getValFromRow(row, 'Fecha', 'Fecha Creacion'));
+            const cup = cleanCup(getValFromRow(row, 'CUP', 'Codigo (CUP)', 'Codigo CUP'));
+
+            if (fact && fact !== '-') ausenteFacturas.add(fact);
+            if (doc && date && cup) ausenteDocDateCup.add(`${doc}_${date}_${cup}`);
+            continue;
+          }
+          validRows.push(row);
+        }
+
         const createRowFromTransaction = (row: Record<string, unknown>): any[] => {
           const rowData = new Array(GLOBAL_REPORT_COLUMNS.length).fill('');
 
@@ -290,13 +343,13 @@ export async function processReporteTransaccion(
           return rowData;
         };
 
-        // MODO A: Si se pasa la tabla actual de facturación, actualizamos cada fila con los datos de transacción
+        // MODO A: Si se pasa la tabla actual de facturación, actualizamos cada fila con los datos de transacción válidos
         if (currentData && currentData.length > 1) {
           const byFactura = new Map<string, { valServ: any; factEnt: any }>();
           const byDocDateCup = new Map<string, { valServ: any; factEnt: any }>();
           const byDocDate = new Map<string, { valServ: any; factEnt: any }[]>();
 
-          for (const row of rawRows) {
+          for (const row of validRows) {
             const fact = cleanFact(getValFromRow(row, '# Factura del Paciente', 'Factura del Paciente', 'Factura'));
             const doc = cleanDoc(getValFromRow(row, 'Documento', 'Numero Documento', 'Identificacion'));
             const date = cleanDate(getValFromRow(row, 'Fecha', 'Fecha Creacion'));
@@ -323,13 +376,22 @@ export async function processReporteTransaccion(
             }
           }
 
-          const updatedData = currentData.map((row, idx) => {
-            if (idx === 0) return row; // Encabezado
+          const updatedData: any[][] = [currentData[0]]; // Encabezado
 
+          for (let i = 1; i < currentData.length; i++) {
+            const row = currentData[i];
             const factNum = cleanFact(row[2]);  // Factura
             const docNum = cleanDoc(row[3]);    // Número Documento
             const dateStr = cleanDate(row[1]);  // Fecha Creación
             const cupStr = cleanCup(row[17]);   // Código (CUP)
+
+            // Excluir si el registro coincide con una cita marcada 'Ausente' en el reporte de transacciones
+            if (
+              (factNum && ausenteFacturas.has(factNum)) ||
+              (docNum && dateStr && cupStr && ausenteDocDateCup.has(`${docNum}_${dateStr}_${cupStr}`))
+            ) {
+              continue;
+            }
 
             let match: { valServ: any; factEnt: any } | null = null;
             if (factNum && byFactura.has(factNum)) {
@@ -357,13 +419,13 @@ export async function processReporteTransaccion(
               }
               newRow[27] = totalFinal;
             }
-            return newRow;
-          });
+            updatedData.push(newRow);
+          }
 
-          // Añadir a la tabla los ítems de "COLMENA SEGUROS RIESGOS LABORALES" y "ECOPETROL S A"
+          // Añadir a la tabla los ítems de "COLMENA SEGUROS RIESGOS LABORALES" y "ECOPETROL S A" (solo válidos, no ausentes)
           const existingCountMap = new Map<string, number>();
-          for (let i = 1; i < currentData.length; i++) {
-            const r = currentData[i];
+          for (let i = 1; i < updatedData.length; i++) {
+            const r = updatedData[i];
             const d = cleanDoc(r[3]);
             const dt = cleanDate(r[1]);
             const c = cleanCup(r[17]);
@@ -372,7 +434,7 @@ export async function processReporteTransaccion(
             existingCountMap.set(key, (existingCountMap.get(key) || 0) + 1);
           }
 
-          for (const row of rawRows) {
+          for (const row of validRows) {
             const entidad = getValFromRow(row, 'Entidad', 'EPS/Entidad Paciente', 'EPS');
             if (isTargetEntity(entidad)) {
               const doc = cleanDoc(getValFromRow(row, 'Documento', 'Numero Documento', 'Cedula', 'Identificacion'));
@@ -397,17 +459,18 @@ export async function processReporteTransaccion(
             }
           }
 
+          (updatedData as any).filteredCount = filteredCount;
           resolve(updatedData);
           return;
         }
 
-        // MODO B: Si no hay tabla previa, generamos las filas desde el reporte de transacciones
+        // MODO B: Si no hay tabla previa, generamos las filas desde el reporte de transacciones válidas (excluyendo ausentes)
         const wsData: any[][] = [GLOBAL_REPORT_COLUMNS];
 
-        for (const row of rawRows) {
+        for (const row of validRows) {
           wsData.push(createRowFromTransaction(row));
         }
-        resolve({ data: wsData, filteredCount: 0 });
+        resolve({ data: wsData, filteredCount });
       } catch (err: any) {
         reject(new Error('Error al procesar Transacciones: ' + err.message));
       }
